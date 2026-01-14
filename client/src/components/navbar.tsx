@@ -32,6 +32,7 @@ export function Navbar() {
     { href: "/", label: t("nav.home"), show: true },
     { href: "/exams", label: t("nav.exams"), show: isAuthenticated },
     { href: "/pricing", label: t("nav.pricing"), show: true },
+    { href: "/schedule-exam", label: t("nav.scheduleExam"), show: true },
     { href: "/profile", label: t("nav.profile"), show: isAuthenticated },
   ];
 

@@ -92,6 +92,21 @@ export const paymentHistory = pgTable("payment_history", {
   index("idx_payment_history_user").on(table.userId),
 ]);
 
+export const callbackRequests = pgTable("callback_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  firstName: varchar("first_name", { length: 100 }).notNull(),
+  lastName: varchar("last_name", { length: 100 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 20 }).notNull(),
+  preferredDay: varchar("preferred_day", { length: 20 }).notNull(),
+  preferredTime: varchar("preferred_time", { length: 20 }).notNull(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_callback_requests_status").on(table.status),
+  index("idx_callback_requests_created").on(table.createdAt),
+]);
+
 export const userProfilesRelations = relations(userProfiles, ({ many }) => ({
   examSessions: many(examSessions),
   examResults: many(examResults),
@@ -132,6 +147,12 @@ export const insertPaymentHistorySchema = createInsertSchema(paymentHistory).omi
   createdAt: true,
 });
 
+export const insertCallbackRequestSchema = createInsertSchema(callbackRequests).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+});
+
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
@@ -142,6 +163,8 @@ export type InsertExamResult = z.infer<typeof insertExamResultSchema>;
 export type ExamResult = typeof examResults.$inferSelect;
 export type InsertPaymentHistory = z.infer<typeof insertPaymentHistorySchema>;
 export type PaymentHistory = typeof paymentHistory.$inferSelect;
+export type InsertCallbackRequest = z.infer<typeof insertCallbackRequestSchema>;
+export type CallbackRequest = typeof callbackRequests.$inferSelect;
 
 export type ExamCategory = "real_estate" | "property_casualty" | "life_insurance" | "general_lines";
 export type Language = "en" | "es";

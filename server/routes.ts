@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { isAuthenticated } from "./replit_integrations/auth";
 import { getCachedStripeClient } from "./stripeClient";
-import { insertQuestionSchema, type ExamCategory, examCategoryEnum } from "@shared/schema";
+import { insertQuestionSchema, insertCallbackRequestSchema, callbackRequests, type ExamCategory, examCategoryEnum } from "@shared/schema";
 import { z } from "zod";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
@@ -462,6 +462,38 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error deleting question:", error);
       res.status(500).json({ message: "Failed to delete question" });
+    }
+  });
+
+  app.post("/api/callback-requests", async (req, res) => {
+    try {
+      const parsed = insertCallbackRequestSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid data", errors: parsed.error.errors });
+      }
+      
+      const [request] = await db.insert(callbackRequests).values(parsed.data).returning();
+      res.json({ success: true, id: request.id });
+    } catch (error) {
+      console.error("Error creating callback request:", error);
+      res.status(500).json({ message: "Failed to submit callback request" });
+    }
+  });
+
+  app.get("/api/admin/callback-requests", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getProfile(userId);
+      
+      if (profile?.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      const requests = await db.select().from(callbackRequests).orderBy(sql`created_at DESC`);
+      res.json(requests);
+    } catch (error) {
+      console.error("Error fetching callback requests:", error);
+      res.status(500).json({ message: "Failed to fetch callback requests" });
     }
   });
 

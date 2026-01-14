@@ -1,0 +1,61 @@
+Create a complete web application called "Easy Pass" - a bilingual exam practice platform for Texas licensing exams. Build this as a full-stack application with the following specifications:
+
+Core Requirements:
+Frontend: React.js with responsive design
+Backend: Node.js/Express.js
+Database: PostgreSQL or MongoDB
+Payment: Stripe integration
+Languages: English and Spanish support throughout
+Exam Categories:
+Texas Real Estate Salespersons Exam
+Texas Property and Casualty Insurance Exam
+Texas Life Insurance Exam
+Texas General Lines Insurance Exam
+User Features:
+Registration/Login: Email/password authentication with email verification
+Subscription Plans:
+Weekly: $6.99 (auto-renewing)
+Monthly: $19.99 (auto-renewing)
+Payment Integration: Stripe for credit card processing with automatic billing
+Practice Exams: Access to all exam categories with questions randomized
+Anti-Print Protection: Disable print functionality during exam sessions (CSS print media queries and JavaScript)
+Scoring System: Immediate pass/fail results with detailed scoring
+SMS Notifications: Text alerts for results and subscription status
+Profile Management: View subscription, cancel anytime, change language preference
+Language Toggle: Switch between English/Spanish dynamically
+Admin Panel Features:
+Question Management: Upload/edit/delete questions for each exam category
+User Management: View all users, subscription status, payment history
+Analytics Dashboard: User engagement, pass rates, revenue metrics
+Bulk Question Upload: CSV/Excel import functionality
+Technical Implementation:
+Authentication: JWT tokens with refresh mechanism
+Database Schema: Users, Subscriptions, Exams, Questions, Results, Payments tables
+API Routes: RESTful endpoints for all CRUD operations
+Security: Input validation, SQL injection protection, rate limiting
+Responsive Design: Mobile-first approach with Bootstrap or Tailwind CSS
+State Management: Redux or Context API for React
+Internationalization: i18next for language switching
+Subscription Management:
+Stripe webhooks for payment status updates
+Automatic subscription renewal
+Grace period handling for failed payments
+One-click cancellation with immediate effect
+Email confirmations for all subscription changes
+Exam Session Features:
+Timed practice sessions
+Question navigation (previous/next/review)
+Answer selection with visual feedback
+Results summary with correct/incorrect breakdown
+Prevent browser back button during exams
+Session timeout handling
+Additional Requirements:
+Environment variables for API keys and database connections
+Error handling and logging throughout
+Loading states and user feedback
+Email service integration (SendGrid or similar)
+SMS service integration (Twilio)
+Admin authentication separate from regular users
+File Structure:
+/client (React frontend) /server (Express backend) /database (Schema and migrations) /config (Environment and service configurations)
+Build this as a complete, production-ready application with all functionality working end-to-end. Include setup instructions, environment variable requirements, and deployment configuration.

@@ -52,7 +52,7 @@ export function Navbar() {
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary">
             <GraduationCap className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="text-xl font-bold">Easy Pass</span>
+          <span className="text-xl font-bold">LBS EasyPass</span>
         </Link>
 
         <div className="hidden md:flex items-center gap-6">
@@ -156,7 +156,7 @@ export function Navbar() {
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2">
                   <GraduationCap className="h-5 w-5" />
-                  Easy Pass
+                  LBS EasyPass
                 </SheetTitle>
               </SheetHeader>
               <div className="flex flex-col gap-4 mt-6">

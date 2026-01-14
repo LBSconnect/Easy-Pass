@@ -34,7 +34,7 @@ const resources = {
         questions: "questions",
       },
       features: {
-        title: "Why Choose Easy Pass",
+        title: "Why Choose LBS EasyPass",
         subtitle: "Everything you need to succeed on your licensing exam",
         bilingual: {
           title: "Bilingual Support",
@@ -86,7 +86,7 @@ const resources = {
           {
             name: "Maria G.",
             exam: "Real Estate Exam",
-            quote: "Easy Pass helped me pass my real estate exam on the first try. The Spanish language option was a game changer!",
+            quote: "LBS EasyPass helped me pass my real estate exam on the first try. The Spanish language option was a game changer!",
           },
           {
             name: "John D.",
@@ -96,12 +96,12 @@ const resources = {
           {
             name: "Carlos R.",
             exam: "Life Insurance",
-            quote: "Affordable and effective. I recommend Easy Pass to everyone preparing for their licensing exam.",
+            quote: "Affordable and effective. I recommend LBS EasyPass to everyone preparing for their licensing exam.",
           },
         ],
       },
       footer: {
-        company: "Easy Pass",
+        company: "LBS EasyPass",
         tagline: "Your path to professional licensing success",
         quickLinks: "Quick Links",
         examCategories: "Exam Categories",
@@ -236,7 +236,7 @@ const resources = {
         questions: "preguntas",
       },
       features: {
-        title: "Por Qué Elegir Easy Pass",
+        title: "Por Qué Elegir LBS EasyPass",
         subtitle: "Todo lo que necesitas para aprobar tu examen de licencia",
         bilingual: {
           title: "Soporte Bilingüe",
@@ -288,7 +288,7 @@ const resources = {
           {
             name: "María G.",
             exam: "Examen de Bienes Raíces",
-            quote: "Easy Pass me ayudó a aprobar mi examen de bienes raíces en el primer intento. ¡La opción en español fue increíble!",
+            quote: "LBS EasyPass me ayudó a aprobar mi examen de bienes raíces en el primer intento. ¡La opción en español fue increíble!",
           },
           {
             name: "Juan D.",
@@ -298,12 +298,12 @@ const resources = {
           {
             name: "Carlos R.",
             exam: "Seguro de Vida",
-            quote: "Económico y efectivo. Recomiendo Easy Pass a todos los que se preparan para su examen de licencia.",
+            quote: "Económico y efectivo. Recomiendo LBS EasyPass a todos los que se preparan para su examen de licencia.",
           },
         ],
       },
       footer: {
-        company: "Easy Pass",
+        company: "LBS EasyPass",
         tagline: "Tu camino hacia el éxito en licencias profesionales",
         quickLinks: "Enlaces Rápidos",
         examCategories: "Categorías de Exámenes",

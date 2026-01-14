@@ -108,7 +108,7 @@ export default function LandingPage() {
                           <GraduationCap className="h-10 w-10 text-primary" />
                         </div>
                       </div>
-                      <h3 className="text-2xl font-bold">Easy Pass</h3>
+                      <h3 className="text-2xl font-bold">LBS EasyPass</h3>
                       <p className="text-muted-foreground">
                         Texas Licensing Exam Prep
                       </p>
@@ -322,7 +322,7 @@ export default function LandingPage() {
               Ready to Pass Your Exam?
             </h2>
             <p className="text-primary-foreground/80 mb-8 max-w-2xl mx-auto">
-              Join thousands of successful test takers who trusted Easy Pass for their exam preparation.
+              Join thousands of successful test takers who trusted LBS EasyPass for their exam preparation.
             </p>
             <Button size="lg" variant="secondary" asChild className="gap-2">
               <a href="/api/login">

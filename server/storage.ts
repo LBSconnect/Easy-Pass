@@ -87,7 +87,12 @@ export class DatabaseStorage implements IStorage {
       );
     }
     
-    const result = await query.orderBy(sql`RANDOM()`).limit(limit || 100);
+    if (limit) {
+      const result = await query.orderBy(sql`RANDOM()`).limit(limit);
+      return result;
+    }
+    
+    const result = await query.orderBy(sql`RANDOM()`);
     return result;
   }
 

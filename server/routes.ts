@@ -10,6 +10,7 @@ import { sql } from "drizzle-orm";
 
 const startExamSchema = z.object({
   category: z.enum(examCategoryEnum.enumValues),
+  mode: z.enum(["practice", "full"]).default("practice"),
 });
 
 const submitExamSchema = z.object({
@@ -101,19 +102,25 @@ export async function registerRoutes(
         return res.status(403).json({ message: subscriptionCheck.message });
       }
       
-      const { category } = parsed.data;
-      const questions = await storage.getQuestions(category, 50);
+      const { category, mode } = parsed.data;
+      
+      const questionLimit = mode === "full" ? undefined : 50;
+      const questions = await storage.getQuestions(category, questionLimit);
       
       if (questions.length === 0) {
         return res.status(404).json({ message: "No questions available for this category" });
       }
+      
+      const timeLimit = mode === "full" 
+        ? Math.max(questions.length * 108, 5400)
+        : 5400;
       
       const session = await storage.createExamSession({
         userId,
         category,
         questionIds: questions.map(q => q.id),
         currentQuestionIndex: 0,
-        timeLimit: 5400,
+        timeLimit,
         isCompleted: false,
       });
       

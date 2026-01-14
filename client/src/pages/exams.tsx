@@ -59,11 +59,18 @@ const categoryColors = {
 function ExamCategorySelection() {
   const { t, i18n } = useTranslation();
 
-  const categories = [
+  const practiceCategories = [
     { id: "real_estate" as const, questions: 50 },
     { id: "property_casualty" as const, questions: 50 },
     { id: "life_insurance" as const, questions: 50 },
     { id: "general_lines" as const, questions: 50 },
+  ];
+
+  const fullMockCategories = [
+    { id: "real_estate" as const, questions: 200 },
+    { id: "property_casualty" as const, questions: 200 },
+    { id: "life_insurance" as const, questions: 199 },
+    { id: "general_lines" as const, questions: 196 },
   ];
 
   return (
@@ -71,42 +78,100 @@ function ExamCategorySelection() {
       <Navbar />
       <main className="flex-1">
         <div className="container mx-auto px-4 py-12">
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-12">
+          <div className="max-w-4xl mx-auto space-y-12">
+            <div className="text-center">
               <h1 className="text-3xl font-bold mb-4">{t("exam.selectCategory")}</h1>
               <p className="text-muted-foreground">
-                Choose an exam category to start your practice session
+                {i18n.language === "es" 
+                  ? "Elige un modo de práctica para comenzar tu sesión de estudio"
+                  : "Choose a practice mode to start your study session"}
               </p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              {categories.map((category) => {
-                const Icon = categoryIcons[category.id];
-                return (
-                  <Link key={category.id} href={`/exams/${category.id}`}>
-                    <Card
-                      className={`hover-elevate transition-all cursor-pointer border-2 ${categoryColors[category.id]}`}
-                      data-testid={`card-select-${category.id}`}
-                    >
-                      <CardHeader className="flex flex-row items-center gap-4">
-                        <div className={`p-4 rounded-lg ${categoryColors[category.id]}`}>
-                          <Icon className="h-8 w-8" />
-                        </div>
-                        <div className="flex-1">
-                          <CardTitle className="text-lg">
-                            {t(`categories.${category.id}`)}
-                          </CardTitle>
-                          <CardDescription>
-                            {category.questions} {t("categories.questions")}
-                          </CardDescription>
-                        </div>
-                        <ArrowRight className="h-5 w-5 text-muted-foreground" />
-                      </CardHeader>
-                    </Card>
-                  </Link>
-                );
-              })}
-            </div>
+            <section>
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">
+                  {i18n.language === "es" ? "Exámenes de Práctica" : "Practice Exams"}
+                </h2>
+                <p className="text-muted-foreground">
+                  {i18n.language === "es" 
+                    ? "50 preguntas aleatorias con límite de 90 minutos - perfecto para práctica rápida"
+                    : "50 random questions with 90-minute time limit - perfect for quick practice"}
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {practiceCategories.map((category) => {
+                  const Icon = categoryIcons[category.id];
+                  return (
+                    <Link key={category.id} href={`/exams/${category.id}`}>
+                      <Card
+                        className={`hover-elevate transition-all cursor-pointer border-2 ${categoryColors[category.id]}`}
+                        data-testid={`card-practice-${category.id}`}
+                      >
+                        <CardHeader className="flex flex-row items-center gap-4">
+                          <div className={`p-4 rounded-lg ${categoryColors[category.id]}`}>
+                            <Icon className="h-8 w-8" />
+                          </div>
+                          <div className="flex-1">
+                            <CardTitle className="text-lg">
+                              {t(`categories.${category.id}`)}
+                            </CardTitle>
+                            <CardDescription>
+                              {category.questions} {t("categories.questions")}
+                            </CardDescription>
+                          </div>
+                          <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                        </CardHeader>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section>
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">
+                  {i18n.language === "es" ? "Exámenes Completos de Simulación" : "Full Mock Exams"}
+                </h2>
+                <p className="text-muted-foreground">
+                  {i18n.language === "es" 
+                    ? "Todas las preguntas disponibles - simulación completa del examen real"
+                    : "All available questions - complete simulation of the real exam"}
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {fullMockCategories.map((category) => {
+                  const Icon = categoryIcons[category.id];
+                  return (
+                    <Link key={category.id} href={`/exams/${category.id}?mode=full`}>
+                      <Card
+                        className={`hover-elevate transition-all cursor-pointer border-2 ${categoryColors[category.id]}`}
+                        data-testid={`card-full-${category.id}`}
+                      >
+                        <CardHeader className="flex flex-row items-center gap-4">
+                          <div className={`p-4 rounded-lg ${categoryColors[category.id]}`}>
+                            <Icon className="h-8 w-8" />
+                          </div>
+                          <div className="flex-1">
+                            <CardTitle className="text-lg">
+                              {t(`categories.${category.id}`)}
+                            </CardTitle>
+                            <CardDescription>
+                              {category.questions} {t("categories.questions")}
+                            </CardDescription>
+                          </div>
+                          <Badge variant="secondary" className="mr-2">
+                            {i18n.language === "es" ? "Completo" : "Full"}
+                          </Badge>
+                          <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                        </CardHeader>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
           </div>
         </div>
       </main>
@@ -121,6 +186,9 @@ function ExamSession() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const category = params.category as ExamCategory;
+  
+  const searchParams = new URLSearchParams(window.location.search);
+  const mode = searchParams.get("mode") === "full" ? "full" : "practice";
 
   const [session, setSession] = useState<ExamSession | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -134,7 +202,7 @@ function ExamSession() {
 
   const startExamMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/exams/start", { category });
+      const res = await apiRequest("POST", "/api/exams/start", { category, mode });
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Failed to start exam");

@@ -102,7 +102,7 @@ export async function registerRoutes(
       }
       
       const { category } = parsed.data;
-      const questions = await storage.getQuestions(category, 25);
+      const questions = await storage.getQuestions(category, 50);
       
       if (questions.length === 0) {
         return res.status(404).json({ message: "No questions available for this category" });
@@ -113,7 +113,7 @@ export async function registerRoutes(
         category,
         questionIds: questions.map(q => q.id),
         currentQuestionIndex: 0,
-        timeLimit: 3600,
+        timeLimit: 5400,
         isCompleted: false,
       });
       

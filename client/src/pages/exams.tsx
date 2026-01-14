@@ -59,10 +59,10 @@ function ExamCategorySelection() {
   const { t, i18n } = useTranslation();
 
   const categories = [
-    { id: "real_estate" as const, questions: 25 },
-    { id: "property_casualty" as const, questions: 25 },
-    { id: "life_insurance" as const, questions: 25 },
-    { id: "general_lines" as const, questions: 25 },
+    { id: "real_estate" as const, questions: 50 },
+    { id: "property_casualty" as const, questions: 50 },
+    { id: "life_insurance" as const, questions: 50 },
+    { id: "general_lines" as const, questions: 50 },
   ];
 
   return (

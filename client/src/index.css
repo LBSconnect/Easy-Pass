@@ -286,3 +286,136 @@
     inset: -1px;
   }
 }
+
+/* ============================================
+   MOBILE OPTIMIZATIONS
+   iOS and Android touch-friendly styles
+   ============================================ */
+
+/* Ensure minimum touch target size (44x44px recommended by Apple/Google) */
+@layer utilities {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Prevent text selection on interactive elements */
+button, 
+a, 
+[role="button"],
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Allow text selection on content */
+p, h1, h2, h3, h4, h5, h6, span, div {
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+/* Smooth scrolling for iOS */
+.overflow-auto,
+.overflow-y-auto,
+.overflow-x-auto,
+.overflow-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent tap highlight on mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Active state for touch feedback */
+@media (hover: none) and (pointer: coarse) {
+  button:active,
+  a:active,
+  [role="button"]:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
+}
+
+/* Fix for iOS input zoom - ensure font size is at least 16px */
+@media screen and (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Safe area insets for notched devices (iPhone X+) */
+@supports (padding: max(0px)) {
+  .safe-area-inset {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  
+  .safe-area-top {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+}
+
+/* Improve radio/checkbox touch targets on mobile */
+@media (max-width: 768px) {
+  [role="radio"],
+  [role="checkbox"],
+  input[type="radio"],
+  input[type="checkbox"] {
+    min-height: 24px;
+    min-width: 24px;
+  }
+  
+  /* Make radio option labels easier to tap */
+  label:has(input[type="radio"]),
+  label:has(input[type="checkbox"]) {
+    padding: 12px;
+    cursor: pointer;
+  }
+}
+
+/* Responsive typography adjustments */
+@media (max-width: 640px) {
+  h1 {
+    font-size: 1.75rem !important;
+    line-height: 2rem !important;
+  }
+  
+  h2 {
+    font-size: 1.5rem !important;
+    line-height: 1.75rem !important;
+  }
+}
+
+/* Fix for fixed headers on iOS */
+.sticky {
+  -webkit-sticky: -webkit-sticky;
+}
+
+/* Prevent body scroll when modal is open */
+body.modal-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+
+/* Ensure proper spacing on very small screens */
+@media (max-width: 375px) {
+  .container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}

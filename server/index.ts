@@ -68,8 +68,9 @@ async function initStripe() {
       .catch((err: Error) => {
         console.log("Stripe sync skipped:", err.message);
       });
-  } catch (error) {
-    console.log("Stripe initialization skipped, Stripe features may be limited");
+  } catch (error: any) {
+    console.log("Stripe initialization skipped:", error.message);
+    console.log("Stripe features may be limited");
   }
 }
 

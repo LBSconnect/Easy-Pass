@@ -44,24 +44,32 @@ export function Footer() {
             <h3 className="mb-4 text-sm font-semibold">{t("footer.examCategories")}</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <span className="hover:text-primary cursor-pointer transition-colors">
-                  {t("categories.real_estate")}
-                </span>
+                <Link href="/exams/real_estate">
+                  <span className="hover:text-primary cursor-pointer transition-colors">
+                    {t("categories.real_estate")}
+                  </span>
+                </Link>
               </li>
               <li>
-                <span className="hover:text-primary cursor-pointer transition-colors">
-                  {t("categories.property_casualty")}
-                </span>
+                <Link href="/exams/property_casualty">
+                  <span className="hover:text-primary cursor-pointer transition-colors">
+                    {t("categories.property_casualty")}
+                  </span>
+                </Link>
               </li>
               <li>
-                <span className="hover:text-primary cursor-pointer transition-colors">
-                  {t("categories.life_insurance")}
-                </span>
+                <Link href="/exams/life_insurance">
+                  <span className="hover:text-primary cursor-pointer transition-colors">
+                    {t("categories.life_insurance")}
+                  </span>
+                </Link>
               </li>
               <li>
-                <span className="hover:text-primary cursor-pointer transition-colors">
-                  {t("categories.general_lines")}
-                </span>
+                <Link href="/exams/general_lines">
+                  <span className="hover:text-primary cursor-pointer transition-colors">
+                    {t("categories.general_lines")}
+                  </span>
+                </Link>
               </li>
             </ul>
           </div>

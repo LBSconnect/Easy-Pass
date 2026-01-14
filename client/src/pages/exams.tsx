@@ -124,23 +124,33 @@ function ExamSession() {
   const [timeRemaining, setTimeRemaining] = useState(3600);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [result, setResult] = useState<ExamResult | null>(null);
+  const [subscriptionRequired, setSubscriptionRequired] = useState(false);
 
   const startExamMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/exams/start", { category });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to start exam");
+      }
       return res.json();
     },
     onSuccess: (data) => {
       setSession(data.session);
       setQuestions(data.questions);
       setTimeRemaining(data.session.timeLimit);
+      setSubscriptionRequired(false);
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      if (error.message.includes("subscription") || error.message.includes("subscribe")) {
+        setSubscriptionRequired(true);
+      } else {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -236,6 +246,67 @@ function ExamSession() {
             <p className="text-muted-foreground">{t("common.loading")}</p>
           </div>
         </main>
+      </div>
+    );
+  }
+
+  if (subscriptionRequired) {
+    const Icon = categoryIcons[category];
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <main className="flex-1">
+          <div className="container mx-auto px-4 py-12">
+            <div className="max-w-lg mx-auto">
+              <Card className="text-center">
+                <CardHeader className="pb-4">
+                  <div className="mx-auto mb-4">
+                    <div className={`h-20 w-20 rounded-full flex items-center justify-center ${categoryColors[category]}`}>
+                      <Icon className="h-10 w-10" />
+                    </div>
+                  </div>
+                  <CardTitle className="text-2xl">
+                    {i18n.language === "es" ? "Suscripción Requerida" : "Subscription Required"}
+                  </CardTitle>
+                  <CardDescription>
+                    {i18n.language === "es" 
+                      ? "Para acceder a los exámenes de práctica, necesitas una suscripción activa."
+                      : "To access practice exams, you need an active subscription."}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="p-4 rounded-lg bg-muted">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {i18n.language === "es" ? "Examen seleccionado:" : "Selected exam:"}
+                    </p>
+                    <p className="font-medium">{t(`categories.${category}`)}</p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      {i18n.language === "es" 
+                        ? "Suscríbete ahora para obtener acceso ilimitado a todos los exámenes de práctica."
+                        : "Subscribe now to get unlimited access to all practice exams."}
+                    </p>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+                      <Button asChild data-testid="button-subscribe-now">
+                        <Link href="/pricing">
+                          {i18n.language === "es" ? "Ver Planes" : "View Plans"}
+                        </Link>
+                      </Button>
+                      <Button variant="outline" asChild data-testid="button-back-to-exams">
+                        <Link href="/exams">
+                          {i18n.language === "es" ? "Volver a Exámenes" : "Back to Exams"}
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </main>
+        <Footer />
       </div>
     );
   }

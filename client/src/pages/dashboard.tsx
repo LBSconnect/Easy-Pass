@@ -359,7 +359,7 @@ export default function DashboardPage() {
                     </div>
                   ) : results && results.length > 0 ? (
                     <div className="space-y-3">
-                      {results.slice(0, 5).map((result) => {
+                      {results.slice(0, 3).map((result) => {
                         const Icon = categoryIcons[result.category as keyof typeof categoryIcons];
                         return (
                           <div
@@ -400,7 +400,7 @@ export default function DashboardPage() {
                           </div>
                         );
                       })}
-                      {results.length > 5 && (
+                      {results.length > 3 && (
                         <Button variant="ghost" className="w-full" asChild>
                           <Link href="/profile">
                             {i18n.language === "es" ? "Ver todo el historial" : "View all history"}

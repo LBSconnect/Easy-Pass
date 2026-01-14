@@ -216,7 +216,7 @@ export default function LandingPage() {
             <div className="grid gap-8 md:grid-cols-2 max-w-3xl mx-auto">
               <Card className="relative" data-testid="card-pricing-weekly">
                 <CardHeader className="text-center pb-8">
-                  <CardTitle className="text-xl">{t("pricing.weekly.name")}</CardTitle>
+                  <CardTitle className="text-xl font-black tracking-wide">{t("pricing.weekly.name")}</CardTitle>
                   <div className="mt-4">
                     <span className="text-4xl font-bold">{t("pricing.weekly.price")}</span>
                     <span className="text-muted-foreground">{t("pricing.weekly.period")}</span>
@@ -247,7 +247,7 @@ export default function LandingPage() {
                   <Badge className="bg-primary">{t("pricing.monthly.savings")}</Badge>
                 </div>
                 <CardHeader className="text-center pb-8">
-                  <CardTitle className="text-xl">{t("pricing.monthly.name")}</CardTitle>
+                  <CardTitle className="text-xl font-black tracking-wide">{t("pricing.monthly.name")}</CardTitle>
                   <div className="mt-4">
                     <span className="text-4xl font-bold">{t("pricing.monthly.price")}</span>
                     <span className="text-muted-foreground">{t("pricing.monthly.period")}</span>

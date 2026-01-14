@@ -73,7 +73,7 @@ export default function PricingPage() {
             <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto">
               <Card className="relative" data-testid="card-pricing-weekly">
                 <CardHeader className="text-center pb-8">
-                  <CardTitle className="text-2xl">{t("pricing.weekly.name")}</CardTitle>
+                  <CardTitle className="text-2xl font-black tracking-wide">{t("pricing.weekly.name")}</CardTitle>
                   <CardDescription>Perfect for quick preparation</CardDescription>
                   <div className="mt-6">
                     <span className="text-5xl font-bold">
@@ -114,7 +114,7 @@ export default function PricingPage() {
                   </Badge>
                 </div>
                 <CardHeader className="text-center pb-8 pt-8">
-                  <CardTitle className="text-2xl">{t("pricing.monthly.name")}</CardTitle>
+                  <CardTitle className="text-2xl font-black tracking-wide">{t("pricing.monthly.name")}</CardTitle>
                   <CardDescription>Best value for serious students</CardDescription>
                   <div className="mt-6">
                     <span className="text-5xl font-bold">

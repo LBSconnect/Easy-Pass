@@ -34,6 +34,10 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
+  List,
+  ChevronDown,
+  ChevronUp,
+  Edit2,
 } from "lucide-react";
 import type { ExamCategory, Question, ExamSession, ExamResult } from "@shared/schema";
 
@@ -125,6 +129,7 @@ function ExamSession() {
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [result, setResult] = useState<ExamResult | null>(null);
   const [subscriptionRequired, setSubscriptionRequired] = useState(false);
+  const [showReviewPanel, setShowReviewPanel] = useState(false);
 
   const startExamMutation = useMutation({
     mutationFn: async () => {
@@ -535,6 +540,87 @@ function ExamSession() {
                   {index + 1}
                 </Button>
               ))}
+            </div>
+
+            <div className="mt-6">
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => setShowReviewPanel(!showReviewPanel)}
+                data-testid="button-review-answers"
+              >
+                <List className="h-4 w-4" />
+                {t("exam.reviewAnswers")}
+                {showReviewPanel ? (
+                  <ChevronUp className="h-4 w-4 ml-auto" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 ml-auto" />
+                )}
+              </Button>
+
+              {showReviewPanel && (
+                <Card className="mt-4">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <List className="h-5 w-5" />
+                      {t("exam.reviewAnswers")}
+                    </CardTitle>
+                    <CardDescription>
+                      {i18n.language === "es" 
+                        ? "Haz clic en cualquier pregunta para cambiar tu respuesta"
+                        : "Click on any question to change your answer"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3 max-h-96 overflow-y-auto">
+                    {questions.map((question, index) => {
+                      const qText = i18n.language === "es" ? question.questionTextEs : question.questionTextEn;
+                      const opts = i18n.language === "es" ? question.optionsEs : question.optionsEn;
+                      const hasAnswer = answers[question.id] !== undefined;
+                      const selectedOption = hasAnswer ? opts?.[answers[question.id]] : null;
+
+                      return (
+                        <div
+                          key={question.id}
+                          className={`p-3 rounded-lg border cursor-pointer transition-colors hover-elevate ${
+                            index === currentIndex ? "border-primary bg-primary/5" : ""
+                          } ${!hasAnswer ? "border-amber-500/50 bg-amber-500/5" : ""}`}
+                          onClick={() => {
+                            setCurrentIndex(index);
+                            setShowReviewPanel(false);
+                          }}
+                          data-testid={`review-question-${index + 1}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <Badge 
+                              variant={hasAnswer ? "secondary" : "outline"}
+                              className={`shrink-0 ${!hasAnswer ? "border-amber-500 text-amber-600" : ""}`}
+                            >
+                              {index + 1}
+                            </Badge>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium line-clamp-2 mb-1">
+                                {qText}
+                              </p>
+                              {hasAnswer ? (
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                                  <span className="line-clamp-1">{selectedOption}</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 text-xs text-amber-600">
+                                  <AlertCircle className="h-3 w-3" />
+                                  {i18n.language === "es" ? "Sin responder" : "Not answered"}
+                                </div>
+                              )}
+                            </div>
+                            <Edit2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </div>

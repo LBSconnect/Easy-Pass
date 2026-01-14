@@ -137,6 +137,7 @@ const resources = {
         previous: "Previous",
         next: "Next",
         submit: "Submit Exam",
+        endQuiz: "End Quiz",
         reviewAnswers: "Review Answers",
         confirmSubmit: "Are you sure you want to submit? You cannot change your answers after submission.",
         results: {
@@ -388,6 +389,7 @@ const resources = {
         previous: "Anterior",
         next: "Siguiente",
         submit: "Enviar Examen",
+        endQuiz: "Terminar Examen",
         reviewAnswers: "Revisar Respuestas",
         confirmSubmit: "¿Estás seguro de que quieres enviar? No podrás cambiar tus respuestas después.",
         results: {

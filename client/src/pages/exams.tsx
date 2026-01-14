@@ -440,6 +440,14 @@ function ExamSession() {
             <Badge variant="secondary">
               {answeredCount}/{questions.length}
             </Badge>
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={() => setShowSubmitDialog(true)}
+              data-testid="button-end-quiz"
+            >
+              {t("exam.endQuiz")}
+            </Button>
           </div>
         </div>
         <Progress value={progress} className="h-1" />

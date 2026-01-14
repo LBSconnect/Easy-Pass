@@ -202,31 +202,24 @@ export async function registerRoutes(
 
   app.get("/api/stripe/prices", async (req, res) => {
     try {
-      const result = await db.execute(
-        sql`SELECT * FROM stripe.prices WHERE active = true ORDER BY unit_amount`
-      );
-      if (result.rows.length > 0) {
-        result.rows.forEach((row: any) => VALID_PRICE_IDS.add(row.id));
-        res.json(result.rows);
-      } else {
-        const stripe = await getCachedStripeClient();
-        const prices = await stripe.prices.list({
-          active: true,
-          expand: ["data.product"],
-        });
-        const formattedPrices = prices.data.map(p => {
-          VALID_PRICE_IDS.add(p.id);
-          return {
-            id: p.id,
-            unit_amount: p.unit_amount,
-            currency: p.currency,
-            recurring_interval: p.recurring?.interval,
-            product_id: typeof p.product === "string" ? p.product : p.product?.id,
-            product_name: typeof p.product === "object" ? p.product?.name : null,
-          };
-        });
-        res.json(formattedPrices);
-      }
+      const stripe = await getCachedStripeClient();
+      const prices = await stripe.prices.list({
+        active: true,
+        expand: ["data.product"],
+      });
+      const formattedPrices = prices.data.map(p => {
+        VALID_PRICE_IDS.add(p.id);
+        return {
+          id: p.id,
+          unit_amount: p.unit_amount,
+          currency: p.currency,
+          recurring_interval: p.recurring?.interval,
+          recurring: p.recurring,
+          product_id: typeof p.product === "string" ? p.product : p.product?.id,
+          product_name: typeof p.product === "object" ? p.product?.name : null,
+        };
+      });
+      res.json(formattedPrices);
     } catch (error) {
       console.error("Error fetching prices:", error);
       res.json([]);

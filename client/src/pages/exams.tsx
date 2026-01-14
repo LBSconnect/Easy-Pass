@@ -140,6 +140,9 @@ function ExamSession() {
       setQuestions(data.questions);
       setTimeRemaining(data.session.timeLimit);
       setSubscriptionRequired(false);
+      setResult(null);
+      setAnswers({});
+      setCurrentIndex(0);
     },
     onError: (error: Error) => {
       if (error.message.includes("subscription") || error.message.includes("subscribe")) {

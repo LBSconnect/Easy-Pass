@@ -157,11 +157,21 @@ export async function registerRoutes(
       
       let correctAnswers = 0;
       const questionIds = session.questionIds as string[];
+      const topicStats: Record<string, { correct: number; total: number }> = {};
       
       for (const questionId of questionIds) {
         const question = await storage.getQuestion(questionId);
-        if (question && answers[questionId] === question.correctAnswer) {
-          correctAnswers++;
+        if (question) {
+          const topic = question.topic || "General";
+          if (!topicStats[topic]) {
+            topicStats[topic] = { correct: 0, total: 0 };
+          }
+          topicStats[topic].total++;
+          
+          if (answers[questionId] === question.correctAnswer) {
+            correctAnswers++;
+            topicStats[topic].correct++;
+          }
         }
       }
       
@@ -189,7 +199,14 @@ export async function registerRoutes(
         timeTaken,
       });
       
-      res.json({ result });
+      const topicBreakdown = Object.entries(topicStats).map(([topic, stats]) => ({
+        topic,
+        correct: stats.correct,
+        total: stats.total,
+        percentage: Math.round((stats.correct / stats.total) * 100),
+      })).sort((a, b) => a.percentage - b.percentage);
+      
+      res.json({ result, topicBreakdown });
     } catch (error) {
       console.error("Error submitting exam:", error);
       res.status(500).json({ message: "Failed to submit exam" });

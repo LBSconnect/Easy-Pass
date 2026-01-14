@@ -197,6 +197,7 @@ function ExamSession() {
   const [timeRemaining, setTimeRemaining] = useState(3600);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [result, setResult] = useState<ExamResult | null>(null);
+  const [topicBreakdown, setTopicBreakdown] = useState<Array<{topic: string; correct: number; total: number; percentage: number}>>([]);
   const [subscriptionRequired, setSubscriptionRequired] = useState(false);
   const [showReviewPanel, setShowReviewPanel] = useState(false);
 
@@ -215,6 +216,7 @@ function ExamSession() {
       setTimeRemaining(data.session.timeLimit);
       setSubscriptionRequired(false);
       setResult(null);
+      setTopicBreakdown([]);
       setAnswers({});
       setCurrentIndex(0);
     },
@@ -240,6 +242,7 @@ function ExamSession() {
     },
     onSuccess: (data) => {
       setResult(data.result);
+      setTopicBreakdown(data.topicBreakdown || []);
       queryClient.invalidateQueries({ queryKey: ["/api/results"] });
     },
     onError: (error: Error) => {
@@ -389,18 +392,18 @@ function ExamSession() {
   }
 
   if (result) {
-    const chartData = [
-      {
-        name: i18n.language === "es" ? "Correctas" : "Correct",
-        value: result.correctAnswers,
-        fill: "#22c55e",
-      },
-      {
-        name: i18n.language === "es" ? "Incorrectas" : "Incorrect",
-        value: result.totalQuestions - result.correctAnswers,
-        fill: "#ef4444",
-      },
+    const topicColors = [
+      "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", 
+      "#ec4899", "#06b6d4", "#84cc16", "#f97316", "#6366f1"
     ];
+    
+    const topicChartData = topicBreakdown.map((item, index) => ({
+      name: item.topic,
+      percentage: item.percentage,
+      correct: item.correct,
+      total: item.total,
+      fill: item.percentage >= 70 ? "#22c55e" : item.percentage >= 50 ? "#f59e0b" : "#ef4444",
+    }));
 
     const categoryName = t(`categories.${category}`);
 
@@ -476,61 +479,66 @@ function ExamSession() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">
-                    {i18n.language === "es" ? "Resultados por Categoría" : "Results by Category"}
+                    {i18n.language === "es" ? "Resultados por Tema" : "Results by Topic"}
                   </CardTitle>
                   <CardDescription>
-                    {categoryName}
+                    {i18n.language === "es" 
+                      ? "Enfócate en los temas con puntuación más baja" 
+                      : "Focus on topics with lower scores"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-64" data-testid="results-chart">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={chartData}
-                        layout="vertical"
-                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                      >
-                        <XAxis type="number" domain={[0, result.totalQuestions]} />
-                        <YAxis type="category" dataKey="name" width={100} />
-                        <Tooltip
-                          formatter={(value: number) => [
-                            `${value} ${i18n.language === "es" ? "preguntas" : "questions"}`,
-                            "",
-                          ]}
-                        />
-                        <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                          {chartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  
-                  <div className="mt-6 grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-3 p-3 rounded-lg border">
-                      <div className="w-4 h-4 rounded bg-green-500" />
-                      <div>
-                        <div className="font-medium text-green-600 dark:text-green-400">
-                          {result.correctAnswers} / {result.totalQuestions}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {i18n.language === "es" ? "Respuestas Correctas" : "Correct Answers"}
+                  {topicChartData.length > 0 ? (
+                    <>
+                      <div className="h-64" data-testid="results-chart">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={topicChartData}
+                            layout="vertical"
+                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                          >
+                            <XAxis type="number" domain={[0, 100]} unit="%" />
+                            <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 12 }} />
+                            <Tooltip
+                              formatter={(value: number, name: string, props: any) => [
+                                `${props.payload.correct}/${props.payload.total} (${value}%)`,
+                                i18n.language === "es" ? "Puntuación" : "Score",
+                              ]}
+                            />
+                            <Bar dataKey="percentage" radius={[0, 4, 4, 0]}>
+                              {topicChartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                      
+                      <div className="mt-6 space-y-2">
+                        <p className="text-sm font-medium mb-3">
+                          {i18n.language === "es" ? "Leyenda:" : "Legend:"}
+                        </p>
+                        <div className="flex flex-wrap gap-4 text-sm">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded bg-green-500" />
+                            <span>{i18n.language === "es" ? "70%+ Excelente" : "70%+ Excellent"}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded bg-amber-500" />
+                            <span>{i18n.language === "es" ? "50-69% Necesita Práctica" : "50-69% Needs Practice"}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded bg-red-500" />
+                            <span>{i18n.language === "es" ? "<50% Enfocarse Aquí" : "<50% Focus Here"}</span>
+                          </div>
                         </div>
                       </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      {i18n.language === "es" ? "No hay datos de temas disponibles" : "No topic data available"}
                     </div>
-                    <div className="flex items-center gap-3 p-3 rounded-lg border">
-                      <div className="w-4 h-4 rounded bg-red-500" />
-                      <div>
-                        <div className="font-medium text-red-600 dark:text-red-400">
-                          {result.totalQuestions - result.correctAnswers} / {result.totalQuestions}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {i18n.language === "es" ? "Respuestas Incorrectas" : "Incorrect Answers"}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  )}
 
                   <div className="mt-6 p-4 rounded-lg bg-muted">
                     <div className="text-center">

@@ -65,13 +65,13 @@ const resources = {
         title: "Simple, Transparent Pricing",
         subtitle: "Choose the plan that works for you",
         weekly: {
-          name: "WEEKLY",
+          name: "Weekly",
           price: "$6.99",
           period: "/week",
           features: ["Access to all exam categories", "Unlimited practice tests", "Detailed explanations", "Progress tracking", "Bilingual support"],
         },
         monthly: {
-          name: "MONTHLY",
+          name: "Monthly",
           price: "$19.99",
           period: "/month",
           savings: "Save 28%",
@@ -267,13 +267,13 @@ const resources = {
         title: "Precios Simples y Transparentes",
         subtitle: "Elige el plan que mejor te funcione",
         weekly: {
-          name: "SEMANAL",
+          name: "Semanal",
           price: "$6.99",
           period: "/semana",
           features: ["Acceso a todas las categorías", "Exámenes de práctica ilimitados", "Explicaciones detalladas", "Seguimiento de progreso", "Soporte bilingüe"],
         },
         monthly: {
-          name: "MENSUAL",
+          name: "Mensual",
           price: "$19.99",
           period: "/mes",
           savings: "Ahorra 28%",

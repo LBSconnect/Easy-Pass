@@ -104,7 +104,7 @@ export default function LandingPage() {
                   <div className="absolute inset-4 bg-card rounded-2xl shadow-2xl border flex items-center justify-center">
                     <div className="text-center p-8 space-y-4">
                       <div className="flex justify-center">
-                        <img src={logoImage} alt="LBS EasyPass" className="h-24 w-24 object-contain" />
+                        <img src={logoImage} alt="LBS EasyPass" className="h-32 w-32 object-contain" />
                       </div>
                       <h3 className="text-2xl font-bold">LBS EasyPass</h3>
                       <p className="text-muted-foreground">

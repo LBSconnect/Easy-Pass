@@ -51,7 +51,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <nav className="container mx-auto flex h-16 items-center justify-between gap-4 px-4">
         <Link href="/" className="flex items-center gap-2">
-          <img src={logoImage} alt="LBS EasyPass" className="h-10 w-10 object-contain" />
+          <img src={logoImage} alt="LBS EasyPass" className="h-12 w-12 object-contain" />
           <span className="text-xl font-bold">LBS EasyPass</span>
         </Link>
 
@@ -155,7 +155,7 @@ export function Navbar() {
             <SheetContent side="right">
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2">
-                  <img src={logoImage} alt="LBS EasyPass" className="h-8 w-8 object-contain" />
+                  <img src={logoImage} alt="LBS EasyPass" className="h-10 w-10 object-contain" />
                   LBS EasyPass
                 </SheetTitle>
               </SheetHeader>

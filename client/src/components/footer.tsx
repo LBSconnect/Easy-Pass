@@ -11,7 +11,7 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           <div className="space-y-4">
             <Link href="/" className="flex items-center gap-2">
-              <img src={logoImage} alt="LBS EasyPass" className="h-10 w-10 object-contain" />
+              <img src={logoImage} alt="LBS EasyPass" className="h-12 w-12 object-contain" />
               <span className="text-xl font-bold">{t("footer.company")}</span>
             </Link>
             <p className="text-sm text-muted-foreground">{t("footer.tagline")}</p>

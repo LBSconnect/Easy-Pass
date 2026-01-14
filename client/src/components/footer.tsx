@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
-import { GraduationCap } from "lucide-react";
+import logoImage from "@assets/log_1768432206192.jpg";
 
 export function Footer() {
   const { t } = useTranslation();
@@ -11,9 +11,7 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           <div className="space-y-4">
             <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary">
-                <GraduationCap className="h-5 w-5 text-primary-foreground" />
-              </div>
+              <img src={logoImage} alt="LBS EasyPass" className="h-10 w-10 object-contain" />
               <span className="text-xl font-bold">{t("footer.company")}</span>
             </Link>
             <p className="text-sm text-muted-foreground">{t("footer.tagline")}</p>

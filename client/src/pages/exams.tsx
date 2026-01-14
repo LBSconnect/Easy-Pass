@@ -39,6 +39,7 @@ import {
   ChevronUp,
   Edit2,
 } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Legend, Tooltip } from "recharts";
 import type { ExamCategory, Question, ExamSession, ExamResult } from "@shared/schema";
 
 const categoryIcons = {
@@ -320,12 +321,27 @@ function ExamSession() {
   }
 
   if (result) {
+    const chartData = [
+      {
+        name: i18n.language === "es" ? "Correctas" : "Correct",
+        value: result.correctAnswers,
+        fill: "#22c55e",
+      },
+      {
+        name: i18n.language === "es" ? "Incorrectas" : "Incorrect",
+        value: result.totalQuestions - result.correctAnswers,
+        fill: "#ef4444",
+      },
+    ];
+
+    const categoryName = t(`categories.${category}`);
+
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
         <main className="flex-1">
           <div className="container mx-auto px-4 py-12">
-            <div className="max-w-2xl mx-auto">
+            <div className="max-w-3xl mx-auto space-y-6">
               <Card className="text-center">
                 <CardHeader className="pb-4">
                   <div className="mx-auto mb-4">
@@ -385,6 +401,85 @@ function ExamSession() {
                     <Button variant="outline" asChild>
                       <Link href="/dashboard">{t("exam.results.backToDashboard")}</Link>
                     </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">
+                    {i18n.language === "es" ? "Resultados por Categoría" : "Results by Category"}
+                  </CardTitle>
+                  <CardDescription>
+                    {categoryName}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64" data-testid="results-chart">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={chartData}
+                        layout="vertical"
+                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <XAxis type="number" domain={[0, result.totalQuestions]} />
+                        <YAxis type="category" dataKey="name" width={100} />
+                        <Tooltip
+                          formatter={(value: number) => [
+                            `${value} ${i18n.language === "es" ? "preguntas" : "questions"}`,
+                            "",
+                          ]}
+                        />
+                        <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                          {chartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  
+                  <div className="mt-6 grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3 p-3 rounded-lg border">
+                      <div className="w-4 h-4 rounded bg-green-500" />
+                      <div>
+                        <div className="font-medium text-green-600 dark:text-green-400">
+                          {result.correctAnswers} / {result.totalQuestions}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {i18n.language === "es" ? "Respuestas Correctas" : "Correct Answers"}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg border">
+                      <div className="w-4 h-4 rounded bg-red-500" />
+                      <div>
+                        <div className="font-medium text-red-600 dark:text-red-400">
+                          {result.totalQuestions - result.correctAnswers} / {result.totalQuestions}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {i18n.language === "es" ? "Respuestas Incorrectas" : "Incorrect Answers"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 p-4 rounded-lg bg-muted">
+                    <div className="text-center">
+                      <div className="text-sm text-muted-foreground mb-1">
+                        {i18n.language === "es" ? "Porcentaje de Aprobación" : "Pass Rate"}
+                      </div>
+                      <div className="text-2xl font-bold">
+                        {result.score >= 70 ? (
+                          <span className="text-green-500">{result.score}%</span>
+                        ) : (
+                          <span className="text-red-500">{result.score}%</span>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {i18n.language === "es" ? "Se requiere 70% para aprobar" : "70% required to pass"}
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

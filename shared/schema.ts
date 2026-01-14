@@ -32,6 +32,7 @@ export const userProfiles = pgTable("user_profiles", {
 export const questions = pgTable("questions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   category: examCategoryEnum("category").notNull(),
+  topic: varchar("topic"),
   questionTextEn: text("question_text_en").notNull(),
   questionTextEs: text("question_text_es").notNull(),
   optionsEn: jsonb("options_en").notNull().$type<string[]>(),
@@ -45,6 +46,7 @@ export const questions = pgTable("questions", {
 }, (table) => [
   index("idx_questions_category").on(table.category),
   index("idx_questions_active").on(table.isActive),
+  index("idx_questions_topic").on(table.topic),
 ]);
 
 export const examSessions = pgTable("exam_sessions", {

@@ -77,9 +77,9 @@ export function Footer() {
           <div>
             <h3 className="mb-4 text-sm font-semibold">{t("footer.contact")}</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>support@easypass.com</li>
-              <li>1-800-EASYPASS</li>
-              <li>Austin, Texas</li>
+              <li>Support@LBSconnect.net</li>
+              <li>281-836-5357</li>
+              <li>Houston, Texas</li>
             </ul>
           </div>
         </div>

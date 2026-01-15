@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { isAuthenticated } from "./replit_integrations/auth";
 import { getCachedStripeClient } from "./stripeClient";
-import { insertQuestionSchema, insertCallbackRequestSchema, callbackRequests, type ExamCategory, examCategoryEnum } from "@shared/schema";
+import { insertQuestionSchema, insertCallbackRequestSchema, insertQuestionFeedbackSchema, callbackRequests, questionFeedback, type ExamCategory, examCategoryEnum, feedbackStatusEnum } from "@shared/schema";
 import { z } from "zod";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
@@ -509,6 +509,72 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error deleting question:", error);
       res.status(500).json({ message: "Failed to delete question" });
+    }
+  });
+
+  app.post("/api/question-feedback", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const parsed = insertQuestionFeedbackSchema.safeParse({ ...req.body, userId });
+      
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid data", errors: parsed.error.errors });
+      }
+      
+      const feedback = await storage.createQuestionFeedback(parsed.data);
+      res.json({ success: true, feedback });
+    } catch (error) {
+      console.error("Error creating question feedback:", error);
+      res.status(500).json({ message: "Failed to submit feedback" });
+    }
+  });
+
+  app.get("/api/admin/question-feedback", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getProfile(userId);
+      
+      if (profile?.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      const feedback = await storage.getAllQuestionFeedback();
+      res.json(feedback);
+    } catch (error) {
+      console.error("Error fetching question feedback:", error);
+      res.status(500).json({ message: "Failed to fetch feedback" });
+    }
+  });
+
+  app.patch("/api/admin/question-feedback/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getProfile(userId);
+      
+      if (profile?.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      const { id } = req.params;
+      const updateSchema = z.object({
+        status: z.enum(feedbackStatusEnum.enumValues).optional(),
+        adminNotes: z.string().optional(),
+      });
+      
+      const parsed = updateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid data", errors: parsed.error.errors });
+      }
+      
+      const updated = await storage.updateQuestionFeedback(id, parsed.data);
+      if (!updated) {
+        return res.status(404).json({ message: "Feedback not found" });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating question feedback:", error);
+      res.status(500).json({ message: "Failed to update feedback" });
     }
   });
 

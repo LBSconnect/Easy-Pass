@@ -6,6 +6,7 @@ import {
   paymentHistory,
   questionFeedback,
   studyProgress,
+  examCertificates,
   type UserProfile, 
   type InsertUserProfile,
   type Question,
@@ -22,6 +23,8 @@ import {
   type FeedbackStatus,
   type StudyProgress,
   type InsertStudyProgress,
+  type ExamCertificate,
+  type InsertExamCertificate,
 } from "@shared/schema";
 import { users, type User } from "@shared/models/auth";
 import { db } from "./db";
@@ -69,6 +72,12 @@ export interface IStorage {
   getStudyProgressByTopic(userId: string, topicId: string): Promise<StudyProgress | undefined>;
   upsertStudyProgress(userId: string, category: ExamCategory, topicId: string, correct: boolean): Promise<StudyProgress>;
   getQuestionsByTopic(category: ExamCategory, topicId: string, limit?: number): Promise<Question[]>;
+  
+  createCertificate(certificate: InsertExamCertificate): Promise<ExamCertificate>;
+  getCertificateBySlug(slug: string): Promise<ExamCertificate | undefined>;
+  getCertificateByResultId(resultId: string): Promise<ExamCertificate | undefined>;
+  getCertificatesByUser(userId: string): Promise<ExamCertificate[]>;
+  revokeCertificate(id: string): Promise<ExamCertificate | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -328,6 +337,44 @@ export class DatabaseStorage implements IStorage {
       return query.orderBy(sql`RANDOM()`).limit(limit);
     }
     return query.orderBy(sql`RANDOM()`);
+  }
+
+  async createCertificate(certificate: InsertExamCertificate): Promise<ExamCertificate> {
+    const [created] = await db.insert(examCertificates).values(certificate).returning();
+    return created;
+  }
+
+  async getCertificateBySlug(slug: string): Promise<ExamCertificate | undefined> {
+    const [cert] = await db
+      .select()
+      .from(examCertificates)
+      .where(eq(examCertificates.slug, slug));
+    return cert;
+  }
+
+  async getCertificateByResultId(resultId: string): Promise<ExamCertificate | undefined> {
+    const [cert] = await db
+      .select()
+      .from(examCertificates)
+      .where(eq(examCertificates.resultId, resultId));
+    return cert;
+  }
+
+  async getCertificatesByUser(userId: string): Promise<ExamCertificate[]> {
+    return db
+      .select()
+      .from(examCertificates)
+      .where(eq(examCertificates.userId, userId))
+      .orderBy(desc(examCertificates.createdAt));
+  }
+
+  async revokeCertificate(id: string): Promise<ExamCertificate | undefined> {
+    const [updated] = await db
+      .update(examCertificates)
+      .set({ isRevoked: true })
+      .where(eq(examCertificates.id, id))
+      .returning();
+    return updated;
   }
 }
 

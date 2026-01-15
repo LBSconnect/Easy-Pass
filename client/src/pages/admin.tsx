@@ -59,8 +59,13 @@ import {
   Search,
   Upload,
   CheckCircle2,
+  Flag,
+  MessageSquare,
+  Check,
+  X,
+  Eye,
 } from "lucide-react";
-import type { Question, ExamCategory } from "@shared/schema";
+import type { Question, ExamCategory, QuestionFeedback } from "@shared/schema";
 
 const questionFormSchema = z.object({
   category: z.enum(["real_estate", "property_casualty", "life_insurance", "general_lines"]),
@@ -110,6 +115,36 @@ export default function AdminPage() {
 
   const { data: questions, isLoading: questionsLoading } = useQuery<Question[]>({
     queryKey: ["/api/admin/questions", selectedCategory],
+  });
+
+  const { data: feedback, isLoading: feedbackLoading } = useQuery<QuestionFeedback[]>({
+    queryKey: ["/api/admin/question-feedback"],
+  });
+
+  const [selectedFeedback, setSelectedFeedback] = useState<QuestionFeedback | null>(null);
+  const [feedbackAdminNotes, setFeedbackAdminNotes] = useState("");
+
+  const updateFeedbackMutation = useMutation({
+    mutationFn: async ({ id, status, adminNotes }: { id: string; status: string; adminNotes?: string }) => {
+      const res = await apiRequest("PATCH", `/api/admin/question-feedback/${id}`, { status, adminNotes });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: t("common.success"),
+        description: "Feedback updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/question-feedback"] });
+      setSelectedFeedback(null);
+      setFeedbackAdminNotes("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const form = useForm<QuestionFormValues>({
@@ -322,6 +357,15 @@ export default function AdminPage() {
               <TabsTrigger value="analytics" className="gap-2">
                 <BarChart3 className="h-4 w-4" />
                 {t("admin.analytics")}
+              </TabsTrigger>
+              <TabsTrigger value="feedback" className="gap-2">
+                <Flag className="h-4 w-4" />
+                Feedback
+                {feedback && feedback.filter(f => f.status === "pending").length > 0 && (
+                  <Badge variant="destructive" className="ml-1 h-5 min-w-[20px] px-1.5">
+                    {feedback.filter(f => f.status === "pending").length}
+                  </Badge>
+                )}
               </TabsTrigger>
             </TabsList>
 
@@ -682,7 +726,204 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="feedback" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5" />
+                    Question Feedback
+                  </CardTitle>
+                  <CardDescription>
+                    Review and manage user-submitted feedback on exam questions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {feedbackLoading ? (
+                    <div className="space-y-4">
+                      {[...Array(3)].map((_, i) => (
+                        <Skeleton key={i} className="h-20 w-full" />
+                      ))}
+                    </div>
+                  ) : feedback && feedback.length > 0 ? (
+                    <div className="space-y-4">
+                      {feedback.map((item) => {
+                        const feedbackTypeLabels: Record<string, string> = {
+                          error: "Error in question",
+                          unclear: "Unclear question",
+                          wrong_answer: "Wrong answer marked",
+                          translation: "Translation issue",
+                          suggestion: "Suggestion",
+                          other: "Other",
+                        };
+                        const statusColors: Record<string, string> = {
+                          pending: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+                          reviewed: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+                          resolved: "bg-green-500/10 text-green-600 border-green-500/20",
+                          dismissed: "bg-gray-500/10 text-gray-600 border-gray-500/20",
+                        };
+
+                        return (
+                          <Card key={item.id} className="border">
+                            <CardContent className="pt-4">
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1 space-y-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <Badge variant="outline" className={statusColors[item.status]}>
+                                      {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                                    </Badge>
+                                    <Badge variant="secondary">
+                                      {feedbackTypeLabels[item.feedbackType] || item.feedbackType}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      {new Date(item.createdAt).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground">
+                                    Question ID: <code className="text-xs bg-muted px-1 py-0.5 rounded">{item.questionId.slice(0, 8)}...</code>
+                                  </p>
+                                  {item.description && (
+                                    <p className="text-sm border-l-2 border-muted pl-3 py-1">
+                                      {item.description}
+                                    </p>
+                                  )}
+                                  {item.adminNotes && (
+                                    <div className="bg-muted/50 rounded p-2 text-sm">
+                                      <span className="font-medium">Admin notes:</span> {item.adminNotes}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex gap-2">
+                                  {item.status === "pending" && (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-8 gap-1"
+                                        onClick={() => setSelectedFeedback(item)}
+                                        data-testid={`button-review-feedback-${item.id}`}
+                                      >
+                                        <Eye className="h-3 w-3" />
+                                        Review
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-8 text-green-600"
+                                        onClick={() => updateFeedbackMutation.mutate({ id: item.id, status: "resolved" })}
+                                        data-testid={`button-resolve-feedback-${item.id}`}
+                                      >
+                                        <Check className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-8 text-muted-foreground"
+                                        onClick={() => updateFeedbackMutation.mutate({ id: item.id, status: "dismissed" })}
+                                        data-testid={`button-dismiss-feedback-${item.id}`}
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <Flag className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No feedback submitted yet</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
+
+      <Dialog open={!!selectedFeedback} onOpenChange={(open) => !open && setSelectedFeedback(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Review Feedback</DialogTitle>
+            <DialogDescription>
+              Update the status and add notes for this feedback
+            </DialogDescription>
+          </DialogHeader>
+          {selectedFeedback && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Feedback Type</label>
+                <p className="text-sm text-muted-foreground">
+                  {{
+                    error: "Error in question",
+                    unclear: "Unclear question",
+                    wrong_answer: "Wrong answer marked",
+                    translation: "Translation issue",
+                    suggestion: "Suggestion",
+                    other: "Other",
+                  }[selectedFeedback.feedbackType] || selectedFeedback.feedbackType}
+                </p>
+              </div>
+              {selectedFeedback.description && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">User Description</label>
+                  <p className="text-sm bg-muted/50 rounded p-3">{selectedFeedback.description}</p>
+                </div>
+              )}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Admin Notes</label>
+                <Textarea
+                  value={feedbackAdminNotes}
+                  onChange={(e) => setFeedbackAdminNotes(e.target.value)}
+                  placeholder="Add notes about this feedback..."
+                  className="min-h-[100px]"
+                  data-testid="textarea-admin-notes"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setSelectedFeedback(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (selectedFeedback) {
+                  updateFeedbackMutation.mutate({
+                    id: selectedFeedback.id,
+                    status: "dismissed",
+                    adminNotes: feedbackAdminNotes,
+                  });
+                }
+              }}
+              disabled={updateFeedbackMutation.isPending}
+            >
+              Dismiss
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedFeedback) {
+                  updateFeedbackMutation.mutate({
+                    id: selectedFeedback.id,
+                    status: "resolved",
+                    adminNotes: feedbackAdminNotes,
+                  });
+                }
+              }}
+              disabled={updateFeedbackMutation.isPending}
+            >
+              Mark Resolved
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
         </div>
       </main>
 

@@ -4,6 +4,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { z } from "zod";
+import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
 import {
   Accordion,
   AccordionContent,
@@ -196,6 +198,7 @@ export default function FAQPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Navbar />
       <section className="relative bg-gradient-to-br from-primary/10 via-background to-accent/10 py-16">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
@@ -473,6 +476,7 @@ export default function FAQPage() {
           </div>
         </div>
       </section>
+      <Footer />
     </div>
   );
 }

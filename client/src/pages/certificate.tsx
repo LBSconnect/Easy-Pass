@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
 import {
   Award,
   Share2,
@@ -124,44 +126,52 @@ export default function CertificatePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
-        <Card className="w-full max-w-2xl">
-          <CardContent className="p-8">
-            <div className="space-y-6 text-center">
-              <Skeleton className="h-20 w-20 rounded-full mx-auto" />
-              <Skeleton className="h-8 w-3/4 mx-auto" />
-              <Skeleton className="h-6 w-1/2 mx-auto" />
-              <Skeleton className="h-4 w-2/3 mx-auto" />
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <Card className="w-full max-w-2xl">
+            <CardContent className="p-8">
+              <div className="space-y-6 text-center">
+                <Skeleton className="h-20 w-20 rounded-full mx-auto" />
+                <Skeleton className="h-8 w-3/4 mx-auto" />
+                <Skeleton className="h-6 w-1/2 mx-auto" />
+                <Skeleton className="h-4 w-2/3 mx-auto" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        <Footer />
       </div>
     );
   }
 
   if (error || !certificate) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-8 text-center">
-            <div className="h-16 w-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FileText className="h-8 w-8 text-destructive" />
-            </div>
-            <h2 className="text-xl font-semibold mb-2">
-              {language === "es" ? "Certificado no encontrado" : "Certificate Not Found"}
-            </h2>
-            <p className="text-muted-foreground mb-6">
-              {language === "es" 
-                ? "Este certificado no existe o ha sido revocado."
-                : "This certificate does not exist or has been revoked."}
-            </p>
-            <Link href="/">
-              <Button data-testid="button-go-home">
-                {language === "es" ? "Ir al inicio" : "Go to Home"}
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-8 text-center">
+              <div className="h-16 w-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FileText className="h-8 w-8 text-destructive" />
+              </div>
+              <h2 className="text-xl font-semibold mb-2">
+                {language === "es" ? "Certificado no encontrado" : "Certificate Not Found"}
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                {language === "es" 
+                  ? "Este certificado no existe o ha sido revocado."
+                  : "This certificate does not exist or has been revoked."}
+              </p>
+              <Link href="/">
+                <Button data-testid="button-go-home">
+                  {language === "es" ? "Ir al inicio" : "Go to Home"}
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+        <Footer />
       </div>
     );
   }
@@ -171,9 +181,11 @@ export default function CertificatePage() {
   const categoryGradient = categoryColors[certificate.category as keyof typeof categoryColors] || "from-slate-600 to-slate-800";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4 py-12">
-      <div className="w-full max-w-2xl space-y-6">
-        <Card className="overflow-hidden border-2 border-primary/20 shadow-xl" data-testid="card-certificate">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex flex-col">
+      <Navbar />
+      <div className="flex-1 flex items-center justify-center p-4 py-12">
+        <div className="w-full max-w-2xl space-y-6">
+          <Card className="overflow-hidden border-2 border-primary/20 shadow-xl" data-testid="card-certificate">
           <div className={`bg-gradient-to-r ${categoryGradient} p-8 text-white`}>
             <div className="flex items-center justify-center gap-3 mb-4">
               <Award className="h-12 w-12" />
@@ -288,7 +300,9 @@ export default function CertificatePage() {
             </Button>
           </Link>
         </div>
+        </div>
       </div>
+      <Footer />
     </div>
   );
 }

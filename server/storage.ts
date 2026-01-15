@@ -5,6 +5,7 @@ import {
   examResults, 
   paymentHistory,
   questionFeedback,
+  studyProgress,
   type UserProfile, 
   type InsertUserProfile,
   type Question,
@@ -19,6 +20,8 @@ import {
   type QuestionFeedback,
   type InsertQuestionFeedback,
   type FeedbackStatus,
+  type StudyProgress,
+  type InsertStudyProgress,
 } from "@shared/schema";
 import { users, type User } from "@shared/models/auth";
 import { db } from "./db";
@@ -61,6 +64,11 @@ export interface IStorage {
   getQuestionFeedback(questionId?: string): Promise<QuestionFeedback[]>;
   getAllQuestionFeedback(): Promise<QuestionFeedback[]>;
   updateQuestionFeedback(id: string, data: { status?: FeedbackStatus; adminNotes?: string }): Promise<QuestionFeedback | undefined>;
+  
+  getStudyProgress(userId: string, category?: ExamCategory): Promise<StudyProgress[]>;
+  getStudyProgressByTopic(userId: string, topicId: string): Promise<StudyProgress | undefined>;
+  upsertStudyProgress(userId: string, category: ExamCategory, topicId: string, correct: boolean): Promise<StudyProgress>;
+  getQuestionsByTopic(category: ExamCategory, topicId: string, limit?: number): Promise<Question[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -255,6 +263,71 @@ export class DatabaseStorage implements IStorage {
       .where(eq(questionFeedback.id, id))
       .returning();
     return updated;
+  }
+
+  async getStudyProgress(userId: string, category?: ExamCategory): Promise<StudyProgress[]> {
+    if (category) {
+      return db
+        .select()
+        .from(studyProgress)
+        .where(and(eq(studyProgress.userId, userId), eq(studyProgress.category, category)))
+        .orderBy(desc(studyProgress.lastStudiedAt));
+    }
+    return db
+      .select()
+      .from(studyProgress)
+      .where(eq(studyProgress.userId, userId))
+      .orderBy(desc(studyProgress.lastStudiedAt));
+  }
+
+  async getStudyProgressByTopic(userId: string, topicId: string): Promise<StudyProgress | undefined> {
+    const [progress] = await db
+      .select()
+      .from(studyProgress)
+      .where(and(eq(studyProgress.userId, userId), eq(studyProgress.topicId, topicId)));
+    return progress;
+  }
+
+  async upsertStudyProgress(userId: string, category: ExamCategory, topicId: string, correct: boolean): Promise<StudyProgress> {
+    const existing = await this.getStudyProgressByTopic(userId, topicId);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(studyProgress)
+        .set({
+          questionsAnswered: existing.questionsAnswered + 1,
+          correctAnswers: existing.correctAnswers + (correct ? 1 : 0),
+          lastStudiedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(studyProgress.id, existing.id))
+        .returning();
+      return updated;
+    }
+    
+    const [created] = await db
+      .insert(studyProgress)
+      .values({
+        userId,
+        category,
+        topicId,
+        questionsAnswered: 1,
+        correctAnswers: correct ? 1 : 0,
+      })
+      .returning();
+    return created;
+  }
+
+  async getQuestionsByTopic(category: ExamCategory, topicId: string, limit?: number): Promise<Question[]> {
+    let query = db
+      .select()
+      .from(questions)
+      .where(and(eq(questions.category, category), eq(questions.isActive, true)));
+    
+    if (limit) {
+      return query.orderBy(sql`RANDOM()`).limit(limit);
+    }
+    return query.orderBy(sql`RANDOM()`);
   }
 }
 

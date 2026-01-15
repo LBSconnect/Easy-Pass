@@ -112,6 +112,23 @@ export const callbackRequests = pgTable("callback_requests", {
 export const feedbackTypeEnum = pgEnum("feedback_type", ["error", "unclear", "wrong_answer", "translation", "suggestion", "other"]);
 export const feedbackStatusEnum = pgEnum("feedback_status", ["pending", "reviewed", "resolved", "dismissed"]);
 
+export const studyProgress = pgTable("study_progress", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  category: examCategoryEnum("category").notNull(),
+  topicId: varchar("topic_id").notNull(),
+  questionsAnswered: integer("questions_answered").default(0).notNull(),
+  correctAnswers: integer("correct_answers").default(0).notNull(),
+  lastStudiedAt: timestamp("last_studied_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_study_progress_user").on(table.userId),
+  index("idx_study_progress_category").on(table.category),
+  index("idx_study_progress_topic").on(table.topicId),
+  index("idx_study_progress_user_topic").on(table.userId, table.topicId),
+]);
+
 export const questionFeedback = pgTable("question_feedback", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   questionId: varchar("question_id").notNull(),
@@ -183,6 +200,15 @@ export const insertQuestionFeedbackSchema = createInsertSchema(questionFeedback)
   updatedAt: true,
 });
 
+export const insertStudyProgressSchema = createInsertSchema(studyProgress).omit({
+  id: true,
+  questionsAnswered: true,
+  correctAnswers: true,
+  lastStudiedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
@@ -197,6 +223,8 @@ export type InsertCallbackRequest = z.infer<typeof insertCallbackRequestSchema>;
 export type CallbackRequest = typeof callbackRequests.$inferSelect;
 export type InsertQuestionFeedback = z.infer<typeof insertQuestionFeedbackSchema>;
 export type QuestionFeedback = typeof questionFeedback.$inferSelect;
+export type InsertStudyProgress = z.infer<typeof insertStudyProgressSchema>;
+export type StudyProgress = typeof studyProgress.$inferSelect;
 
 export type ExamCategory = "real_estate" | "property_casualty" | "life_insurance" | "general_lines";
 export type FeedbackType = "error" | "unclear" | "wrong_answer" | "translation" | "suggestion" | "other";

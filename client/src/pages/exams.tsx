@@ -38,7 +38,24 @@ import {
   ChevronDown,
   ChevronUp,
   Edit2,
+  Flag,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Legend, Tooltip } from "recharts";
 import type { ExamCategory, Question, ExamSession, ExamResult } from "@shared/schema";
 
@@ -201,6 +218,43 @@ function ExamSession() {
   const [subscriptionRequired, setSubscriptionRequired] = useState(false);
   const [showReviewPanel, setShowReviewPanel] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
+  const [feedbackType, setFeedbackType] = useState<string>("");
+  const [feedbackDescription, setFeedbackDescription] = useState("");
+
+  const feedbackMutation = useMutation({
+    mutationFn: async (data: { questionId: string; feedbackType: string; description: string }) => {
+      const res = await apiRequest("POST", "/api/question-feedback", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: i18n.language === "es" ? "Comentario enviado" : "Feedback submitted",
+        description: i18n.language === "es" 
+          ? "Gracias por reportar este problema" 
+          : "Thank you for reporting this issue",
+      });
+      setShowFeedbackDialog(false);
+      setFeedbackType("");
+      setFeedbackDescription("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmitFeedback = () => {
+    if (!currentQuestion || !feedbackType) return;
+    feedbackMutation.mutate({
+      questionId: currentQuestion.id,
+      feedbackType,
+      description: feedbackDescription,
+    });
+  };
 
   const startExamMutation = useMutation({
     mutationFn: async () => {
@@ -659,11 +713,23 @@ function ExamSession() {
           <div className="max-w-3xl mx-auto">
             <Card className="mb-6">
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <Badge variant="secondary">
                     {t("exam.question")} {currentIndex + 1} {t("exam.of")}{" "}
                     {questions.length}
                   </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 gap-1 text-muted-foreground"
+                    onClick={() => setShowFeedbackDialog(true)}
+                    data-testid="button-report-question"
+                  >
+                    <Flag className="h-3.5 w-3.5" />
+                    <span className="text-xs hidden sm:inline">
+                      {i18n.language === "es" ? "Reportar" : "Report Issue"}
+                    </span>
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -879,6 +945,85 @@ function ExamSession() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={showFeedbackDialog} onOpenChange={setShowFeedbackDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {i18n.language === "es" ? "Reportar Problema" : "Report Issue"}
+            </DialogTitle>
+            <DialogDescription>
+              {i18n.language === "es" 
+                ? "Ayúdanos a mejorar reportando problemas con esta pregunta"
+                : "Help us improve by reporting issues with this question"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                {i18n.language === "es" ? "Tipo de Problema" : "Issue Type"}
+              </label>
+              <Select value={feedbackType} onValueChange={setFeedbackType}>
+                <SelectTrigger data-testid="select-feedback-type">
+                  <SelectValue placeholder={i18n.language === "es" ? "Selecciona un tipo" : "Select issue type"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="error">
+                    {i18n.language === "es" ? "Error en la pregunta" : "Error in question"}
+                  </SelectItem>
+                  <SelectItem value="unclear">
+                    {i18n.language === "es" ? "Pregunta poco clara" : "Unclear question"}
+                  </SelectItem>
+                  <SelectItem value="wrong_answer">
+                    {i18n.language === "es" ? "Respuesta incorrecta" : "Wrong answer marked"}
+                  </SelectItem>
+                  <SelectItem value="translation">
+                    {i18n.language === "es" ? "Problema de traducción" : "Translation issue"}
+                  </SelectItem>
+                  <SelectItem value="suggestion">
+                    {i18n.language === "es" ? "Sugerencia" : "Suggestion"}
+                  </SelectItem>
+                  <SelectItem value="other">
+                    {i18n.language === "es" ? "Otro" : "Other"}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                {i18n.language === "es" ? "Descripción (opcional)" : "Description (optional)"}
+              </label>
+              <Textarea
+                value={feedbackDescription}
+                onChange={(e) => setFeedbackDescription(e.target.value)}
+                placeholder={i18n.language === "es" 
+                  ? "Describe el problema en detalle..."
+                  : "Describe the issue in detail..."}
+                className="min-h-[100px]"
+                data-testid="textarea-feedback-description"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowFeedbackDialog(false)}
+              data-testid="button-cancel-feedback"
+            >
+              {i18n.language === "es" ? "Cancelar" : "Cancel"}
+            </Button>
+            <Button
+              onClick={handleSubmitFeedback}
+              disabled={!feedbackType || feedbackMutation.isPending}
+              data-testid="button-submit-feedback"
+            >
+              {feedbackMutation.isPending 
+                ? (i18n.language === "es" ? "Enviando..." : "Submitting...")
+                : (i18n.language === "es" ? "Enviar" : "Submit")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -307,6 +307,90 @@ const resources = {
         noCertificates: "No certificates yet",
         earnCertificate: "Pass an exam to earn your certificate!",
       },
+      faq: {
+        title: "Frequently Asked Questions",
+        subtitle: "Expert tips and resources to help you pass your Texas licensing exam",
+        externalResources: "Additional Resources",
+        trust: {
+          users: "Trusted by students",
+          secureTitle: "Confidential & Secure",
+          secureDesc: "Your data is protected",
+          testimonials: "Read Testimonials",
+          testimonialsDesc: "See what others say",
+        },
+        topics: {
+          realEstate: {
+            title: "How to Pass the Texas Real Estate Exam",
+            q1: {
+              question: "What are the key topics I need to study for the Texas Real Estate exam?",
+              answer: "Focus on these core areas:\n\n• Property ownership and land use controls (15-20% of exam)\n• Contracts and agency relationships (20-25% of exam)\n• Financing principles and mortgage regulations\n• Texas real estate license law and TREC rules\n• Property valuation and market analysis\n\nWe recommend studying at least 80-100 hours before taking the exam. Use our practice tests to identify weak areas.",
+            },
+            q2: {
+              question: "How many questions are on the Texas Real Estate exam and what's the passing score?",
+              answer: "The Texas Real Estate Salesperson exam consists of:\n\n• National portion: 80 questions\n• State portion: 30 questions\n• Total: 110 questions\n• Time limit: 150 minutes\n• Passing score: 70% on each portion\n\nYou must pass both portions to receive your license.",
+            },
+            q3: {
+              question: "What are the best study strategies for the Real Estate exam?",
+              answer: "Proven strategies that work:\n\n1. Take practice exams regularly - aim for at least 10 full practice tests\n2. Review incorrect answers immediately and understand why\n3. Study in focused 45-minute sessions with breaks\n4. Create flashcards for vocabulary and formulas\n5. Join study groups or online forums\n6. Take notes while reading - don't just highlight\n7. Practice math problems daily (prorations, commissions, etc.)",
+            },
+          },
+          lifeInsurance: {
+            title: "How to Pass the Texas Life Insurance Exam",
+            q1: {
+              question: "What topics are covered on the Texas Life Insurance exam?",
+              answer: "The exam covers these main areas:\n\n• Life insurance policies and provisions (30-35%)\n• Life insurance contract law and regulations\n• Types of life insurance products (term, whole, universal)\n• Annuities and retirement products\n• Texas insurance regulations and ethics\n• Policy riders and beneficiary designations\n\nPay special attention to Texas-specific regulations as they make up a significant portion of the exam.",
+            },
+            q2: {
+              question: "How can I prepare effectively for the Life Insurance exam?",
+              answer: "Effective preparation strategies:\n\n1. Complete your pre-licensing course thoroughly - don't rush\n2. Use our practice exams to simulate real test conditions\n3. Memorize key policy provisions and their purposes\n4. Understand the math: premiums, death benefits, cash values\n5. Review Texas Department of Insurance regulations\n6. Study for at least 2-3 weeks after completing coursework\n7. Take the exam while material is fresh in your mind",
+            },
+          },
+          fastestWay: {
+            title: "Fastest Way to Pass Any Exam",
+            q1: {
+              question: "What is the most efficient study method to pass quickly?",
+              answer: "The fastest path to passing:\n\n1. Active Recall: Test yourself constantly instead of re-reading\n2. Spaced Repetition: Review material at increasing intervals\n3. Practice Tests: Take at least 5-10 full practice exams\n4. Focus on Weaknesses: Spend 70% of time on difficult topics\n5. Time Management: Study in focused 25-50 minute blocks\n6. Sleep Well: Memory consolidation happens during sleep\n\nStudents who use active recall pass 40% faster than passive readers.",
+            },
+            q2: {
+              question: "How many hours should I study to pass on my first attempt?",
+              answer: "Recommended study hours by exam:\n\n• Real Estate: 80-100 hours (4-6 weeks)\n• Life Insurance: 40-60 hours (2-4 weeks)\n• Property & Casualty: 50-70 hours (3-4 weeks)\n• General Lines: 60-80 hours (3-5 weeks)\n\nQuality matters more than quantity. Two focused hours beat four distracted hours. Track your progress with our platform to optimize your study time.",
+            },
+          },
+          stressFree: {
+            title: "How to Pass an Exam Without Stress",
+            q1: {
+              question: "How can I reduce anxiety before and during the exam?",
+              answer: "Proven stress-reduction techniques:\n\n• Physical: Deep breathing, progressive muscle relaxation, light exercise\n• Mental: Positive visualization, affirmations, reframing negative thoughts\n• Practical: Arrive early, know the location, prepare materials night before\n• During exam: Read questions carefully, skip and return to hard ones\n\nRemember: Some anxiety is normal and can actually improve performance. The goal is to manage it, not eliminate it.",
+            },
+            q2: {
+              question: "What should I do the day before and morning of the exam?",
+              answer: "Day before:\n• Light review only - no cramming\n• Prepare ID, confirmation, and materials\n• Eat a balanced dinner\n• Get 7-8 hours of sleep\n• Avoid alcohol and caffeine after noon\n\nExam morning:\n• Eat a protein-rich breakfast\n• Arrive 30 minutes early\n• Avoid last-minute studying\n• Stay hydrated but don't overdo it\n• Take a few deep breaths before entering",
+            },
+          },
+        },
+        guestPost: {
+          title: "Write for Us",
+          description: "Share your exam success story or study tips with our community. We welcome guest articles from professionals who have passed their licensing exams.",
+          code: "Code",
+          name: "Your Name",
+          namePlaceholder: "John Smith",
+          email: "Email Address",
+          emailPlaceholder: "john@example.com",
+          topic: "Article Topic",
+          topicPlaceholder: "Select a topic",
+          articleUrl: "Link to Your Article or Draft",
+          optional: "optional",
+          message: "Tell Us About Your Article",
+          messagePlaceholder: "Describe your article idea, your qualifications, and what value it would provide to exam candidates...",
+          submit: "Submit Article Proposal",
+          submitting: "Submitting...",
+          successTitle: "Thank You!",
+          successMessage: "We've received your article proposal and will review it within 2-3 business days.",
+          errorTitle: "Submission Failed",
+          errorMessage: "Something went wrong. Please try again.",
+          submitAnother: "Submit Another Article",
+        },
+      },
     },
   },
   es: {
@@ -612,6 +696,90 @@ const resources = {
         myCertificates: "Mis Certificados",
         noCertificates: "Aún no tienes certificados",
         earnCertificate: "¡Aprueba un examen para obtener tu certificado!",
+      },
+      faq: {
+        title: "Preguntas Frecuentes",
+        subtitle: "Consejos y recursos de expertos para ayudarte a aprobar tu examen de licencia de Texas",
+        externalResources: "Recursos Adicionales",
+        trust: {
+          users: "Estudiantes confían en nosotros",
+          secureTitle: "Confidencial y Seguro",
+          secureDesc: "Tus datos están protegidos",
+          testimonials: "Leer Testimonios",
+          testimonialsDesc: "Ve lo que dicen otros",
+        },
+        topics: {
+          realEstate: {
+            title: "Cómo Aprobar el Examen de Bienes Raíces de Texas",
+            q1: {
+              question: "¿Cuáles son los temas clave que debo estudiar para el examen de Bienes Raíces de Texas?",
+              answer: "Enfócate en estas áreas principales:\n\n• Propiedad y controles de uso del suelo (15-20% del examen)\n• Contratos y relaciones de agencia (20-25% del examen)\n• Principios de financiamiento y regulaciones hipotecarias\n• Ley de licencias de bienes raíces de Texas y reglas de TREC\n• Valoración de propiedades y análisis de mercado\n\nRecomendamos estudiar al menos 80-100 horas antes de tomar el examen. Usa nuestras pruebas de práctica para identificar áreas débiles.",
+            },
+            q2: {
+              question: "¿Cuántas preguntas tiene el examen de Bienes Raíces de Texas y cuál es la puntuación para aprobar?",
+              answer: "El examen de Vendedor de Bienes Raíces de Texas consiste en:\n\n• Porción nacional: 80 preguntas\n• Porción estatal: 30 preguntas\n• Total: 110 preguntas\n• Límite de tiempo: 150 minutos\n• Puntuación para aprobar: 70% en cada porción\n\nDebes aprobar ambas porciones para recibir tu licencia.",
+            },
+            q3: {
+              question: "¿Cuáles son las mejores estrategias de estudio para el examen de Bienes Raíces?",
+              answer: "Estrategias probadas que funcionan:\n\n1. Toma exámenes de práctica regularmente - apunta a al menos 10 pruebas completas\n2. Revisa las respuestas incorrectas inmediatamente y entiende por qué\n3. Estudia en sesiones enfocadas de 45 minutos con descansos\n4. Crea tarjetas para vocabulario y fórmulas\n5. Únete a grupos de estudio o foros en línea\n6. Toma notas mientras lees - no solo subrayes\n7. Practica problemas matemáticos diariamente (prorrateos, comisiones, etc.)",
+            },
+          },
+          lifeInsurance: {
+            title: "Cómo Aprobar el Examen de Seguros de Vida de Texas",
+            q1: {
+              question: "¿Qué temas se cubren en el examen de Seguros de Vida de Texas?",
+              answer: "El examen cubre estas áreas principales:\n\n• Pólizas y provisiones de seguros de vida (30-35%)\n• Ley de contratos y regulaciones de seguros de vida\n• Tipos de productos de seguros de vida (término, vida entera, universal)\n• Anualidades y productos de jubilación\n• Regulaciones y ética de seguros de Texas\n• Cláusulas adicionales y designaciones de beneficiarios\n\nPresta especial atención a las regulaciones específicas de Texas ya que representan una porción significativa del examen.",
+            },
+            q2: {
+              question: "¿Cómo puedo prepararme eficazmente para el examen de Seguros de Vida?",
+              answer: "Estrategias de preparación efectivas:\n\n1. Completa tu curso de pre-licencia completamente - no te apresures\n2. Usa nuestros exámenes de práctica para simular condiciones reales de prueba\n3. Memoriza las provisiones clave de las pólizas y sus propósitos\n4. Entiende las matemáticas: primas, beneficios por muerte, valores en efectivo\n5. Revisa las regulaciones del Departamento de Seguros de Texas\n6. Estudia al menos 2-3 semanas después de completar el curso\n7. Toma el examen mientras el material está fresco en tu mente",
+            },
+          },
+          fastestWay: {
+            title: "La Forma Más Rápida de Aprobar Cualquier Examen",
+            q1: {
+              question: "¿Cuál es el método de estudio más eficiente para aprobar rápidamente?",
+              answer: "El camino más rápido para aprobar:\n\n1. Recuerdo Activo: Ponte a prueba constantemente en lugar de releer\n2. Repetición Espaciada: Revisa el material en intervalos crecientes\n3. Exámenes de Práctica: Toma al menos 5-10 exámenes de práctica completos\n4. Enfócate en Debilidades: Dedica el 70% del tiempo a temas difíciles\n5. Gestión del Tiempo: Estudia en bloques enfocados de 25-50 minutos\n6. Duerme Bien: La consolidación de memoria ocurre durante el sueño\n\nLos estudiantes que usan recuerdo activo aprueban 40% más rápido que los lectores pasivos.",
+            },
+            q2: {
+              question: "¿Cuántas horas debo estudiar para aprobar en el primer intento?",
+              answer: "Horas de estudio recomendadas por examen:\n\n• Bienes Raíces: 80-100 horas (4-6 semanas)\n• Seguros de Vida: 40-60 horas (2-4 semanas)\n• Propiedad y Accidentes: 50-70 horas (3-4 semanas)\n• Líneas Generales: 60-80 horas (3-5 semanas)\n\nLa calidad importa más que la cantidad. Dos horas enfocadas superan cuatro horas distraídas. Rastrea tu progreso con nuestra plataforma para optimizar tu tiempo de estudio.",
+            },
+          },
+          stressFree: {
+            title: "Cómo Aprobar un Examen Sin Estrés",
+            q1: {
+              question: "¿Cómo puedo reducir la ansiedad antes y durante el examen?",
+              answer: "Técnicas probadas de reducción de estrés:\n\n• Físicas: Respiración profunda, relajación muscular progresiva, ejercicio ligero\n• Mentales: Visualización positiva, afirmaciones, reformular pensamientos negativos\n• Prácticas: Llega temprano, conoce la ubicación, prepara materiales la noche anterior\n• Durante el examen: Lee las preguntas cuidadosamente, salta y vuelve a las difíciles\n\nRecuerda: Un poco de ansiedad es normal y puede mejorar el rendimiento. El objetivo es manejarla, no eliminarla.",
+            },
+            q2: {
+              question: "¿Qué debo hacer el día antes y la mañana del examen?",
+              answer: "Día anterior:\n• Solo repaso ligero - no estudies intensamente\n• Prepara identificación, confirmación y materiales\n• Come una cena balanceada\n• Duerme 7-8 horas\n• Evita alcohol y cafeína después del mediodía\n\nMañana del examen:\n• Come un desayuno rico en proteínas\n• Llega 30 minutos antes\n• Evita estudiar a última hora\n• Mantente hidratado pero no exageres\n• Respira profundamente antes de entrar",
+            },
+          },
+        },
+        guestPost: {
+          title: "Escribe para Nosotros",
+          description: "Comparte tu historia de éxito en el examen o consejos de estudio con nuestra comunidad. Damos la bienvenida a artículos de profesionales que han aprobado sus exámenes de licencia.",
+          code: "Código",
+          name: "Tu Nombre",
+          namePlaceholder: "Juan García",
+          email: "Correo Electrónico",
+          emailPlaceholder: "juan@ejemplo.com",
+          topic: "Tema del Artículo",
+          topicPlaceholder: "Selecciona un tema",
+          articleUrl: "Enlace a Tu Artículo o Borrador",
+          optional: "opcional",
+          message: "Cuéntanos Sobre Tu Artículo",
+          messagePlaceholder: "Describe tu idea de artículo, tus calificaciones y qué valor proporcionaría a los candidatos del examen...",
+          submit: "Enviar Propuesta de Artículo",
+          submitting: "Enviando...",
+          successTitle: "¡Gracias!",
+          successMessage: "Hemos recibido tu propuesta de artículo y la revisaremos en 2-3 días hábiles.",
+          errorTitle: "Error al Enviar",
+          errorMessage: "Algo salió mal. Por favor intenta de nuevo.",
+          submitAnother: "Enviar Otro Artículo",
+        },
       },
     },
   },

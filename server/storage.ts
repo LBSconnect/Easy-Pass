@@ -36,6 +36,7 @@ export interface IStorage {
   createExamSession(session: InsertExamSession): Promise<ExamSession>;
   getExamSession(id: string): Promise<ExamSession | undefined>;
   updateExamSession(id: string, data: Partial<ExamSession>): Promise<ExamSession | undefined>;
+  deleteExamSession(id: string): Promise<boolean>;
   
   createExamResult(result: InsertExamResult): Promise<ExamResult>;
   getExamResults(userId: string): Promise<ExamResult[]>;
@@ -141,6 +142,14 @@ export class DatabaseStorage implements IStorage {
       .where(eq(examSessions.id, id))
       .returning();
     return updated;
+  }
+
+  async deleteExamSession(id: string): Promise<boolean> {
+    const [deleted] = await db
+      .delete(examSessions)
+      .where(eq(examSessions.id, id))
+      .returning();
+    return !!deleted;
   }
 
   async createExamResult(result: InsertExamResult): Promise<ExamResult> {

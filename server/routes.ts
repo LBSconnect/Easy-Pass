@@ -213,6 +213,29 @@ export async function registerRoutes(
     }
   });
 
+  app.delete("/api/exams/:sessionId/cancel", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { sessionId } = req.params;
+      
+      const session = await storage.getExamSession(sessionId);
+      if (!session || session.userId !== userId) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      
+      if (session.isCompleted) {
+        return res.status(400).json({ message: "Cannot cancel a completed exam" });
+      }
+      
+      await storage.deleteExamSession(sessionId);
+      
+      res.json({ message: "Exam cancelled successfully" });
+    } catch (error) {
+      console.error("Error cancelling exam:", error);
+      res.status(500).json({ message: "Failed to cancel exam" });
+    }
+  });
+
   app.get("/api/results", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

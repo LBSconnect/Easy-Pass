@@ -200,6 +200,7 @@ function ExamSession() {
   const [topicBreakdown, setTopicBreakdown] = useState<Array<{topic: string; correct: number; total: number; percentage: number}>>([]);
   const [subscriptionRequired, setSubscriptionRequired] = useState(false);
   const [showReviewPanel, setShowReviewPanel] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   const startExamMutation = useMutation({
     mutationFn: async () => {
@@ -244,6 +245,27 @@ function ExamSession() {
       setResult(data.result);
       setTopicBreakdown(data.topicBreakdown || []);
       queryClient.invalidateQueries({ queryKey: ["/api/results"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const cancelExamMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("DELETE", `/api/exams/${session?.id}/cancel`);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: i18n.language === "es" ? "Examen cancelado" : "Exam cancelled",
+        description: i18n.language === "es" ? "Tu intento ha sido cancelado" : "Your attempt has been cancelled",
+      });
+      setLocation("/exams");
     },
     onError: (error: Error) => {
       toast({
@@ -603,7 +625,7 @@ function ExamSession() {
             </span>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Badge variant="outline" className="gap-1">
               <Clock className="h-3 w-3" />
               {formatTime(timeRemaining)}
@@ -611,6 +633,14 @@ function ExamSession() {
             <Badge variant="secondary">
               {answeredCount}/{questions.length}
             </Badge>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowCancelDialog(true)}
+              data-testid="button-cancel-exam"
+            >
+              {t("exam.cancel")}
+            </Button>
             <Button 
               variant="destructive" 
               size="sm"
@@ -824,6 +854,27 @@ function ExamSession() {
             <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleSubmit}>
               {t("common.confirm")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("exam.cancelAttempt")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("exam.confirmCancel")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => cancelExamMutation.mutate()}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-cancel"
+            >
+              {t("exam.cancelExam")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

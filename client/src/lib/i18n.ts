@@ -139,6 +139,10 @@ const resources = {
         next: "Next",
         submit: "Submit Exam",
         endQuiz: "End Quiz",
+        cancel: "Cancel",
+        cancelAttempt: "Cancel Exam Attempt",
+        cancelExam: "Yes, Cancel Exam",
+        confirmCancel: "Are you sure you want to cancel this exam? Your progress will be lost and this attempt will not be recorded.",
         reviewAnswers: "Review Answers",
         confirmSubmit: "Are you sure you want to submit? You cannot change your answers after submission.",
         results: {
@@ -392,6 +396,10 @@ const resources = {
         next: "Siguiente",
         submit: "Enviar Examen",
         endQuiz: "Terminar Examen",
+        cancel: "Cancelar",
+        cancelAttempt: "Cancelar Intento de Examen",
+        cancelExam: "Sí, Cancelar Examen",
+        confirmCancel: "¿Estás seguro de que quieres cancelar este examen? Tu progreso se perderá y este intento no será registrado.",
         reviewAnswers: "Revisar Respuestas",
         confirmSubmit: "¿Estás seguro de que quieres enviar? No podrás cambiar tus respuestas después.",
         results: {

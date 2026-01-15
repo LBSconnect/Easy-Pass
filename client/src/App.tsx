@@ -15,6 +15,7 @@ import PricingPage from "@/pages/pricing";
 import ProfilePage from "@/pages/profile";
 import AdminPage from "@/pages/admin";
 import ScheduleExamPage from "@/pages/schedule-exam";
+import StudyGuidePage from "@/pages/study-guide";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -68,6 +69,7 @@ function Router() {
       <Route path="/exams/:category" component={() => <ProtectedRoute component={ExamsPage} />} />
       <Route path="/pricing" component={PricingPage} />
       <Route path="/schedule-exam" component={ScheduleExamPage} />
+      <Route path="/study-guide" component={() => <ProtectedRoute component={StudyGuidePage} />} />
       <Route path="/profile" component={() => <ProtectedRoute component={ProfilePage} />} />
       <Route path="/admin" component={() => <ProtectedRoute component={AdminPage} />} />
       <Route component={NotFound} />

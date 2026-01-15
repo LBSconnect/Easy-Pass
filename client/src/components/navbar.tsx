@@ -32,6 +32,7 @@ export function Navbar() {
   const navLinks = [
     { href: "/", label: t("nav.home"), show: true, external: false },
     { href: "/exams", label: t("nav.exams"), show: isAuthenticated, external: false },
+    { href: "/study-guide", label: t("nav.studyGuide"), show: isAuthenticated, external: false },
     { href: "/pricing", label: t("nav.pricing"), show: true, external: false },
     { href: "/schedule-exam", label: t("nav.scheduleExam"), show: true, external: false },
     { href: "https://www.lbs4.com/", label: t("nav.testCenter"), show: true, external: true },

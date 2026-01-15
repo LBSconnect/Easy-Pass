@@ -338,6 +338,29 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
+              <Card className="bg-gradient-to-r from-primary/5 to-transparent border-primary/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                    {i18n.language === "es" ? "Guía de Estudio" : "Study Guide"}
+                  </CardTitle>
+                  <CardDescription>
+                    {i18n.language === "es" 
+                      ? "Aprende a tu propio ritmo con cuestionarios por tema" 
+                      : "Learn at your own pace with topic-based quizzes"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full min-h-[44px]" asChild>
+                    <Link href="/study-guide" data-testid="link-study-guide">
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      {i18n.language === "es" ? "Abrir Guía de Estudio" : "Open Study Guide"}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
             </div>
 
             <div className="space-y-6">

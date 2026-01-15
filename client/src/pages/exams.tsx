@@ -39,6 +39,8 @@ import {
   ChevronUp,
   Edit2,
   Flag,
+  Award,
+  Share2,
 } from "lucide-react";
 import {
   Dialog,
@@ -221,6 +223,30 @@ function ExamSession() {
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [feedbackType, setFeedbackType] = useState<string>("");
   const [feedbackDescription, setFeedbackDescription] = useState("");
+  const [certificate, setCertificate] = useState<{ id: string; slug: string } | null>(null);
+
+  const certificateMutation = useMutation({
+    mutationFn: async (resultId: string) => {
+      const res = await apiRequest("POST", `/api/results/${resultId}/certificate`);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setCertificate(data);
+      toast({
+        title: i18n.language === "es" ? "Certificado generado" : "Certificate generated",
+        description: i18n.language === "es" 
+          ? "Tu certificado está listo para compartir" 
+          : "Your certificate is ready to share",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const feedbackMutation = useMutation({
     mutationFn: async (data: { questionId: string; feedbackType: string; message: string }) => {
@@ -274,6 +300,7 @@ function ExamSession() {
       setTopicBreakdown([]);
       setAnswers({});
       setCurrentIndex(0);
+      setCertificate(null);
     },
     onError: (error: Error) => {
       if (error.message.includes("subscription") || error.message.includes("subscribe")) {
@@ -541,8 +568,33 @@ function ExamSession() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-                    <Button onClick={() => startExamMutation.mutate()}>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:justify-center sm:flex-wrap">
+                    {result.passed && (
+                      <>
+                        {certificate ? (
+                          <Button variant="default" className="gap-2" asChild data-testid="button-view-certificate">
+                            <Link href={`/certificates/${certificate.slug}`}>
+                              <Award className="h-4 w-4" />
+                              {i18n.language === "es" ? "Ver Certificado" : "View Certificate"}
+                            </Link>
+                          </Button>
+                        ) : (
+                          <Button 
+                            variant="default" 
+                            className="gap-2"
+                            onClick={() => certificateMutation.mutate(result.id)}
+                            disabled={certificateMutation.isPending}
+                            data-testid="button-get-certificate"
+                          >
+                            <Award className="h-4 w-4" />
+                            {certificateMutation.isPending 
+                              ? (i18n.language === "es" ? "Generando..." : "Generating...")
+                              : (i18n.language === "es" ? "Obtener Certificado" : "Get Certificate")}
+                          </Button>
+                        )}
+                      </>
+                    )}
+                    <Button variant="outline" onClick={() => startExamMutation.mutate()}>
                       {t("exam.results.tryAgain")}
                     </Button>
                     <Button variant="outline" asChild>

@@ -163,6 +163,23 @@ export const examCertificates = pgTable("exam_certificates", {
   index("idx_certificates_slug").on(table.slug),
 ]);
 
+export const guestArticleStatusEnum = pgEnum("guest_article_status", ["pending", "approved", "rejected"]);
+
+export const guestArticles = pgTable("guest_articles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 100 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  topic: varchar("topic", { length: 200 }).notNull(),
+  articleUrl: varchar("article_url", { length: 500 }),
+  message: text("message").notNull(),
+  status: guestArticleStatusEnum("status").default("pending").notNull(),
+  adminNotes: text("admin_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_guest_articles_status").on(table.status),
+  index("idx_guest_articles_email").on(table.email),
+]);
+
 export const userProfilesRelations = relations(userProfiles, ({ many }) => ({
   examSessions: many(examSessions),
   examResults: many(examResults),
@@ -232,6 +249,13 @@ export const insertExamCertificateSchema = createInsertSchema(examCertificates).
   createdAt: true,
 });
 
+export const insertGuestArticleSchema = createInsertSchema(guestArticles).omit({
+  id: true,
+  status: true,
+  adminNotes: true,
+  createdAt: true,
+});
+
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
@@ -250,8 +274,11 @@ export type InsertStudyProgress = z.infer<typeof insertStudyProgressSchema>;
 export type StudyProgress = typeof studyProgress.$inferSelect;
 export type InsertExamCertificate = z.infer<typeof insertExamCertificateSchema>;
 export type ExamCertificate = typeof examCertificates.$inferSelect;
+export type InsertGuestArticle = z.infer<typeof insertGuestArticleSchema>;
+export type GuestArticle = typeof guestArticles.$inferSelect;
 
 export type ExamCategory = "real_estate" | "property_casualty" | "life_insurance" | "general_lines";
+export type GuestArticleStatus = "pending" | "approved" | "rejected";
 export type FeedbackType = "error" | "unclear" | "wrong_answer" | "translation" | "suggestion" | "other";
 export type FeedbackStatus = "pending" | "reviewed" | "resolved" | "dismissed";
 export type Language = "en" | "es";

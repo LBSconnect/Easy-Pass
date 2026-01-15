@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { isAuthenticated } from "./replit_integrations/auth";
 import { getCachedStripeClient } from "./stripeClient";
 import { insertQuestionSchema, insertCallbackRequestSchema, insertQuestionFeedbackSchema, callbackRequests, questionFeedback, type ExamCategory, examCategoryEnum, feedbackStatusEnum } from "@shared/schema";
+import { studyTopicsConfig, getTopicById, getTopicsByCategory } from "@shared/studyTopics";
 import { z } from "zod";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
@@ -607,6 +608,121 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching callback requests:", error);
       res.status(500).json({ message: "Failed to fetch callback requests" });
+    }
+  });
+
+  // Study Guide Routes
+  app.get("/api/study-guide/topics", async (req, res) => {
+    try {
+      res.json(studyTopicsConfig);
+    } catch (error) {
+      console.error("Error fetching study topics:", error);
+      res.status(500).json({ message: "Failed to fetch study topics" });
+    }
+  });
+
+  app.get("/api/study-guide/topics/:category", async (req, res) => {
+    try {
+      const { category } = req.params;
+      if (!examCategoryEnum.enumValues.includes(category as ExamCategory)) {
+        return res.status(400).json({ message: "Invalid category" });
+      }
+      const topics = getTopicsByCategory(category as ExamCategory);
+      res.json(topics);
+    } catch (error) {
+      console.error("Error fetching category topics:", error);
+      res.status(500).json({ message: "Failed to fetch topics" });
+    }
+  });
+
+  app.get("/api/study-guide/progress", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const category = req.query.category as ExamCategory | undefined;
+      
+      if (category && !examCategoryEnum.enumValues.includes(category)) {
+        return res.status(400).json({ message: "Invalid category" });
+      }
+      
+      const progress = await storage.getStudyProgress(userId, category);
+      res.json(progress);
+    } catch (error) {
+      console.error("Error fetching study progress:", error);
+      res.status(500).json({ message: "Failed to fetch progress" });
+    }
+  });
+
+  app.get("/api/study-guide/quiz/:topicId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { topicId } = req.params;
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      const topicInfo = getTopicById(topicId);
+      if (!topicInfo) {
+        return res.status(404).json({ message: "Topic not found" });
+      }
+      
+      const subscriptionCheck = await ensureSubscriptionActive(userId);
+      if (!subscriptionCheck.active) {
+        return res.status(403).json({ message: subscriptionCheck.message });
+      }
+      
+      const questions = await storage.getQuestions(topicInfo.category.category, Math.min(limit, 20));
+      
+      const questionsWithoutAnswers = questions.map(({ correctAnswer, ...rest }) => rest);
+      
+      res.json({
+        topic: topicInfo.topic,
+        category: topicInfo.category,
+        questions: questionsWithoutAnswers,
+      });
+    } catch (error) {
+      console.error("Error fetching quiz questions:", error);
+      res.status(500).json({ message: "Failed to fetch quiz" });
+    }
+  });
+
+  const submitQuizAnswerSchema = z.object({
+    questionId: z.string(),
+    selectedAnswer: z.number().min(0).max(3),
+    topicId: z.string(),
+  });
+
+  app.post("/api/study-guide/answer", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const parsed = submitQuizAnswerSchema.safeParse(req.body);
+      
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid data", errors: parsed.error.errors });
+      }
+      
+      const { questionId, selectedAnswer, topicId } = parsed.data;
+      
+      const question = await storage.getQuestion(questionId);
+      if (!question) {
+        return res.status(404).json({ message: "Question not found" });
+      }
+      
+      const topicInfo = getTopicById(topicId);
+      if (!topicInfo) {
+        return res.status(404).json({ message: "Topic not found" });
+      }
+      
+      const isCorrect = question.correctAnswer === selectedAnswer;
+      
+      await storage.upsertStudyProgress(userId, topicInfo.category.category, topicId, isCorrect);
+      
+      res.json({
+        correct: isCorrect,
+        correctAnswer: question.correctAnswer,
+        explanationEn: question.explanationEn,
+        explanationEs: question.explanationEs,
+      });
+    } catch (error) {
+      console.error("Error submitting quiz answer:", error);
+      res.status(500).json({ message: "Failed to submit answer" });
     }
   });
 

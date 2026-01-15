@@ -244,6 +244,7 @@ const resources = {
           thankYou: "Thank You!",
           willContact: "We will contact you soon to schedule your exam.",
           submitAnother: "Submit Another Request",
+          readyToBook: "Ready To Book",
         },
         days: {
           monday: "Monday",
@@ -502,6 +503,7 @@ const resources = {
           thankYou: "¡Gracias!",
           willContact: "Te contactaremos pronto para agendar tu examen.",
           submitAnother: "Enviar Otra Solicitud",
+          readyToBook: "Listo Para Reservar",
         },
         days: {
           monday: "Lunes",

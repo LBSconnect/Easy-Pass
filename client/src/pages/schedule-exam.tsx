@@ -90,20 +90,20 @@ export default function ScheduleExamPage() {
       <Navbar />
       
       <main className="flex-1">
-        <section className="bg-primary/5 py-16">
+        <section className="bg-primary/5 py-8 sm:py-12 md:py-16">
           <div className="container mx-auto px-4 text-center">
-            <h1 className="text-4xl font-bold mb-4" data-testid="text-page-title">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4" data-testid="text-page-title">
               {t("scheduleExam.title")}
             </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-2">
               {t("scheduleExam.subtitle")}
             </p>
           </div>
         </section>
 
-        <section className="py-12">
+        <section className="py-6 sm:py-8 md:py-12 safe-area-inset">
           <div className="container mx-auto px-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
               <div className="space-y-6">
                 <Card>
                   <CardHeader>
@@ -125,22 +125,27 @@ export default function ScheduleExamPage() {
                     
                     <div className="space-y-3">
                       <Label htmlFor="origin">{t("scheduleExam.directions.enterOrigin")}</Label>
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <Input
                           id="origin"
                           placeholder={t("scheduleExam.directions.placeholder")}
                           value={origin}
                           onChange={(e) => setOrigin(e.target.value)}
                           onKeyDown={(e) => e.key === "Enter" && handleGetDirections()}
+                          className="text-base min-h-[44px]"
                           data-testid="input-origin-address"
                         />
-                        <Button onClick={handleGetDirections} data-testid="button-get-directions">
+                        <Button 
+                          onClick={handleGetDirections} 
+                          className="w-full sm:w-auto min-h-[44px]"
+                          data-testid="button-get-directions"
+                        >
                           {t("scheduleExam.directions.getDirections")}
                         </Button>
                       </div>
                     </div>
 
-                    <div className="aspect-video w-full rounded-lg overflow-hidden border">
+                    <div className="aspect-[4/3] sm:aspect-video w-full rounded-lg overflow-hidden border">
                       <iframe
                         title="LBS Testing Center Location"
                         width="100%"
@@ -155,7 +160,7 @@ export default function ScheduleExamPage() {
                     </div>
 
                     {showDirections && origin && (
-                      <Button variant="outline" className="w-full" asChild>
+                      <Button variant="outline" className="w-full min-h-[44px]" asChild>
                         <a href={externalMapsUrl} target="_blank" rel="noopener noreferrer" data-testid="link-open-maps">
                           <ExternalLink className="h-4 w-4 mr-2" />
                           {t("scheduleExam.directions.openInMaps")}
@@ -163,7 +168,7 @@ export default function ScheduleExamPage() {
                       </Button>
                     )}
 
-                    <Button variant="default" className="w-full" asChild>
+                    <Button variant="default" className="w-full min-h-[44px]" asChild>
                       <a href="https://www.lbs4.com/" target="_blank" rel="noopener noreferrer" data-testid="link-test-center-website">
                         <ExternalLink className="h-4 w-4 mr-2" />
                         {t("scheduleExam.visitTestCenter")}
@@ -313,14 +318,14 @@ export default function ScheduleExamPage() {
 
                           <Button 
                             type="submit" 
-                            className="w-full" 
+                            className="w-full min-h-[44px] text-base" 
                             disabled={submitMutation.isPending}
                             data-testid="button-submit-callback"
                           >
                             {submitMutation.isPending ? t("scheduleExam.form.submitting") : t("scheduleExam.form.submit")}
                           </Button>
 
-                          <Button className="w-full bg-green-600 hover:bg-green-700 text-white" asChild>
+                          <Button className="w-full min-h-[44px] text-base bg-green-600 hover:bg-green-700 text-white" asChild>
                             <a href="https://www.lbs4.com/" target="_blank" rel="noopener noreferrer" data-testid="link-ready-to-book">
                               <ExternalLink className="h-4 w-4 mr-2" />
                               {t("scheduleExam.form.readyToBook")}

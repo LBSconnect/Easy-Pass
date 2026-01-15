@@ -223,7 +223,7 @@ function ExamSession() {
   const [feedbackDescription, setFeedbackDescription] = useState("");
 
   const feedbackMutation = useMutation({
-    mutationFn: async (data: { questionId: string; feedbackType: string; description: string }) => {
+    mutationFn: async (data: { questionId: string; feedbackType: string; message: string }) => {
       const res = await apiRequest("POST", "/api/question-feedback", data);
       return res.json();
     },
@@ -252,7 +252,7 @@ function ExamSession() {
     feedbackMutation.mutate({
       questionId: currentQuestion.id,
       feedbackType,
-      description: feedbackDescription,
+      message: feedbackDescription,
     });
   };
 

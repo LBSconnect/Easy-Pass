@@ -782,9 +782,9 @@ export default function AdminPage() {
                                   <p className="text-sm text-muted-foreground">
                                     Question ID: <code className="text-xs bg-muted px-1 py-0.5 rounded">{item.questionId.slice(0, 8)}...</code>
                                   </p>
-                                  {item.description && (
+                                  {item.message && (
                                     <p className="text-sm border-l-2 border-muted pl-3 py-1">
-                                      {item.description}
+                                      {item.message}
                                     </p>
                                   )}
                                   {item.adminNotes && (
@@ -800,7 +800,10 @@ export default function AdminPage() {
                                         size="sm"
                                         variant="outline"
                                         className="h-8 gap-1"
-                                        onClick={() => setSelectedFeedback(item)}
+                                        onClick={() => {
+                                          setSelectedFeedback(item);
+                                          setFeedbackAdminNotes(item.adminNotes || "");
+                                        }}
                                         data-testid={`button-review-feedback-${item.id}`}
                                       >
                                         <Eye className="h-3 w-3" />
@@ -867,10 +870,10 @@ export default function AdminPage() {
                   }[selectedFeedback.feedbackType] || selectedFeedback.feedbackType}
                 </p>
               </div>
-              {selectedFeedback.description && (
+              {selectedFeedback.message && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">User Description</label>
-                  <p className="text-sm bg-muted/50 rounded p-3">{selectedFeedback.description}</p>
+                  <p className="text-sm bg-muted/50 rounded p-3">{selectedFeedback.message}</p>
                 </div>
               )}
               <div className="space-y-2">

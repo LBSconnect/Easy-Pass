@@ -14,6 +14,11 @@ The application follows a subscription-based model with weekly ($6.99) and month
 - Implemented Stripe credential caching for improved performance
 - Added proper admin role checks on all admin endpoints
 - Seeded 10 sample questions and created Stripe subscription products
+- Added question feedback system allowing users to report issues with exam questions
+  - Database table: question_feedback with feedback types (error, unclear, wrong_answer, translation, suggestion, other)
+  - API endpoints: POST /api/question-feedback, GET/PATCH /api/admin/question-feedback
+  - UI: "Report Issue" button in exam view with feedback modal
+  - Admin panel: Feedback tab for reviewing and managing submitted feedback
 
 ## User Preferences
 

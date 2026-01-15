@@ -248,6 +248,101 @@ export async function registerRoutes(
     }
   });
 
+  // Generate certificate for a passed exam result
+  app.post("/api/results/:resultId/certificate", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { resultId } = req.params;
+      
+      // Get the exam result and verify ownership
+      const results = await storage.getExamResults(userId);
+      const result = results.find(r => r.id === resultId);
+      
+      if (!result) {
+        return res.status(404).json({ message: "Result not found" });
+      }
+      
+      if (!result.passed) {
+        return res.status(400).json({ message: "Certificate can only be generated for passed exams" });
+      }
+      
+      // Check if certificate already exists
+      const existing = await storage.getCertificateByResultId(resultId);
+      if (existing) {
+        return res.json(existing);
+      }
+      
+      // Get user info for certificate name
+      const user = await storage.getUser(userId);
+      const recipientName = user?.firstName && user?.lastName 
+        ? `${user.firstName} ${user.lastName}`
+        : user?.firstName || user?.email?.split('@')[0] || 'Student';
+      
+      // Generate unique slug (10 chars alphanumeric)
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+      let slug = '';
+      for (let i = 0; i < 10; i++) {
+        slug += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      
+      const certificate = await storage.createCertificate({
+        resultId,
+        userId,
+        category: result.category,
+        score: result.score,
+        slug,
+        recipientName,
+        completedAt: result.completedAt,
+      });
+      
+      res.json(certificate);
+    } catch (error) {
+      console.error("Error generating certificate:", error);
+      res.status(500).json({ message: "Failed to generate certificate" });
+    }
+  });
+
+  // Get user's certificates
+  app.get("/api/certificates", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const certificates = await storage.getCertificatesByUser(userId);
+      res.json(certificates);
+    } catch (error) {
+      console.error("Error fetching certificates:", error);
+      res.status(500).json({ message: "Failed to fetch certificates" });
+    }
+  });
+
+  // Public endpoint - Get certificate by slug (for sharing)
+  app.get("/api/certificates/public/:slug", async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const certificate = await storage.getCertificateBySlug(slug);
+      
+      if (!certificate) {
+        return res.status(404).json({ message: "Certificate not found" });
+      }
+      
+      if (certificate.isRevoked) {
+        return res.status(410).json({ message: "This certificate has been revoked" });
+      }
+      
+      // Return certificate data (minimal PII)
+      res.json({
+        id: certificate.id,
+        recipientName: certificate.recipientName,
+        category: certificate.category,
+        score: certificate.score,
+        completedAt: certificate.completedAt,
+        slug: certificate.slug,
+      });
+    } catch (error) {
+      console.error("Error fetching public certificate:", error);
+      res.status(500).json({ message: "Failed to fetch certificate" });
+    }
+  });
+
   app.get("/api/stripe/prices", async (req, res) => {
     try {
       const stripe = await getCachedStripeClient();

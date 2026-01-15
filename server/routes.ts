@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { isAuthenticated } from "./replit_integrations/auth";
 import { getCachedStripeClient } from "./stripeClient";
-import { insertQuestionSchema, insertCallbackRequestSchema, insertQuestionFeedbackSchema, callbackRequests, questionFeedback, type ExamCategory, examCategoryEnum, feedbackStatusEnum } from "@shared/schema";
+import { insertQuestionSchema, insertCallbackRequestSchema, insertQuestionFeedbackSchema, insertGuestArticleSchema, callbackRequests, questionFeedback, type ExamCategory, examCategoryEnum, feedbackStatusEnum, guestArticleStatusEnum } from "@shared/schema";
 import { studyTopicsConfig, getTopicById, getTopicsByCategory } from "@shared/studyTopics";
 import { z } from "zod";
 import { db } from "./db";
@@ -340,6 +340,73 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching public certificate:", error);
       res.status(500).json({ message: "Failed to fetch certificate" });
+    }
+  });
+
+  // Guest article submission (public endpoint)
+  app.post("/api/guest-articles", async (req, res) => {
+    try {
+      const parsed = insertGuestArticleSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid submission", errors: parsed.error.errors });
+      }
+      
+      const article = await storage.createGuestArticle(parsed.data);
+      res.status(201).json({ message: "Article submission received", id: article.id });
+    } catch (error) {
+      console.error("Error submitting guest article:", error);
+      res.status(500).json({ message: "Failed to submit article" });
+    }
+  });
+
+  // Admin: Get all guest articles
+  app.get("/api/admin/guest-articles", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getProfile(userId);
+      
+      if (!profile || profile.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const articles = await storage.getAllGuestArticles();
+      res.json(articles);
+    } catch (error) {
+      console.error("Error fetching guest articles:", error);
+      res.status(500).json({ message: "Failed to fetch guest articles" });
+    }
+  });
+
+  // Admin: Update guest article status
+  app.patch("/api/admin/guest-articles/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getProfile(userId);
+      
+      if (!profile || profile.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const { id } = req.params;
+      const statusSchema = z.object({
+        status: z.enum(guestArticleStatusEnum.enumValues),
+        adminNotes: z.string().optional(),
+      });
+      
+      const parsed = statusSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid status", errors: parsed.error.errors });
+      }
+      
+      const article = await storage.updateGuestArticleStatus(id, parsed.data.status, parsed.data.adminNotes);
+      if (!article) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      
+      res.json(article);
+    } catch (error) {
+      console.error("Error updating guest article:", error);
+      res.status(500).json({ message: "Failed to update guest article" });
     }
   });
 

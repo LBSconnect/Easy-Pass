@@ -7,6 +7,7 @@ import {
   questionFeedback,
   studyProgress,
   examCertificates,
+  guestArticles,
   type UserProfile, 
   type InsertUserProfile,
   type Question,
@@ -25,6 +26,9 @@ import {
   type InsertStudyProgress,
   type ExamCertificate,
   type InsertExamCertificate,
+  type GuestArticle,
+  type InsertGuestArticle,
+  type GuestArticleStatus,
 } from "@shared/schema";
 import { users, type User } from "@shared/models/auth";
 import { db } from "./db";
@@ -78,6 +82,10 @@ export interface IStorage {
   getCertificateByResultId(resultId: string): Promise<ExamCertificate | undefined>;
   getCertificatesByUser(userId: string): Promise<ExamCertificate[]>;
   revokeCertificate(id: string): Promise<ExamCertificate | undefined>;
+  
+  createGuestArticle(article: InsertGuestArticle): Promise<GuestArticle>;
+  getAllGuestArticles(): Promise<GuestArticle[]>;
+  updateGuestArticleStatus(id: string, status: GuestArticleStatus, adminNotes?: string): Promise<GuestArticle | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -373,6 +381,27 @@ export class DatabaseStorage implements IStorage {
       .update(examCertificates)
       .set({ isRevoked: true })
       .where(eq(examCertificates.id, id))
+      .returning();
+    return updated;
+  }
+
+  async createGuestArticle(article: InsertGuestArticle): Promise<GuestArticle> {
+    const [created] = await db.insert(guestArticles).values(article).returning();
+    return created;
+  }
+
+  async getAllGuestArticles(): Promise<GuestArticle[]> {
+    return db
+      .select()
+      .from(guestArticles)
+      .orderBy(desc(guestArticles.createdAt));
+  }
+
+  async updateGuestArticleStatus(id: string, status: GuestArticleStatus, adminNotes?: string): Promise<GuestArticle | undefined> {
+    const [updated] = await db
+      .update(guestArticles)
+      .set({ status, adminNotes })
+      .where(eq(guestArticles.id, id))
       .returning();
     return updated;
   }

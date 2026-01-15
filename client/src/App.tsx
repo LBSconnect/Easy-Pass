@@ -16,6 +16,7 @@ import ProfilePage from "@/pages/profile";
 import AdminPage from "@/pages/admin";
 import ScheduleExamPage from "@/pages/schedule-exam";
 import StudyGuidePage from "@/pages/study-guide";
+import CertificatePage from "@/pages/certificate";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -72,6 +73,7 @@ function Router() {
       <Route path="/study-guide" component={() => <ProtectedRoute component={StudyGuidePage} />} />
       <Route path="/profile" component={() => <ProtectedRoute component={ProfilePage} />} />
       <Route path="/admin" component={() => <ProtectedRoute component={AdminPage} />} />
+      <Route path="/certificates/:slug" component={CertificatePage} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -361,6 +361,48 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-primary" />
+                    {t("fullMock.title")}
+                  </CardTitle>
+                  <CardDescription>
+                    {t("fullMock.subtitle")}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-3">
+                  {categories.map((category) => {
+                    const Icon = categoryIcons[category.id];
+                    return (
+                      <Link key={category.id} href={`/exams/${category.id}?mode=full`}>
+                        <div 
+                          className={`flex items-center gap-3 p-3 rounded-lg border hover-elevate cursor-pointer ${
+                            !hasActiveSubscription ? "opacity-60" : ""
+                          }`}
+                          data-testid={`card-full-mock-${category.id}`}
+                        >
+                          <div className={`p-2 rounded-lg ${categoryColors[category.id]}`}>
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {t(`categories.${category.id}`)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {category.totalQuestions} {i18n.language === "es" ? "preguntas" : "questions"}
+                            </p>
+                          </div>
+                          <Badge variant="secondary" className="text-xs shrink-0">
+                            {t("fullMock.badge")}
+                          </Badge>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+
             </div>
 
             <div className="space-y-6">

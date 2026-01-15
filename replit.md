@@ -19,6 +19,14 @@ The application follows a subscription-based model with weekly ($6.99) and month
   - API endpoints: POST /api/question-feedback, GET/PATCH /api/admin/question-feedback
   - UI: "Report Issue" button in exam view with feedback modal
   - Admin panel: Feedback tab for reviewing and managing submitted feedback
+- Added interactive study guide with topic-based quizzes and progress tracking
+  - Database table: study_progress to track user progress per topic
+  - Topic configuration: shared/studyTopics.ts defines topics for all 4 exam categories
+  - API endpoints: GET /api/study-guide/topics, GET /api/study-guide/progress, GET /api/study-guide/quiz/:topicId, POST /api/study-guide/answer
+  - UI: Study guide page with category sections, topic cards, progress indicators, quiz interface with instant feedback
+  - Dashboard integration: Quick action card links to study guide
+  - Navigation: Study Guide link in navbar for authenticated users
+  - Bilingual support: Full English/Spanish translations
 
 ## User Preferences
 

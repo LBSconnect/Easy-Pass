@@ -42,28 +42,28 @@ export function Footer() {
             <h3 className="mb-4 text-sm font-semibold">{t("footer.examCategories")}</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <Link href="/exams/real_estate">
+                <Link href="/exams">
                   <span className="hover:text-primary cursor-pointer transition-colors">
                     {t("categories.real_estate")}
                   </span>
                 </Link>
               </li>
               <li>
-                <Link href="/exams/property_casualty">
+                <Link href="/exams">
                   <span className="hover:text-primary cursor-pointer transition-colors">
                     {t("categories.property_casualty")}
                   </span>
                 </Link>
               </li>
               <li>
-                <Link href="/exams/life_insurance">
+                <Link href="/exams">
                   <span className="hover:text-primary cursor-pointer transition-colors">
                     {t("categories.life_insurance")}
                   </span>
                 </Link>
               </li>
               <li>
-                <Link href="/exams/general_lines">
+                <Link href="/exams">
                   <span className="hover:text-primary cursor-pointer transition-colors">
                     {t("categories.general_lines")}
                   </span>
@@ -85,12 +85,16 @@ export function Footer() {
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t pt-8 md:flex-row">
           <p className="text-sm text-muted-foreground">{t("footer.copyright")}</p>
           <div className="flex gap-6 text-sm text-muted-foreground">
-            <span className="cursor-pointer hover:text-primary transition-colors">
-              {t("footer.terms")}
-            </span>
-            <span className="cursor-pointer hover:text-primary transition-colors">
-              {t("footer.privacy")}
-            </span>
+            <Link href="/terms">
+              <span className="cursor-pointer hover:text-primary transition-colors" data-testid="link-terms">
+                {t("footer.terms")}
+              </span>
+            </Link>
+            <Link href="/privacy">
+              <span className="cursor-pointer hover:text-primary transition-colors" data-testid="link-privacy">
+                {t("footer.privacy")}
+              </span>
+            </Link>
           </div>
         </div>
       </div>

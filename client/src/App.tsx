@@ -18,6 +18,8 @@ import ScheduleExamPage from "@/pages/schedule-exam";
 import StudyGuidePage from "@/pages/study-guide";
 import CertificatePage from "@/pages/certificate";
 import FAQPage from "@/pages/faq";
+import TermsPage from "@/pages/terms";
+import PrivacyPage from "@/pages/privacy";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -76,6 +78,8 @@ function Router() {
       <Route path="/admin" component={() => <ProtectedRoute component={AdminPage} />} />
       <Route path="/certificates/:slug" component={CertificatePage} />
       <Route path="/faq" component={FAQPage} />
+      <Route path="/terms" component={TermsPage} />
+      <Route path="/privacy" component={PrivacyPage} />
       <Route component={NotFound} />
     </Switch>
   );

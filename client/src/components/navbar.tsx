@@ -30,11 +30,12 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { href: "/", label: t("nav.home"), show: true },
-    { href: "/exams", label: t("nav.exams"), show: isAuthenticated },
-    { href: "/pricing", label: t("nav.pricing"), show: true },
-    { href: "/schedule-exam", label: t("nav.scheduleExam"), show: true },
-    { href: "/profile", label: t("nav.profile"), show: isAuthenticated },
+    { href: "/", label: t("nav.home"), show: true, external: false },
+    { href: "/exams", label: t("nav.exams"), show: isAuthenticated, external: false },
+    { href: "/pricing", label: t("nav.pricing"), show: true, external: false },
+    { href: "/schedule-exam", label: t("nav.scheduleExam"), show: true, external: false },
+    { href: "https://www.lbs4.com/", label: t("nav.testCenter"), show: true, external: true },
+    { href: "/profile", label: t("nav.profile"), show: isAuthenticated, external: false },
   ];
 
   const getInitials = () => {
@@ -59,18 +60,31 @@ export function Navbar() {
           {navLinks
             .filter((link) => link.show)
             .map((link) => (
-              <Link key={link.href} href={link.href}>
-                <span
-                  className={`text-sm font-medium transition-colors hover:text-primary ${
-                    location === link.href
-                      ? "text-primary"
-                      : "text-muted-foreground"
-                  }`}
-                  data-testid={`link-nav-${link.href.replace("/", "") || "home"}`}
+              link.external ? (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground"
+                  data-testid="link-nav-test-center"
                 >
                   {link.label}
-                </span>
-              </Link>
+                </a>
+              ) : (
+                <Link key={link.href} href={link.href}>
+                  <span
+                    className={`text-sm font-medium transition-colors hover:text-primary ${
+                      location === link.href
+                        ? "text-primary"
+                        : "text-muted-foreground"
+                    }`}
+                    data-testid={`link-nav-${link.href.replace("/", "") || "home"}`}
+                  >
+                    {link.label}
+                  </span>
+                </Link>
+              )
             ))}
         </div>
 
@@ -163,21 +177,34 @@ export function Navbar() {
                 {navLinks
                   .filter((link) => link.show)
                   .map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <span
-                        className={`block py-2 text-lg font-medium ${
-                          location === link.href
-                            ? "text-primary"
-                            : "text-muted-foreground"
-                        }`}
+                    link.external ? (
+                      <a
+                        key={link.href}
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block py-2 text-lg font-medium text-muted-foreground"
                       >
                         {link.label}
-                      </span>
-                    </Link>
+                      </a>
+                    ) : (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <span
+                          className={`block py-2 text-lg font-medium ${
+                            location === link.href
+                              ? "text-primary"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {link.label}
+                        </span>
+                      </Link>
+                    )
                   ))}
                 {!isAuthenticated && (
                   <Button asChild className="mt-4">

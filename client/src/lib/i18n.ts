@@ -35,6 +35,12 @@ const resources = {
         practiceNow: "Practice Now",
         questions: "questions",
       },
+      fullMock: {
+        title: "Full Mock Exams",
+        subtitle: "All available questions - complete simulation of the real exam",
+        badge: "Full",
+        startExam: "Start Full Exam",
+      },
       features: {
         title: "Why Choose LBS EasyPass",
         subtitle: "Everything you need to succeed on your licensing exam",
@@ -293,6 +299,12 @@ const resources = {
         general_lines: "Líneas Generales de Seguros de Texas",
         practiceNow: "Practicar Ahora",
         questions: "preguntas",
+      },
+      fullMock: {
+        title: "Exámenes Completos de Simulación",
+        subtitle: "Todas las preguntas disponibles - simulación completa del examen real",
+        badge: "Completo",
+        startExam: "Comenzar Examen Completo",
       },
       features: {
         title: "Por Qué Elegir LBS EasyPass",

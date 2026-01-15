@@ -168,6 +168,58 @@ export default function LandingPage() {
           </div>
         </section>
 
+        <section className="py-20" id="full-mock-exams">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold mb-4">{t("fullMock.title")}</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                {t("fullMock.subtitle")}
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
+              {[
+                { id: "real_estate" as const, questions: 200 },
+                { id: "property_casualty" as const, questions: 200 },
+                { id: "life_insurance" as const, questions: 199 },
+                { id: "general_lines" as const, questions: 196 },
+              ].map((category) => {
+                const Icon = categoryIcons[category.id];
+                return (
+                  <Card 
+                    key={category.id} 
+                    className="hover-elevate transition-all duration-200"
+                    data-testid={`card-full-mock-${category.id}`}
+                  >
+                    <CardHeader className="flex flex-row items-center gap-4">
+                      <div className={`p-3 rounded-lg ${categoryColors[category.id]}`}>
+                        <Icon className="h-6 w-6" />
+                      </div>
+                      <div className="flex-1">
+                        <CardTitle className="text-lg">
+                          {t(`categories.${category.id}`)}
+                        </CardTitle>
+                        <CardDescription>
+                          {category.questions} {t("categories.questions")}
+                        </CardDescription>
+                      </div>
+                      <Badge variant="secondary">{t("fullMock.badge")}</Badge>
+                    </CardHeader>
+                    <CardContent>
+                      <Button variant="outline" className="w-full gap-2" asChild>
+                        <a href="/api/login">
+                          {t("fullMock.startExam")}
+                          <ArrowRight className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
         <section className="py-20" id="features">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">

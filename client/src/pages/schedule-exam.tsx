@@ -162,6 +162,13 @@ export default function ScheduleExamPage() {
                         </a>
                       </Button>
                     )}
+
+                    <Button variant="default" className="w-full" asChild>
+                      <a href="https://www.lbs4.com/" target="_blank" rel="noopener noreferrer" data-testid="link-test-center-website">
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        {t("scheduleExam.visitTestCenter")}
+                      </a>
+                    </Button>
                   </CardContent>
                 </Card>
               </div>

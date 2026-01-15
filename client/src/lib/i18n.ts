@@ -213,6 +213,7 @@ const resources = {
       scheduleExam: {
         title: "Schedule Your Exam",
         subtitle: "Visit our testing center in Houston or request a callback to schedule your appointment",
+        visitTestCenter: "Visit Test Center Website",
         location: {
           title: "Testing Center Location",
           description: "Visit our conveniently located testing center in Houston",
@@ -470,6 +471,7 @@ const resources = {
       scheduleExam: {
         title: "Agenda Tu Examen",
         subtitle: "Visita nuestro centro de pruebas en Houston o solicita una llamada para agendar tu cita",
+        visitTestCenter: "Visitar Sitio Web del Centro de Pruebas",
         location: {
           title: "Ubicación del Centro de Pruebas",
           description: "Visita nuestro centro de pruebas convenientemente ubicado en Houston",

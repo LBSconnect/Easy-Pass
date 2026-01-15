@@ -4,6 +4,7 @@ import {
   examSessions, 
   examResults, 
   paymentHistory,
+  questionFeedback,
   type UserProfile, 
   type InsertUserProfile,
   type Question,
@@ -15,6 +16,9 @@ import {
   type InsertPaymentHistory,
   type PaymentHistory,
   type ExamCategory,
+  type QuestionFeedback,
+  type InsertQuestionFeedback,
+  type FeedbackStatus,
 } from "@shared/schema";
 import { users, type User } from "@shared/models/auth";
 import { db } from "./db";
@@ -52,6 +56,11 @@ export interface IStorage {
     totalRevenue: number;
     passRate: number;
   }>;
+  
+  createQuestionFeedback(feedback: InsertQuestionFeedback): Promise<QuestionFeedback>;
+  getQuestionFeedback(questionId?: string): Promise<QuestionFeedback[]>;
+  getAllQuestionFeedback(): Promise<QuestionFeedback[]>;
+  updateQuestionFeedback(id: string, data: { status?: FeedbackStatus; adminNotes?: string }): Promise<QuestionFeedback | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -217,6 +226,35 @@ export class DatabaseStorage implements IStorage {
       totalRevenue,
       passRate,
     };
+  }
+
+  async createQuestionFeedback(feedback: InsertQuestionFeedback): Promise<QuestionFeedback> {
+    const [created] = await db.insert(questionFeedback).values(feedback).returning();
+    return created;
+  }
+
+  async getQuestionFeedback(questionId?: string): Promise<QuestionFeedback[]> {
+    if (questionId) {
+      return db
+        .select()
+        .from(questionFeedback)
+        .where(eq(questionFeedback.questionId, questionId))
+        .orderBy(desc(questionFeedback.createdAt));
+    }
+    return db.select().from(questionFeedback).orderBy(desc(questionFeedback.createdAt));
+  }
+
+  async getAllQuestionFeedback(): Promise<QuestionFeedback[]> {
+    return db.select().from(questionFeedback).orderBy(desc(questionFeedback.createdAt));
+  }
+
+  async updateQuestionFeedback(id: string, data: { status?: FeedbackStatus; adminNotes?: string }): Promise<QuestionFeedback | undefined> {
+    const [updated] = await db
+      .update(questionFeedback)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(questionFeedback.id, id))
+      .returning();
+    return updated;
   }
 }
 

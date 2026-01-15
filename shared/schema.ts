@@ -146,6 +146,23 @@ export const questionFeedback = pgTable("question_feedback", {
   index("idx_question_feedback_type").on(table.feedbackType),
 ]);
 
+export const examCertificates = pgTable("exam_certificates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  resultId: varchar("result_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  category: examCategoryEnum("category").notNull(),
+  score: integer("score").notNull(),
+  slug: varchar("slug", { length: 12 }).notNull().unique(),
+  recipientName: varchar("recipient_name", { length: 200 }).notNull(),
+  isRevoked: boolean("is_revoked").default(false).notNull(),
+  completedAt: timestamp("completed_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_certificates_user").on(table.userId),
+  index("idx_certificates_result").on(table.resultId),
+  index("idx_certificates_slug").on(table.slug),
+]);
+
 export const userProfilesRelations = relations(userProfiles, ({ many }) => ({
   examSessions: many(examSessions),
   examResults: many(examResults),
@@ -209,6 +226,12 @@ export const insertStudyProgressSchema = createInsertSchema(studyProgress).omit(
   updatedAt: true,
 });
 
+export const insertExamCertificateSchema = createInsertSchema(examCertificates).omit({
+  id: true,
+  isRevoked: true,
+  createdAt: true,
+});
+
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
@@ -225,6 +248,8 @@ export type InsertQuestionFeedback = z.infer<typeof insertQuestionFeedbackSchema
 export type QuestionFeedback = typeof questionFeedback.$inferSelect;
 export type InsertStudyProgress = z.infer<typeof insertStudyProgressSchema>;
 export type StudyProgress = typeof studyProgress.$inferSelect;
+export type InsertExamCertificate = z.infer<typeof insertExamCertificateSchema>;
+export type ExamCertificate = typeof examCertificates.$inferSelect;
 
 export type ExamCategory = "real_estate" | "property_casualty" | "life_insurance" | "general_lines";
 export type FeedbackType = "error" | "unclear" | "wrong_answer" | "translation" | "suggestion" | "other";

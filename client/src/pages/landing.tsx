@@ -19,7 +19,7 @@ import {
   FileText,
   ArrowRight
 } from "lucide-react";
-import logoImage from "@assets/log_1768432206192.jpg";
+import logoImage from "@assets/EP_logo_1768576610105.png";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 
@@ -104,9 +104,8 @@ export default function LandingPage() {
                   <div className="absolute inset-4 bg-card rounded-2xl shadow-2xl border flex items-center justify-center">
                     <div className="text-center p-8 space-y-4">
                       <div className="flex justify-center">
-                        <img src={logoImage} alt="LBS EasyPass" className="h-32 w-32 object-contain" />
+                        <img src={logoImage} alt="MyEasyPass" className="h-24 object-contain" />
                       </div>
-                      <h3 className="text-2xl font-bold">LBS EasyPass</h3>
                       <p className="text-muted-foreground">
                         Texas Licensing Exam Prep
                       </p>

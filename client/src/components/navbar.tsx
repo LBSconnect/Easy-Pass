@@ -20,7 +20,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Menu, User, LogOut, Settings, LayoutDashboard } from "lucide-react";
-import logoImage from "@assets/log_1768432206192.jpg";
+import logoImage from "@assets/EP_logo_1768576610105.png";
 import { useState } from "react";
 
 export function Navbar() {
@@ -54,8 +54,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <nav className="container mx-auto flex h-16 items-center justify-between gap-4 px-4">
         <Link href="/" className="flex items-center gap-2">
-          <img src={logoImage} alt="LBS EasyPass" className="h-12 w-12 object-contain" />
-          <span className="text-xl font-bold">LBS EasyPass</span>
+          <img src={logoImage} alt="MyEasyPass" className="h-12 object-contain" />
         </Link>
 
         <div className="hidden md:flex items-center gap-6">
@@ -171,8 +170,7 @@ export function Navbar() {
             <SheetContent side="right">
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2">
-                  <img src={logoImage} alt="LBS EasyPass" className="h-10 w-10 object-contain" />
-                  LBS EasyPass
+                  <img src={logoImage} alt="MyEasyPass" className="h-10 object-contain" />
                 </SheetTitle>
               </SheetHeader>
               <div className="flex flex-col gap-4 mt-6">

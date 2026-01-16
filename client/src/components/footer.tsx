@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
-import logoImage from "@assets/log_1768432206192.jpg";
+import logoImage from "@assets/EP_logo_1768576610105.png";
 
 export function Footer() {
   const { t } = useTranslation();
@@ -11,8 +11,7 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           <div className="space-y-4">
             <Link href="/" className="flex items-center gap-2">
-              <img src={logoImage} alt="LBS EasyPass" className="h-12 w-12 object-contain" />
-              <span className="text-xl font-bold">{t("footer.company")}</span>
+              <img src={logoImage} alt="MyEasyPass" className="h-12 object-contain" />
             </Link>
             <p className="text-sm text-muted-foreground">{t("footer.tagline")}</p>
           </div>

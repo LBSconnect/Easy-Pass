@@ -125,7 +125,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
   console.log("Invoice paid:", invoice.id);
 
   const customerId = invoice.customer as string;
-  const subscriptionId = invoice.subscription as string;
+  const subscriptionId = (invoice as any).subscription as string;
 
   if (subscriptionId) {
     const stripe = await getCachedStripeClient();
@@ -152,8 +152,9 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void
 async function updateUserSubscription(userId: string, subscription: Stripe.Subscription): Promise<void> {
   const plan = getPlanFromSubscription(subscription);
   const status = mapStripeStatus(subscription.status);
-  const endDate = subscription.current_period_end 
-    ? new Date(subscription.current_period_end * 1000) 
+  const periodEnd = (subscription as any).current_period_end;
+  const endDate = periodEnd 
+    ? new Date(periodEnd * 1000) 
     : undefined;
 
   await storage.updateProfile(userId, {
@@ -177,8 +178,9 @@ async function updateSubscriptionByCustomerId(customerId: string, subscription: 
 
   const plan = getPlanFromSubscription(subscription);
   const status = mapStripeStatus(subscription.status);
-  const endDate = subscription.current_period_end 
-    ? new Date(subscription.current_period_end * 1000) 
+  const periodEnd = (subscription as any).current_period_end;
+  const endDate = periodEnd 
+    ? new Date(periodEnd * 1000) 
     : undefined;
 
   await storage.updateProfile(user.id, {

@@ -8,6 +8,7 @@ import { studyTopicsConfig, getTopicById, getTopicsByCategory } from "@shared/st
 import { z } from "zod";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
+import { sanitizeHtml } from "./sanitize";
 
 const startExamSchema = z.object({
   category: z.enum(examCategoryEnum.enumValues),
@@ -92,9 +93,13 @@ export async function registerRoutes(
       const userId = req.user.claims.sub;
       const { phone, preferredLanguage } = req.body;
       
+      const validLanguages = ["en", "es"];
+      const sanitizedLanguage = validLanguages.includes(preferredLanguage) ? preferredLanguage : undefined;
+      const sanitizedPhone = phone ? sanitizeHtml(phone) ?? phone : undefined;
+      
       const updated = await storage.updateProfile(userId, {
-        phone,
-        preferredLanguage,
+        phone: sanitizedPhone,
+        preferredLanguage: sanitizedLanguage,
       });
       
       res.json(updated);
@@ -366,7 +371,16 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid submission", errors: parsed.error.errors });
       }
       
-      const article = await storage.createGuestArticle(parsed.data);
+      const sanitizedData = {
+        ...parsed.data,
+        name: sanitizeHtml(parsed.data.name) ?? parsed.data.name,
+        email: parsed.data.email,
+        topic: sanitizeHtml(parsed.data.topic) ?? parsed.data.topic,
+        message: sanitizeHtml(parsed.data.message) ?? parsed.data.message,
+        articleUrl: parsed.data.articleUrl ? sanitizeHtml(parsed.data.articleUrl) ?? parsed.data.articleUrl : null,
+      };
+      
+      const article = await storage.createGuestArticle(sanitizedData);
       res.status(201).json({ message: "Article submission received", id: article.id });
     } catch (error) {
       console.error("Error submitting guest article:", error);
@@ -649,7 +663,16 @@ export async function registerRoutes(
       }
       
       const validated = insertQuestionSchema.parse(req.body);
-      const question = await storage.createQuestion(validated);
+      const sanitizedData = {
+        ...validated,
+        questionTextEn: sanitizeHtml(validated.questionTextEn as string) || validated.questionTextEn,
+        questionTextEs: sanitizeHtml(validated.questionTextEs as string) || validated.questionTextEs,
+        optionsEn: (validated.optionsEn as string[]).map(opt => sanitizeHtml(opt) || opt),
+        optionsEs: (validated.optionsEs as string[]).map(opt => sanitizeHtml(opt) || opt),
+        explanationEn: validated.explanationEn ? sanitizeHtml(validated.explanationEn as string) : null,
+        explanationEs: validated.explanationEs ? sanitizeHtml(validated.explanationEs as string) : null,
+      };
+      const question = await storage.createQuestion(sanitizedData as any);
       res.json(question);
     } catch (error) {
       console.error("Error creating question:", error);
@@ -674,7 +697,15 @@ export async function registerRoutes(
       const updateSchema = insertQuestionSchema.partial();
       const validated = updateSchema.parse(req.body);
       
-      const question = await storage.updateQuestion(id, validated);
+      const sanitizedData: any = { ...validated };
+      if (validated.questionTextEn) sanitizedData.questionTextEn = sanitizeHtml(validated.questionTextEn as string) || validated.questionTextEn;
+      if (validated.questionTextEs) sanitizedData.questionTextEs = sanitizeHtml(validated.questionTextEs as string) || validated.questionTextEs;
+      if (validated.optionsEn) sanitizedData.optionsEn = (validated.optionsEn as string[]).map(opt => sanitizeHtml(opt) || opt);
+      if (validated.optionsEs) sanitizedData.optionsEs = (validated.optionsEs as string[]).map(opt => sanitizeHtml(opt) || opt);
+      if (validated.explanationEn) sanitizedData.explanationEn = sanitizeHtml(validated.explanationEn as string);
+      if (validated.explanationEs) sanitizedData.explanationEs = sanitizeHtml(validated.explanationEs as string);
+      
+      const question = await storage.updateQuestion(id, sanitizedData);
       res.json(question);
     } catch (error) {
       console.error("Error updating question:", error);
@@ -712,7 +743,12 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid data", errors: parsed.error.errors });
       }
       
-      const feedback = await storage.createQuestionFeedback(parsed.data);
+      const sanitizedData = {
+        ...parsed.data,
+        message: sanitizeHtml(parsed.data.message) || parsed.data.message,
+      };
+      
+      const feedback = await storage.createQuestionFeedback(sanitizedData);
       res.json({ success: true, feedback });
     } catch (error) {
       console.error("Error creating question feedback:", error);
@@ -776,7 +812,17 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid data", errors: parsed.error.errors });
       }
       
-      const [request] = await db.insert(callbackRequests).values(parsed.data).returning();
+      const sanitizedData = {
+        ...parsed.data,
+        firstName: sanitizeHtml(parsed.data.firstName) ?? parsed.data.firstName,
+        lastName: sanitizeHtml(parsed.data.lastName) ?? parsed.data.lastName,
+        email: parsed.data.email,
+        phone: parsed.data.phone,
+        preferredDay: sanitizeHtml(parsed.data.preferredDay) ?? parsed.data.preferredDay,
+        preferredTime: sanitizeHtml(parsed.data.preferredTime) ?? parsed.data.preferredTime,
+      };
+      
+      const [request] = await db.insert(callbackRequests).values(sanitizedData).returning();
       res.json({ success: true, id: request.id });
     } catch (error) {
       console.error("Error creating callback request:", error);

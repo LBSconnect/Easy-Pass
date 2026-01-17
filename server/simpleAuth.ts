@@ -5,6 +5,8 @@ import type { Express, RequestHandler } from "express";
 import { db } from "./db";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { sanitizeHtml } from "./sanitize";
+import { rateLimit } from "./rateLimit";
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
@@ -23,6 +25,7 @@ export function getSession() {
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
       maxAge: sessionTtl,
     },
   });
@@ -47,6 +50,11 @@ export async function setupAuth(app: Express) {
         return res.status(400).json({ message: "Email and password are required" });
       }
 
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+
       if (password.length < 6) {
         return res.status(400).json({ message: "Password must be at least 6 characters" });
       }
@@ -58,11 +66,14 @@ export async function setupAuth(app: Express) {
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
+      const sanitizedFirstName = sanitizeHtml(firstName);
+      const sanitizedLastName = sanitizeHtml(lastName);
+
       const [newUser] = await db.insert(users).values({
-        email,
+        email: email.toLowerCase().trim(),
         password: hashedPassword,
-        firstName: firstName || null,
-        lastName: lastName || null,
+        firstName: sanitizedFirstName,
+        lastName: sanitizedLastName,
       }).returning();
 
       req.session.userId = newUser.id;
@@ -86,6 +97,17 @@ export async function setupAuth(app: Express) {
 
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      const ip = req.ip || req.socket.remoteAddress || "unknown";
+      const rateLimitKey = `login:${ip}:${email?.toLowerCase()}`;
+      const { allowed, resetIn } = rateLimit(rateLimitKey, 5, 15 * 60 * 1000);
+      
+      if (!allowed) {
+        const minutes = Math.ceil(resetIn / 60000);
+        return res.status(429).json({ 
+          message: `Too many login attempts. Please try again in ${minutes} minutes.` 
+        });
       }
 
       const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);

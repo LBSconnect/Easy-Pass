@@ -69,10 +69,12 @@ Preferred communication style: Simple, everyday language.
 - **Migrations**: Drizzle Kit for schema management (`drizzle-kit push`)
 
 ### Authentication & Authorization
-- **Provider**: Replit Auth (OpenID Connect)
-- **Session Storage**: PostgreSQL sessions table
+- **Provider**: Custom email/password authentication (NOT Replit Auth)
+- **Session Storage**: PostgreSQL sessions table with express-session
+- **Password Security**: bcrypt hashing with 10 rounds
 - **User Roles**: "user" and "admin" roles stored in user_profiles table
 - **Protected Routes**: `isAuthenticated` middleware checks for valid session
+- **Auth Endpoints**: POST /api/register, POST /api/login, GET/POST /api/logout
 
 ### Payment Integration
 - **Provider**: Stripe via Replit's connector system

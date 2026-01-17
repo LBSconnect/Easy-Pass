@@ -512,16 +512,22 @@ export async function registerRoutes(
       const stripe = await getCachedStripeClient();
       const host = req.get("host");
       const protocol = host?.includes("localhost") ? "http" : "https";
+      const returnUrl = `${protocol}://${host}/profile`;
+      
+      console.log("Creating portal session for customer:", profile.stripeCustomerId);
+      console.log("Return URL:", returnUrl);
       
       const session = await stripe.billingPortal.sessions.create({
         customer: profile.stripeCustomerId,
-        return_url: `${protocol}://${host}/profile`,
+        return_url: returnUrl,
       });
       
+      console.log("Portal session created:", session.url);
       res.json({ url: session.url });
-    } catch (error) {
-      console.error("Error creating portal:", error);
-      res.status(500).json({ message: "Failed to create portal session" });
+    } catch (error: any) {
+      console.error("Error creating portal:", error?.message || error);
+      console.error("Error details:", JSON.stringify(error, null, 2));
+      res.status(500).json({ message: "Failed to create portal session", error: error?.message });
     }
   });
 

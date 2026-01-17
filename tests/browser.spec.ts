@@ -51,3 +51,12 @@ test('create, edit, delete item', async ({ page }) => {
 
   await expect(page.locator('text=Updated Item')).not.toBeVisible();
 });
+
+test('XSS is escaped', async ({ page }) => {
+  await page.goto('/form');
+
+  await page.fill('input[name="comment"]', '<script>alert(1)</script>');
+  await page.click('button[type="submit"]');
+
+  await expect(page.locator('script')).toHaveCount(0);
+});

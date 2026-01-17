@@ -4,10 +4,22 @@
 
 Easy Pass is a bilingual (English/Spanish) exam preparation web application for Texas licensing exams. The platform enables users to practice for Real Estate, Property & Casualty Insurance, Life Insurance, and General Lines Insurance exams through timed practice sessions with immediate scoring and feedback.
 
-The application follows a subscription-based model with weekly ($6.99) and monthly ($19.99) plans, integrated through Stripe for payment processing. It includes user-facing practice exam features and an admin panel for question management and analytics.
+The application follows a subscription-based model with category-specific pricing, integrated through Stripe for payment processing. It includes user-facing practice exam features and an admin panel for question management and analytics.
 
 ## Recent Changes (January 2026)
 
+### New Category-Based Subscription Model (Latest)
+- **Business Rule**: Customers can subscribe to only ONE exam category per subscription, OR choose the "Insurance + Real Estate" bundle for all 4 categories
+- **Subscription Types**:
+  - `single`: Access to one specific exam category ($6.99/week or $19.99/month)
+  - `bundle`: Access to all 4 exam categories ($12.99/week or $34.99/month)
+- **Database Fields**: Added `subscriptionType` and `allowedCategories` to user_profiles
+- **Pricing Page**: Category checkboxes with validation logic that enforces single-category or bundle selection
+- **Exam Access**: Category-based enforcement - users can only access exams for categories in their subscription
+- **Migration**: scripts/backfillAllowedCategories.ts for existing subscribers
+- **Stripe Products**: 5 products created (4 single-category + 1 bundle), each with weekly/monthly prices
+
+### Previous Updates
 - Completed full application implementation including frontend and backend
 - Implemented subscription enforcement for exam access (users need active subscription or admin role)
 - Added Zod validation for all API endpoints (exams, checkout, questions)

@@ -44,7 +44,13 @@ async function ensureSubscriptionActive(userId: string, category?: ExamCategory)
     return { active: false, message: "Subscription has expired. Please renew to continue." };
   }
   
-  if (category && profile.allowedCategories) {
+  if (category) {
+    if (!profile.allowedCategories || profile.allowedCategories.length === 0) {
+      return { 
+        active: false, 
+        message: "Your subscription category access is not configured. Please contact support or resubscribe to continue." 
+      };
+    }
     if (!profile.allowedCategories.includes(category)) {
       return { 
         active: false, 
@@ -430,7 +436,7 @@ export async function registerRoutes(
         .filter(p => p.metadata?.subscription_type)
         .map(p => {
           VALID_PRICE_IDS.add(p.id);
-          const product = typeof p.product === "object" ? p.product : null;
+          const product = typeof p.product === "object" && !('deleted' in p.product) ? p.product : null;
           return {
             id: p.id,
             unit_amount: p.unit_amount,
@@ -623,8 +629,9 @@ export async function registerRoutes(
         return res.status(403).json({ message: "Forbidden" });
       }
       
-      const category = req.query.category as ExamCategory | undefined;
-      const questions = await storage.getQuestions(category === "all" ? undefined : category);
+      const categoryParam = req.query.category as string | undefined;
+      const category = categoryParam && categoryParam !== "all" ? categoryParam as ExamCategory : undefined;
+      const questions = await storage.getQuestions(category);
       res.json(questions);
     } catch (error) {
       console.error("Error fetching questions:", error);

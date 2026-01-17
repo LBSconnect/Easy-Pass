@@ -62,9 +62,7 @@ export async function getCachedStripeClient(): Promise<Stripe> {
   }
 
   const { secretKey } = await getCredentials();
-  cachedStripeClient = new Stripe(secretKey, {
-    apiVersion: '2025-08-27.basil',
-  });
+  cachedStripeClient = new Stripe(secretKey);
 
   return cachedStripeClient;
 }
@@ -72,9 +70,7 @@ export async function getCachedStripeClient(): Promise<Stripe> {
 export async function getUncachableStripeClient() {
   const { secretKey } = await getCredentials();
 
-  return new Stripe(secretKey, {
-    apiVersion: '2025-08-27.basil',
-  });
+  return new Stripe(secretKey);
 }
 
 export async function getStripePublishableKey() {

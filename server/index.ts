@@ -46,9 +46,20 @@ async function initStripe() {
     const stripeSync = await getStripeSync();
 
     console.log("Setting up managed webhook...");
-    const domains = process.env.REPLIT_DOMAINS?.split(",") || [];
-    if (domains.length > 0) {
-      const webhookBaseUrl = `https://${domains[0]}`;
+    const isProduction = process.env.REPLIT_DEPLOYMENT === "1";
+    const customDomain = "myeasypass.net";
+    
+    let webhookBaseUrl: string | null = null;
+    if (isProduction) {
+      webhookBaseUrl = `https://${customDomain}`;
+    } else {
+      const domains = process.env.REPLIT_DOMAINS?.split(",") || [];
+      if (domains.length > 0) {
+        webhookBaseUrl = `https://${domains[0]}`;
+      }
+    }
+    
+    if (webhookBaseUrl) {
       try {
         const { webhook } = await stripeSync.findOrCreateManagedWebhook(
           `${webhookBaseUrl}/api/stripe/webhook`

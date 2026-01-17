@@ -88,4 +88,12 @@ test.describe('API Security Tests', () => {
     });
     expect(response.status()).toBe(400);
   });
+
+  test('API rejects invalid input', async ({ request }) => {
+    const res = await request.post('/api/guest-articles', {
+      data: { name: '' },
+    });
+
+    expect(res.status()).toBe(400);
+  });
 });

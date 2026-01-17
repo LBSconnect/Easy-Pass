@@ -8,6 +8,7 @@ export * from "./models/auth";
 export const languageEnum = pgEnum("language", ["en", "es"]);
 export const subscriptionStatusEnum = pgEnum("subscription_status", ["active", "canceled", "past_due", "trialing"]);
 export const subscriptionPlanEnum = pgEnum("subscription_plan", ["weekly", "monthly"]);
+export const subscriptionTypeEnum = pgEnum("subscription_type", ["single", "bundle"]);
 export const examCategoryEnum = pgEnum("exam_category", ["real_estate", "property_casualty", "life_insurance", "general_lines"]);
 export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
 
@@ -21,6 +22,8 @@ export const userProfiles = pgTable("user_profiles", {
   stripeSubscriptionId: varchar("stripe_subscription_id"),
   subscriptionStatus: subscriptionStatusEnum("subscription_status"),
   subscriptionPlan: subscriptionPlanEnum("subscription_plan"),
+  subscriptionType: subscriptionTypeEnum("subscription_type"),
+  allowedCategories: jsonb("allowed_categories").$type<string[]>(),
   subscriptionEndDate: timestamp("subscription_end_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -283,5 +286,6 @@ export type FeedbackType = "error" | "unclear" | "wrong_answer" | "translation" 
 export type FeedbackStatus = "pending" | "reviewed" | "resolved" | "dismissed";
 export type Language = "en" | "es";
 export type SubscriptionPlan = "weekly" | "monthly";
+export type SubscriptionType = "single" | "bundle";
 export type SubscriptionStatus = "active" | "canceled" | "past_due" | "trialing";
 export type UserRole = "user" | "admin";

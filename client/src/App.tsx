@@ -20,6 +20,7 @@ import CertificatePage from "@/pages/certificate";
 import FAQPage from "@/pages/faq";
 import TermsPage from "@/pages/terms";
 import PrivacyPage from "@/pages/privacy";
+import AuthPage from "@/pages/auth";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -36,7 +37,7 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   }
 
   if (!isAuthenticated) {
-    window.location.href = "/api/login";
+    window.location.href = "/login";
     return null;
   }
 
@@ -68,6 +69,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={HomePage} />
+      <Route path="/login" component={AuthPage} />
+      <Route path="/signup" component={AuthPage} />
       <Route path="/dashboard" component={() => <ProtectedRoute component={DashboardPage} />} />
       <Route path="/exams" component={() => <ProtectedRoute component={ExamsPage} />} />
       <Route path="/exams/:category" component={() => <ProtectedRoute component={ExamsPage} />} />

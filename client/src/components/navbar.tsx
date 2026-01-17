@@ -157,7 +157,7 @@ export function Navbar() {
             </DropdownMenu>
           ) : (
             <Button asChild data-testid="button-login">
-              <a href="/api/login">{t("nav.login")}</a>
+              <Link href="/login">{t("nav.login")}</Link>
             </Button>
           )}
 
@@ -207,8 +207,8 @@ export function Navbar() {
                     )
                   ))}
                 {!isAuthenticated && (
-                  <Button asChild className="mt-4">
-                    <a href="/api/login">{t("nav.login")}</a>
+                  <Button asChild className="mt-4" onClick={() => setMobileMenuOpen(false)}>
+                    <Link href="/login">{t("nav.login")}</Link>
                   </Button>
                 )}
               </div>

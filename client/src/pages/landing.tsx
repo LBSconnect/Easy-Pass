@@ -80,7 +80,7 @@ export default function LandingPage() {
                 
                 <div className="flex flex-col gap-4 sm:flex-row">
                   <Button size="lg" asChild className="gap-2" data-testid="button-get-started">
-                    <a href="/api/login">
+                    <a href="/login">
                       {t("hero.cta")}
                       <ArrowRight className="h-4 w-4" />
                     </a>
@@ -134,7 +134,7 @@ export default function LandingPage() {
               {categories.map((category) => {
                 const Icon = categoryIcons[category.id];
                 return (
-                  <a key={category.id} href="/api/login">
+                  <a key={category.id} href="/login">
                     <Card
                       className="hover-elevate transition-all cursor-pointer border"
                       data-testid={`card-category-${category.id}`}
@@ -182,7 +182,7 @@ export default function LandingPage() {
               ].map((category) => {
                 const Icon = categoryIcons[category.id];
                 return (
-                  <a key={category.id} href="/api/login">
+                  <a key={category.id} href="/login">
                     <Card
                       className="hover-elevate transition-all cursor-pointer border"
                       data-testid={`card-full-mock-${category.id}`}
@@ -276,7 +276,7 @@ export default function LandingPage() {
                     )}
                   </ul>
                   <Button className="w-full" variant="outline" asChild>
-                    <a href="/api/login">{t("pricing.subscribe")}</a>
+                    <a href="/login">{t("pricing.subscribe")}</a>
                   </Button>
                   <p className="text-center text-xs text-muted-foreground">
                     {t("pricing.cancelAnytime")}
@@ -307,7 +307,7 @@ export default function LandingPage() {
                     )}
                   </ul>
                   <Button className="w-full" asChild>
-                    <a href="/api/login">{t("pricing.subscribe")}</a>
+                    <a href="/login">{t("pricing.subscribe")}</a>
                   </Button>
                   <p className="text-center text-xs text-muted-foreground">
                     {t("pricing.cancelAnytime")}
@@ -367,7 +367,7 @@ export default function LandingPage() {
               Join thousands of successful test takers who trusted LBS EasyPass for their exam preparation.
             </p>
             <Button size="lg" variant="secondary" asChild className="gap-2">
-              <a href="/api/login">
+              <a href="/login">
                 {t("hero.cta")}
                 <ArrowRight className="h-4 w-4" />
               </a>

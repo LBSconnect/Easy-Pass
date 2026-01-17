@@ -40,7 +40,7 @@ export default function PricingPage() {
 
   const handleSubscribe = (priceId: string) => {
     if (!isAuthenticated) {
-      window.location.href = "/api/login";
+      window.location.href = "/login";
       return;
     }
     checkoutMutation.mutate(priceId);

@@ -60,3 +60,11 @@ test('XSS is escaped', async ({ page }) => {
 
   await expect(page.locator('script')).toHaveCount(0);
 });
+
+test.describe('Form Validation', () => {
+  test('rejects empty submission', async ({ page }) => {
+    await page.goto('/form');
+    await page.click('button[type="submit"]');
+    await expect(page.locator('text=Required')).toBeVisible();
+  });
+});

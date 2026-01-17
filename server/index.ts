@@ -87,10 +87,7 @@ async function initStripe() {
 }
 
 (async () => {
-  await setupAuth(app);
-
-  await initStripe();
-
+  // Stripe webhook must be registered BEFORE express.json() to receive raw body
   app.post(
     "/api/stripe/webhook",
     express.raw({ type: "application/json" }),
@@ -119,6 +116,7 @@ async function initStripe() {
     }
   );
 
+  // JSON body parsing must be set up BEFORE auth routes
   app.use(
     express.json({
       verify: (req, _res, buf) => {
@@ -128,6 +126,10 @@ async function initStripe() {
   );
 
   app.use(express.urlencoded({ extended: false }));
+
+  await setupAuth(app);
+
+  await initStripe();
 
   app.use((req, res, next) => {
     const start = Date.now();

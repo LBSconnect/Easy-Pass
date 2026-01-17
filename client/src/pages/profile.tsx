@@ -136,15 +136,26 @@ export default function ProfilePage() {
 
   const portalMutation = useMutation({
     mutationFn: async () => {
+      console.log("Portal mutation triggered");
       const res = await apiRequest("POST", "/api/stripe/portal");
-      return res.json();
+      const data = await res.json();
+      console.log("Portal response:", data);
+      return data;
     },
     onSuccess: (data) => {
+      console.log("Portal onSuccess:", data);
       if (data.url) {
         window.location.href = data.url;
+      } else {
+        toast({
+          title: "Error",
+          description: "No portal URL received",
+          variant: "destructive",
+        });
       }
     },
     onError: (error: Error) => {
+      console.error("Portal error:", error);
       toast({
         title: "Error",
         description: error.message,
@@ -384,12 +395,23 @@ export default function ProfilePage() {
                           <Button
                             variant="outline"
                             className="w-full"
-                            onClick={() => portalMutation.mutate()}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log("Manage Billing button clicked");
+                              portalMutation.mutate();
+                            }}
                             disabled={portalMutation.isPending}
                             data-testid="button-manage-subscription"
                           >
-                            <Settings className="mr-2 h-4 w-4" />
-                            Manage Billing
+                            {portalMutation.isPending ? (
+                              <>Loading...</>
+                            ) : (
+                              <>
+                                <Settings className="mr-2 h-4 w-4" />
+                                Manage Billing
+                              </>
+                            )}
                           </Button>
 
                           <AlertDialog>

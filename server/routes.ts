@@ -24,7 +24,7 @@ const checkoutSchema = z.object({
 
 const VALID_PRICE_IDS = new Set<string>();
 
-async function ensureSubscriptionActive(userId: string): Promise<{ active: boolean; message?: string }> {
+async function ensureSubscriptionActive(userId: string, category?: ExamCategory): Promise<{ active: boolean; message?: string }> {
   const profile = await storage.getProfile(userId);
   
   if (!profile) {
@@ -42,6 +42,15 @@ async function ensureSubscriptionActive(userId: string): Promise<{ active: boole
   
   if (profile.subscriptionEndDate && new Date(profile.subscriptionEndDate) < new Date()) {
     return { active: false, message: "Subscription has expired. Please renew to continue." };
+  }
+  
+  if (category && profile.allowedCategories) {
+    if (!profile.allowedCategories.includes(category)) {
+      return { 
+        active: false, 
+        message: `Your subscription does not include access to this exam category. Please upgrade your subscription to access ${category.replace('_', ' ')} exams.` 
+      };
+    }
   }
   
   return { active: true };
@@ -98,12 +107,12 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid category", errors: parsed.error.errors });
       }
       
-      const subscriptionCheck = await ensureSubscriptionActive(userId);
+      const { category, mode } = parsed.data;
+      
+      const subscriptionCheck = await ensureSubscriptionActive(userId, category);
       if (!subscriptionCheck.active) {
         return res.status(403).json({ message: subscriptionCheck.message });
       }
-      
-      const { category, mode } = parsed.data;
       
       const questionLimit = mode === "full" ? undefined : 50;
       const questions = await storage.getQuestions(category, questionLimit);
@@ -837,7 +846,7 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Topic not found" });
       }
       
-      const subscriptionCheck = await ensureSubscriptionActive(userId);
+      const subscriptionCheck = await ensureSubscriptionActive(userId, topicInfo.category.category);
       if (!subscriptionCheck.active) {
         return res.status(403).json({ message: subscriptionCheck.message });
       }

@@ -24,3 +24,30 @@ test('login fails with wrong password', async ({ page }) => {
 
   await expect(page.locator('.error')).toBeVisible();
 });
+
+test('create, edit, delete item', async ({ page }) => {
+  await page.goto('/login');
+
+  await page.fill('input[name="email"]', 'test@example.com');
+  await page.fill('input[name="password"]', 'Password123!');
+  await page.click('button[type="submit"]');
+
+  await page.goto('/items');
+
+  await page.click('text=Add Item');
+  await page.fill('input[name="title"]', 'Test Item');
+  await page.click('text=Save');
+
+  await expect(page.locator('text=Test Item')).toBeVisible();
+
+  await page.click('text=Edit');
+  await page.fill('input[name="title"]', 'Updated Item');
+  await page.click('text=Save');
+
+  await expect(page.locator('text=Updated Item')).toBeVisible();
+
+  await page.click('text=Delete');
+  await page.click('text=Confirm');
+
+  await expect(page.locator('text=Updated Item')).not.toBeVisible();
+});

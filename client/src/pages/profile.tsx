@@ -46,7 +46,6 @@ import {
   Clock, 
   CheckCircle2, 
   XCircle,
-  Settings,
   Home,
   Shield,
   Heart,
@@ -134,36 +133,7 @@ export default function ProfilePage() {
     },
   });
 
-  const portalMutation = useMutation({
-    mutationFn: async () => {
-      console.log("Portal mutation triggered");
-      const res = await apiRequest("POST", "/api/stripe/portal");
-      const data = await res.json();
-      console.log("Portal response:", data);
-      return data;
-    },
-    onSuccess: (data) => {
-      console.log("Portal onSuccess:", data);
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        toast({
-          title: "Error",
-          description: "No portal URL received",
-          variant: "destructive",
-        });
-      }
-    },
-    onError: (error: Error) => {
-      console.error("Portal error:", error);
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
+  
   const onSubmit = (data: ProfileFormValues) => {
     updateProfileMutation.mutate(data);
   };
@@ -391,59 +361,40 @@ export default function ProfilePage() {
                       )}
 
                       {hasActiveSubscription && (
-                        <>
-                          <Button
-                            variant="outline"
-                            className="w-full"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              console.log("Manage Billing button clicked");
-                              portalMutation.mutate();
-                            }}
-                            disabled={portalMutation.isPending}
-                            data-testid="button-manage-subscription"
-                          >
-                            {portalMutation.isPending ? (
-                              <>Loading...</>
-                            ) : (
-                              <>
-                                <Settings className="mr-2 h-4 w-4" />
-                                Manage Billing
-                              </>
-                            )}
-                          </Button>
-
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="destructive"
-                                className="w-full"
-                                data-testid="button-cancel-subscription"
-                              >
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              className="w-full"
+                              disabled={cancelSubscriptionMutation.isPending}
+                              data-testid="button-cancel-subscription"
+                            >
+                              {cancelSubscriptionMutation.isPending 
+                                ? "Canceling..." 
+                                : t("profile.cancelSubscription")}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
                                 {t("profile.cancelSubscription")}
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  {t("profile.cancelSubscription")}
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  {t("profile.confirmCancel")}
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => cancelSubscriptionMutation.mutate()}
-                                >
-                                  {t("common.confirm")}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </>
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {i18n.language === "es" 
+                                  ? "¿Está seguro de que desea cancelar su suscripción? Perderá el acceso a todos los exámenes de práctica al final de su período de facturación actual."
+                                  : "Are you sure you want to cancel your subscription? You will lose access to all practice exams at the end of your current billing period."}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => cancelSubscriptionMutation.mutate()}
+                              >
+                                {i18n.language === "es" ? "Sí, cancelar suscripción" : "Yes, cancel subscription"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
 
                       {!hasActiveSubscription && (

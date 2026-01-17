@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { isAuthenticated } from "./replit_integrations/auth";
+import { isAuthenticated } from "./simpleAuth";
 import { getCachedStripeClient } from "./stripeClient";
 import { insertQuestionSchema, insertCallbackRequestSchema, insertQuestionFeedbackSchema, insertGuestArticleSchema, callbackRequests, questionFeedback, type ExamCategory, examCategoryEnum, feedbackStatusEnum, guestArticleStatusEnum } from "@shared/schema";
 import { studyTopicsConfig, getTopicById, getTopicsByCategory } from "@shared/studyTopics";

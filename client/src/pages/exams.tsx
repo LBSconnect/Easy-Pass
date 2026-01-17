@@ -124,7 +124,7 @@ function ExamCategorySelection() {
                   return (
                     <Link key={category.id} href={`/exams/${category.id}`}>
                       <Card
-                        className={`hover-elevate transition-all cursor-pointer border-2 ${categoryColors[category.id]}`}
+                        className="hover-elevate transition-all cursor-pointer border"
                         data-testid={`card-practice-${category.id}`}
                       >
                         <CardHeader className="flex flex-row items-center gap-4">
@@ -139,7 +139,10 @@ function ExamCategorySelection() {
                               {category.questions} {t("categories.questions")}
                             </CardDescription>
                           </div>
-                          <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                          <Button size="sm" className="gap-1 bg-primary hover:bg-primary/90">
+                            Start
+                            <ArrowRight className="h-4 w-4" />
+                          </Button>
                         </CardHeader>
                       </Card>
                     </Link>
@@ -165,7 +168,7 @@ function ExamCategorySelection() {
                   return (
                     <Link key={category.id} href={`/exams/${category.id}?mode=full`}>
                       <Card
-                        className={`hover-elevate transition-all cursor-pointer border-2 ${categoryColors[category.id]}`}
+                        className="hover-elevate transition-all cursor-pointer border"
                         data-testid={`card-full-${category.id}`}
                       >
                         <CardHeader className="flex flex-row items-center gap-4">
@@ -180,10 +183,10 @@ function ExamCategorySelection() {
                               {category.questions} {t("categories.questions")}
                             </CardDescription>
                           </div>
-                          <Badge variant="secondary" className="mr-2">
+                          <Button size="sm" className="gap-1 bg-orange-600 hover:bg-orange-700 text-white">
                             {i18n.language === "es" ? "Completo" : "Full"}
-                          </Badge>
-                          <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                            <ArrowRight className="h-4 w-4" />
+                          </Button>
                         </CardHeader>
                       </Card>
                     </Link>

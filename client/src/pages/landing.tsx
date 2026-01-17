@@ -153,7 +153,7 @@ export default function LandingPage() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <Button variant="outline" className="w-full gap-2" asChild>
+                      <Button className="w-full gap-2 bg-primary hover:bg-primary/90" asChild>
                         <a href="/api/login">
                           {t("categories.practiceNow")}
                           <ArrowRight className="h-4 w-4" />
@@ -205,7 +205,7 @@ export default function LandingPage() {
                       <Badge variant="secondary">{t("fullMock.badge")}</Badge>
                     </CardHeader>
                     <CardContent>
-                      <Button variant="outline" className="w-full gap-2" asChild>
+                      <Button className="w-full gap-2 bg-orange-600 hover:bg-orange-700 text-white" asChild>
                         <a href="/api/login">
                           {t("fullMock.startExam")}
                           <ArrowRight className="h-4 w-4" />

@@ -1,21 +1,45 @@
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, AlertCircle, Package } from "lucide-react";
+
+interface StripePrice {
+  id: string;
+  unit_amount: number;
+  currency: string;
+  recurring_interval: string;
+  subscription_type: 'single' | 'bundle';
+  allowed_categories: string[];
+  billing_period: string;
+  product_name: string;
+}
+
+const EXAM_CATEGORIES = [
+  { id: 'real_estate', label: 'Real Estate', labelEs: 'Bienes Raíces' },
+  { id: 'property_casualty', label: 'Property & Casualty Insurance', labelEs: 'Seguro de Propiedad y Accidentes' },
+  { id: 'life_insurance', label: 'Life Insurance', labelEs: 'Seguro de Vida' },
+  { id: 'general_lines', label: 'General Lines Insurance', labelEs: 'Seguro de Líneas Generales' },
+];
 
 export default function PricingPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const isSpanish = i18n.language === 'es';
 
-  const { data: prices, isLoading: pricesLoading } = useQuery<any[]>({
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [billingPeriod, setBillingPeriod] = useState<'weekly' | 'monthly'>('monthly');
+
+  const { data: prices = [], isLoading: pricesLoading } = useQuery<StripePrice[]>({
     queryKey: ["/api/stripe/prices"],
   });
 
@@ -31,26 +55,79 @@ export default function PricingPage() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: isSpanish ? "Error" : "Error",
         description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  const handleSubscribe = (priceId: string) => {
+  const selectionState = useMemo(() => {
+    const count = selectedCategories.length;
+    if (count === 0) {
+      return { type: 'none', message: null, canSubscribe: false };
+    }
+    if (count === 1) {
+      return { type: 'single', message: null, canSubscribe: true };
+    }
+    return { 
+      type: 'bundle', 
+      message: isSpanish 
+        ? 'Solo se permite un examen por suscripción individual. Para múltiples exámenes, seleccione el paquete de Seguro + Bienes Raíces.'
+        : 'Only one exam allowed per single subscription. To subscribe to multiple exams, please choose the Insurance + Real Estate bundle.',
+      canSubscribe: true 
+    };
+  }, [selectedCategories, isSpanish]);
+
+  const applicablePrice = useMemo(() => {
+    if (selectedCategories.length === 0) return null;
+    
+    if (selectedCategories.length === 1) {
+      return prices.find(p => 
+        p.subscription_type === 'single' && 
+        p.allowed_categories.includes(selectedCategories[0]) &&
+        p.billing_period === billingPeriod
+      );
+    }
+    
+    return prices.find(p => 
+      p.subscription_type === 'bundle' && 
+      p.billing_period === billingPeriod
+    );
+  }, [selectedCategories, billingPeriod, prices]);
+
+  const bundlePrice = useMemo(() => {
+    return prices.find(p => 
+      p.subscription_type === 'bundle' && 
+      p.billing_period === billingPeriod
+    );
+  }, [prices, billingPeriod]);
+
+  const handleCategoryToggle = (categoryId: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(categoryId)
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
+    );
+  };
+
+  const handleSelectBundle = () => {
+    setSelectedCategories(['real_estate', 'property_casualty', 'life_insurance', 'general_lines']);
+  };
+
+  const handleSubscribe = () => {
     if (!isAuthenticated) {
       window.location.href = "/login";
       return;
     }
-    checkoutMutation.mutate(priceId);
+    if (applicablePrice) {
+      checkoutMutation.mutate(applicablePrice.id);
+    }
   };
 
-  const weeklyFeatures = t("pricing.weekly.features", { returnObjects: true }) as string[];
-  const monthlyFeatures = t("pricing.monthly.features", { returnObjects: true }) as string[];
-
-  const weeklyPrice = prices?.find(p => p.recurring_interval === "week" || p.recurring?.interval === "week");
-  const monthlyPrice = prices?.find(p => p.recurring_interval === "month" || p.recurring?.interval === "month");
+  const formatPrice = (amount: number) => {
+    return `$${(amount / 100).toFixed(2)}`;
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -62,7 +139,7 @@ export default function PricingPage() {
             <div className="text-center mb-12">
               <Badge className="mb-4" variant="secondary">
                 <Sparkles className="mr-1 h-3 w-3" />
-                Simple Pricing
+                {isSpanish ? 'Precios Simples' : 'Simple Pricing'}
               </Badge>
               <h1 className="text-4xl font-bold mb-4">{t("pricing.title")}</h1>
               <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
@@ -70,104 +147,220 @@ export default function PricingPage() {
               </p>
             </div>
 
-            <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto">
-              <Card className="relative" data-testid="card-pricing-weekly">
-                <CardHeader className="text-center pb-8">
-                  <CardTitle className="text-2xl font-black tracking-wide">{t("pricing.weekly.name")}</CardTitle>
-                  <CardDescription>Perfect for quick preparation</CardDescription>
-                  <div className="mt-6">
-                    <span className="text-5xl font-bold">
-                      {weeklyPrice ? `$${(weeklyPrice.unit_amount / 100).toFixed(2)}` : t("pricing.weekly.price")}
-                    </span>
-                    <span className="text-muted-foreground text-lg">{t("pricing.weekly.period")}</span>
-                  </div>
+            <div className="max-w-4xl mx-auto">
+              <Card className="mb-8" data-testid="card-category-selection">
+                <CardHeader>
+                  <CardTitle className="text-xl">
+                    {isSpanish ? '1. Seleccione sus Categorías de Examen' : '1. Select Your Exam Categories'}
+                  </CardTitle>
+                  <CardDescription>
+                    {isSpanish 
+                      ? 'Elija los exámenes para los que desea prepararse' 
+                      : 'Choose the exams you want to prepare for'}
+                  </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <ul className="space-y-4">
-                    {weeklyFeatures.map((feature, index) => (
-                      <li key={index} className="flex items-start gap-3">
-                        <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span>{feature}</span>
-                      </li>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {EXAM_CATEGORIES.map((category) => (
+                      <label
+                        key={category.id}
+                        className={`flex items-center gap-3 p-4 rounded-md border cursor-pointer transition-colors ${
+                          selectedCategories.includes(category.id)
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover-elevate'
+                        }`}
+                        data-testid={`checkbox-category-${category.id}`}
+                      >
+                        <Checkbox
+                          checked={selectedCategories.includes(category.id)}
+                          onCheckedChange={() => handleCategoryToggle(category.id)}
+                        />
+                        <span className="font-medium">
+                          {isSpanish ? category.labelEs : category.label}
+                        </span>
+                      </label>
                     ))}
-                  </ul>
-                  <Button
-                    className="w-full"
-                    variant="outline"
-                    size="lg"
-                    onClick={() => weeklyPrice && handleSubscribe(weeklyPrice.id)}
-                    disabled={checkoutMutation.isPending || pricesLoading}
-                    data-testid="button-subscribe-weekly"
-                  >
-                    {checkoutMutation.isPending ? t("common.loading") : t("pricing.subscribe")}
-                  </Button>
-                  <p className="text-center text-sm text-muted-foreground">
-                    {t("pricing.cancelAnytime")}
-                  </p>
+                  </div>
+
+                  {selectionState.type === 'bundle' && (
+                    <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-md border border-amber-200 dark:border-amber-800">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm text-amber-800 dark:text-amber-200">
+                            {selectionState.message}
+                          </p>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="mt-3"
+                            onClick={handleSelectBundle}
+                            data-testid="button-select-bundle"
+                          >
+                            <Package className="mr-2 h-4 w-4" />
+                            {isSpanish ? 'Seleccionar Paquete Completo' : 'Select Full Bundle'}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
-              <Card className="relative border-primary border-2 shadow-lg" data-testid="card-pricing-monthly">
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-primary px-4 py-1 text-sm">
-                    {t("pricing.monthly.savings")}
-                  </Badge>
-                </div>
-                <CardHeader className="text-center pb-8 pt-8">
-                  <CardTitle className="text-2xl font-black tracking-wide">{t("pricing.monthly.name")}</CardTitle>
-                  <CardDescription>Best value for serious students</CardDescription>
-                  <div className="mt-6">
-                    <span className="text-5xl font-bold">
-                      {monthlyPrice ? `$${(monthlyPrice.unit_amount / 100).toFixed(2)}` : t("pricing.monthly.price")}
-                    </span>
-                    <span className="text-muted-foreground text-lg">{t("pricing.monthly.period")}</span>
-                  </div>
+              <Card className="mb-8" data-testid="card-billing-period">
+                <CardHeader>
+                  <CardTitle className="text-xl">
+                    {isSpanish ? '2. Elija su Período de Facturación' : '2. Choose Your Billing Period'}
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <ul className="space-y-4">
-                    {monthlyFeatures.map((feature, index) => (
-                      <li key={index} className="flex items-start gap-3">
-                        <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button
-                    className="w-full"
-                    size="lg"
-                    onClick={() => monthlyPrice && handleSubscribe(monthlyPrice.id)}
-                    disabled={checkoutMutation.isPending || pricesLoading}
-                    data-testid="button-subscribe-monthly"
-                  >
-                    {checkoutMutation.isPending ? t("common.loading") : t("pricing.subscribe")}
-                  </Button>
-                  <p className="text-center text-sm text-muted-foreground">
-                    {t("pricing.cancelAnytime")}
-                  </p>
+                <CardContent>
+                  <div className="flex gap-4">
+                    <Button
+                      variant={billingPeriod === 'weekly' ? 'default' : 'outline'}
+                      className="flex-1"
+                      onClick={() => setBillingPeriod('weekly')}
+                      data-testid="button-billing-weekly"
+                    >
+                      {isSpanish ? 'Semanal' : 'Weekly'}
+                    </Button>
+                    <Button
+                      variant={billingPeriod === 'monthly' ? 'default' : 'outline'}
+                      className="flex-1 relative"
+                      onClick={() => setBillingPeriod('monthly')}
+                      data-testid="button-billing-monthly"
+                    >
+                      {isSpanish ? 'Mensual' : 'Monthly'}
+                      <Badge className="absolute -top-2 -right-2 text-xs" variant="secondary">
+                        {isSpanish ? 'Ahorra 29%' : 'Save 29%'}
+                      </Badge>
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
-            </div>
 
-            <div className="mt-16 text-center">
-              <p className="text-muted-foreground mb-6">
-                All plans include access to our complete question bank with detailed explanations
-              </p>
-              <div className="flex flex-wrap justify-center gap-8 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-500" />
-                  No hidden fees
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-500" />
-                  Cancel anytime
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-500" />
-                  Secure payments
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-500" />
-                  Instant access
+              <Card className={`border-2 ${applicablePrice ? 'border-primary' : 'border-muted'}`} data-testid="card-subscription-summary">
+                <CardHeader>
+                  <CardTitle className="text-xl">
+                    {isSpanish ? '3. Resumen de Suscripción' : '3. Subscription Summary'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {selectedCategories.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>{isSpanish ? 'Seleccione al menos una categoría de examen arriba' : 'Select at least one exam category above'}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      <div>
+                        <h4 className="font-medium mb-2">
+                          {selectionState.type === 'bundle' 
+                            ? (isSpanish ? 'Paquete de Seguro + Bienes Raíces' : 'Insurance + Real Estate Bundle')
+                            : (isSpanish ? 'Suscripción Individual' : 'Single Category Subscription')}
+                        </h4>
+                        <ul className="space-y-2">
+                          {(selectionState.type === 'bundle' ? EXAM_CATEGORIES : EXAM_CATEGORIES.filter(c => selectedCategories.includes(c.id))).map(category => (
+                            <li key={category.id} className="flex items-center gap-2 text-sm">
+                              <Check className="h-4 w-4 text-green-500" />
+                              <span>{isSpanish ? category.labelEs : category.label}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-4 border-t">
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            {billingPeriod === 'weekly' 
+                              ? (isSpanish ? 'Facturado semanalmente' : 'Billed weekly')
+                              : (isSpanish ? 'Facturado mensualmente' : 'Billed monthly')}
+                          </p>
+                          <p className="text-3xl font-bold">
+                            {applicablePrice ? formatPrice(applicablePrice.unit_amount) : '--'}
+                            <span className="text-base font-normal text-muted-foreground">
+                              /{billingPeriod === 'weekly' ? (isSpanish ? 'semana' : 'week') : (isSpanish ? 'mes' : 'month')}
+                            </span>
+                          </p>
+                        </div>
+                        <Button
+                          size="lg"
+                          onClick={handleSubscribe}
+                          disabled={!selectionState.canSubscribe || checkoutMutation.isPending || pricesLoading || !applicablePrice}
+                          data-testid="button-subscribe"
+                        >
+                          {checkoutMutation.isPending 
+                            ? (isSpanish ? 'Procesando...' : 'Processing...') 
+                            : (isSpanish ? 'Suscribirse Ahora' : 'Subscribe Now')}
+                        </Button>
+                      </div>
+
+                      <p className="text-center text-sm text-muted-foreground">
+                        {t("pricing.cancelAnytime")}
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {bundlePrice && (
+                <Card className="mt-8 bg-gradient-to-r from-primary/5 to-primary/10" data-testid="card-bundle-promo">
+                  <CardContent className="flex items-center justify-between py-6">
+                    <div className="flex items-center gap-4">
+                      <Package className="h-10 w-10 text-primary" />
+                      <div>
+                        <h3 className="font-semibold">
+                          {isSpanish ? 'Paquete Completo: Seguro + Bienes Raíces' : 'Complete Bundle: Insurance + Real Estate'}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {isSpanish 
+                            ? 'Acceso a las 4 categorías de exámenes por un precio especial'
+                            : 'Access all 4 exam categories for a special price'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold">
+                        {formatPrice(bundlePrice.unit_amount)}
+                        <span className="text-sm font-normal text-muted-foreground">
+                          /{billingPeriod === 'weekly' ? (isSpanish ? 'semana' : 'week') : (isSpanish ? 'mes' : 'month')}
+                        </span>
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-2"
+                        onClick={handleSelectBundle}
+                        data-testid="button-get-bundle"
+                      >
+                        {isSpanish ? 'Obtener Paquete' : 'Get Bundle'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <div className="mt-12 text-center">
+                <p className="text-muted-foreground mb-6">
+                  {isSpanish 
+                    ? 'Todos los planes incluyen acceso a nuestro banco de preguntas completo con explicaciones detalladas'
+                    : 'All plans include access to our complete question bank with detailed explanations'}
+                </p>
+                <div className="flex flex-wrap justify-center gap-8 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-500" />
+                    {isSpanish ? 'Sin tarifas ocultas' : 'No hidden fees'}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-500" />
+                    {isSpanish ? 'Cancelar en cualquier momento' : 'Cancel anytime'}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-500" />
+                    {isSpanish ? 'Pagos seguros' : 'Secure payments'}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-500" />
+                    {isSpanish ? 'Acceso instantáneo' : 'Instant access'}
+                  </div>
                 </div>
               </div>
             </div>

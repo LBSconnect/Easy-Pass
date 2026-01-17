@@ -417,18 +417,24 @@ export async function registerRoutes(
         active: true,
         expand: ["data.product"],
       });
-      const formattedPrices = prices.data.map(p => {
-        VALID_PRICE_IDS.add(p.id);
-        return {
-          id: p.id,
-          unit_amount: p.unit_amount,
-          currency: p.currency,
-          recurring_interval: p.recurring?.interval,
-          recurring: p.recurring,
-          product_id: typeof p.product === "string" ? p.product : p.product?.id,
-          product_name: typeof p.product === "object" ? p.product?.name : null,
-        };
-      });
+      const formattedPrices = prices.data
+        .filter(p => p.metadata?.subscription_type)
+        .map(p => {
+          VALID_PRICE_IDS.add(p.id);
+          const product = typeof p.product === "object" ? p.product : null;
+          return {
+            id: p.id,
+            unit_amount: p.unit_amount,
+            currency: p.currency,
+            recurring_interval: p.recurring?.interval,
+            recurring: p.recurring,
+            product_id: typeof p.product === "string" ? p.product : p.product?.id,
+            product_name: product?.name || null,
+            subscription_type: p.metadata?.subscription_type,
+            allowed_categories: p.metadata?.allowed_categories?.split(',') || [],
+            billing_period: p.metadata?.billing_period,
+          };
+        });
       res.json(formattedPrices);
     } catch (error) {
       console.error("Error fetching prices:", error);

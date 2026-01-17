@@ -157,14 +157,18 @@ async function updateUserSubscription(userId: string, subscription: Stripe.Subsc
     ? new Date(periodEnd * 1000) 
     : undefined;
 
+  const { subscriptionType, allowedCategories } = getSubscriptionMetadata(subscription);
+
   await storage.updateProfile(userId, {
     stripeSubscriptionId: subscription.id,
     subscriptionStatus: status,
     subscriptionPlan: plan,
+    subscriptionType: subscriptionType,
+    allowedCategories: allowedCategories,
     subscriptionEndDate: endDate,
   });
 
-  console.log(`Updated user ${userId} subscription: ${status}, plan: ${plan}`);
+  console.log(`Updated user ${userId} subscription: ${status}, plan: ${plan}, type: ${subscriptionType}, categories: ${allowedCategories?.join(',')}`);
 }
 
 async function updateSubscriptionByCustomerId(customerId: string, subscription: Stripe.Subscription): Promise<void> {
@@ -183,14 +187,18 @@ async function updateSubscriptionByCustomerId(customerId: string, subscription: 
     ? new Date(periodEnd * 1000) 
     : undefined;
 
+  const { subscriptionType, allowedCategories } = getSubscriptionMetadata(subscription);
+
   await storage.updateProfile(user.id, {
     stripeSubscriptionId: subscription.id,
     subscriptionStatus: status,
     subscriptionPlan: plan,
+    subscriptionType: subscriptionType,
+    allowedCategories: allowedCategories,
     subscriptionEndDate: endDate,
   });
 
-  console.log(`Updated user ${user.id} (customer ${customerId}) subscription: ${status}, plan: ${plan}`);
+  console.log(`Updated user ${user.id} (customer ${customerId}) subscription: ${status}, plan: ${plan}, type: ${subscriptionType}, categories: ${allowedCategories?.join(',')}`);
 }
 
 function getPlanFromSubscription(subscription: Stripe.Subscription): 'weekly' | 'monthly' | undefined {
@@ -219,4 +227,26 @@ function mapStripeStatus(stripeStatus: Stripe.Subscription.Status): 'active' | '
     default:
       return 'canceled';
   }
+}
+
+function getSubscriptionMetadata(subscription: Stripe.Subscription): { 
+  subscriptionType: 'single' | 'bundle' | undefined; 
+  allowedCategories: string[] | undefined; 
+} {
+  const item = subscription.items?.data?.[0];
+  if (!item) return { subscriptionType: undefined, allowedCategories: undefined };
+
+  const priceMetadata = item.price?.metadata;
+  
+  if (!priceMetadata) {
+    return { subscriptionType: undefined, allowedCategories: undefined };
+  }
+
+  const subscriptionType = priceMetadata.subscription_type as 'single' | 'bundle' | undefined;
+  const allowedCategoriesStr = priceMetadata.allowed_categories;
+  const allowedCategories = allowedCategoriesStr 
+    ? allowedCategoriesStr.split(',').map(c => c.trim()) 
+    : undefined;
+
+  return { subscriptionType, allowedCategories };
 }

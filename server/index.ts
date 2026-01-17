@@ -61,10 +61,11 @@ async function initStripe() {
     
     if (webhookBaseUrl) {
       try {
-        const { webhook } = await stripeSync.findOrCreateManagedWebhook(
+        const result = await stripeSync.findOrCreateManagedWebhook(
           `${webhookBaseUrl}/api/stripe/webhook`
         );
-        console.log(`Webhook configured: ${webhook.url}`);
+        const webhookUrl = result?.webhook?.url || result?.url || webhookBaseUrl + "/api/stripe/webhook";
+        console.log(`Webhook configured: ${webhookUrl}`);
       } catch (webhookErr) {
         console.log("Webhook setup skipped:", (webhookErr as Error).message);
       }

@@ -233,9 +233,11 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>{t("auth.email", "Email")}</FormLabel>
                         <FormControl>
-                          <Input 
+                          <input 
                             type="email" 
-                            placeholder="you@example.com" 
+                            placeholder="you@example.com"
+                            autoComplete="email"
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
                             data-testid="input-signup-email"
                             {...field} 
                           />

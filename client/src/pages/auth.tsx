@@ -126,12 +126,12 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>{t("auth.email", "Email")}</FormLabel>
                         <FormControl>
-                          <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                          <div className="relative z-10">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-20" />
                             <Input 
                               type="email" 
                               placeholder="you@example.com" 
-                              className="pl-10" 
+                              className="pl-10 relative z-10" 
                               data-testid="input-email"
                               {...field} 
                             />
@@ -148,19 +148,19 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>{t("auth.password", "Password")}</FormLabel>
                         <FormControl>
-                          <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                          <div className="relative z-10">
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-20" />
                             <Input 
                               type={showPassword ? "text" : "password"} 
                               placeholder="••••••••" 
-                              className="pl-10 pr-10" 
+                              className="pl-10 pr-10 relative z-10" 
                               data-testid="input-password"
                               {...field} 
                             />
                             <button
                               type="button"
                               onClick={() => setShowPassword(!showPassword)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-30"
                               data-testid="button-toggle-password"
                             >
                               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -193,11 +193,11 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>{t("auth.firstName", "First Name")}</FormLabel>
                           <FormControl>
-                            <div className="relative">
-                              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                            <div className="relative z-10">
+                              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-20" />
                               <Input 
                                 placeholder="John" 
-                                className="pl-10" 
+                                className="pl-10 relative z-10" 
                                 data-testid="input-first-name"
                                 {...field} 
                               />
@@ -216,6 +216,7 @@ export default function AuthPage() {
                           <FormControl>
                             <Input 
                               placeholder="Doe" 
+                              className="relative z-10"
                               data-testid="input-last-name"
                               {...field} 
                             />
@@ -254,19 +255,19 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>{t("auth.password", "Password")}</FormLabel>
                         <FormControl>
-                          <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                          <div className="relative z-10">
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-20" />
                             <Input 
                               type={showPassword ? "text" : "password"} 
                               placeholder="••••••••" 
-                              className="pl-10 pr-10" 
+                              className="pl-10 pr-10 relative z-10" 
                               data-testid="input-signup-password"
                               {...field} 
                             />
                             <button
                               type="button"
                               onClick={() => setShowPassword(!showPassword)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-30"
                               data-testid="button-toggle-signup-password"
                             >
                               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -284,12 +285,12 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>{t("auth.confirmPassword", "Confirm Password")}</FormLabel>
                         <FormControl>
-                          <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                          <div className="relative z-10">
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-20" />
                             <Input 
                               type={showPassword ? "text" : "password"} 
                               placeholder="••••••••" 
-                              className="pl-10" 
+                              className="pl-10 relative z-10" 
                               data-testid="input-confirm-password"
                               {...field} 
                             />

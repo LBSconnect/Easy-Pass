@@ -451,17 +451,20 @@ export async function registerRoutes(
         .map(p => {
           VALID_PRICE_IDS.add(p.id);
           const product = typeof p.product === "object" && !('deleted' in p.product) ? p.product : null;
+          const interval = p.recurring?.interval;
+          const billingPeriod = p.metadata?.billing_period || 
+            (interval === 'week' ? 'weekly' : interval === 'month' ? 'monthly' : null);
           return {
             id: p.id,
             unit_amount: p.unit_amount,
             currency: p.currency,
-            recurring_interval: p.recurring?.interval,
+            recurring_interval: interval,
             recurring: p.recurring,
             product_id: typeof p.product === "string" ? p.product : p.product?.id,
             product_name: product?.name || null,
             subscription_type: p.metadata?.subscription_type,
             allowed_categories: p.metadata?.allowed_categories?.split(',') || [],
-            billing_period: p.metadata?.billing_period,
+            billing_period: billingPeriod,
           };
         });
       res.json(formattedPrices);

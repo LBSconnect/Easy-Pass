@@ -233,16 +233,12 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>{t("auth.email", "Email")}</FormLabel>
                         <FormControl>
-                          <div className="relative z-10">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-20" />
-                            <Input 
-                              type="email" 
-                              placeholder="you@example.com" 
-                              className="pl-10 relative z-10" 
-                              data-testid="input-signup-email"
-                              {...field} 
-                            />
-                          </div>
+                          <Input 
+                            type="email" 
+                            placeholder="you@example.com" 
+                            data-testid="input-signup-email"
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

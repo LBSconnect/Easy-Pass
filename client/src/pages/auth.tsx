@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Lock, User, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 
@@ -126,16 +126,13 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>{t("auth.email", "Email")}</FormLabel>
                         <FormControl>
-                          <div className="relative z-10">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-20" />
-                            <Input 
-                              type="email" 
-                              placeholder="you@example.com" 
-                              className="pl-10 relative z-10" 
-                              data-testid="input-email"
-                              {...field} 
-                            />
-                          </div>
+                          <Input 
+                            type="email" 
+                            placeholder="you@example.com" 
+                            autoComplete="email"
+                            data-testid="input-email"
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -147,26 +144,26 @@ export default function AuthPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t("auth.password", "Password")}</FormLabel>
-                        <FormControl>
-                          <div className="relative z-10">
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-20" />
+                        <div className="relative">
+                          <FormControl>
                             <Input 
                               type={showPassword ? "text" : "password"} 
                               placeholder="••••••••" 
-                              className="pl-10 pr-10 relative z-10" 
+                              className="pr-10"
+                              autoComplete="current-password"
                               data-testid="input-password"
                               {...field} 
                             />
-                            <button
-                              type="button"
-                              onClick={() => setShowPassword(!showPassword)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-30"
-                              data-testid="button-toggle-password"
-                            >
-                              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </button>
-                          </div>
-                        </FormControl>
+                          </FormControl>
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            data-testid="button-toggle-password"
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -193,15 +190,12 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>{t("auth.firstName", "First Name")}</FormLabel>
                           <FormControl>
-                            <div className="relative z-10">
-                              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-20" />
-                              <Input 
-                                placeholder="John" 
-                                className="pl-10 relative z-10" 
-                                data-testid="input-first-name"
-                                {...field} 
-                              />
-                            </div>
+                            <Input 
+                              placeholder="John" 
+                              autoComplete="given-name"
+                              data-testid="input-first-name"
+                              {...field} 
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -216,7 +210,7 @@ export default function AuthPage() {
                           <FormControl>
                             <Input 
                               placeholder="Doe" 
-                              className="relative z-10"
+                              autoComplete="family-name"
                               data-testid="input-last-name"
                               {...field} 
                             />
@@ -233,11 +227,10 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>{t("auth.email", "Email")}</FormLabel>
                         <FormControl>
-                          <input 
+                          <Input 
                             type="email" 
                             placeholder="you@example.com"
                             autoComplete="email"
-                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
                             data-testid="input-signup-email"
                             {...field} 
                           />
@@ -252,26 +245,26 @@ export default function AuthPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t("auth.password", "Password")}</FormLabel>
-                        <FormControl>
-                          <div className="relative z-10">
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-20" />
+                        <div className="relative">
+                          <FormControl>
                             <Input 
                               type={showPassword ? "text" : "password"} 
                               placeholder="••••••••" 
-                              className="pl-10 pr-10 relative z-10" 
+                              className="pr-10"
+                              autoComplete="new-password"
                               data-testid="input-signup-password"
                               {...field} 
                             />
-                            <button
-                              type="button"
-                              onClick={() => setShowPassword(!showPassword)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-30"
-                              data-testid="button-toggle-signup-password"
-                            >
-                              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </button>
-                          </div>
-                        </FormControl>
+                          </FormControl>
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            data-testid="button-toggle-signup-password"
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -283,16 +276,13 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>{t("auth.confirmPassword", "Confirm Password")}</FormLabel>
                         <FormControl>
-                          <div className="relative z-10">
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-20" />
-                            <Input 
-                              type={showPassword ? "text" : "password"} 
-                              placeholder="••••••••" 
-                              className="pl-10 relative z-10" 
-                              data-testid="input-confirm-password"
-                              {...field} 
-                            />
-                          </div>
+                          <Input 
+                            type={showPassword ? "text" : "password"} 
+                            placeholder="••••••••"
+                            autoComplete="new-password"
+                            data-testid="input-confirm-password"
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

@@ -127,7 +127,7 @@ export default function AuthPage() {
                         <FormLabel>{t("auth.email", "Email")}</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                             <Input 
                               type="email" 
                               placeholder="you@example.com" 
@@ -149,7 +149,7 @@ export default function AuthPage() {
                         <FormLabel>{t("auth.password", "Password")}</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                             <Input 
                               type={showPassword ? "text" : "password"} 
                               placeholder="••••••••" 
@@ -194,7 +194,7 @@ export default function AuthPage() {
                           <FormLabel>{t("auth.firstName", "First Name")}</FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                               <Input 
                                 placeholder="John" 
                                 className="pl-10" 
@@ -233,7 +233,7 @@ export default function AuthPage() {
                         <FormLabel>{t("auth.email", "Email")}</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                             <Input 
                               type="email" 
                               placeholder="you@example.com" 
@@ -255,7 +255,7 @@ export default function AuthPage() {
                         <FormLabel>{t("auth.password", "Password")}</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                             <Input 
                               type={showPassword ? "text" : "password"} 
                               placeholder="••••••••" 
@@ -285,7 +285,7 @@ export default function AuthPage() {
                         <FormLabel>{t("auth.confirmPassword", "Confirm Password")}</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                             <Input 
                               type={showPassword ? "text" : "password"} 
                               placeholder="••••••••" 

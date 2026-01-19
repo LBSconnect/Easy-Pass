@@ -374,6 +374,38 @@ export default function ProfilePage() {
                         </div>
                       )}
 
+                      {hasActiveSubscription && profile?.subscriptionType && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">
+                            {i18n.language === "es" ? "Tipo" : "Type"}
+                          </span>
+                          <Badge variant="outline" className="capitalize">
+                            {profile.subscriptionType === "bundle" 
+                              ? (i18n.language === "es" ? "Paquete Completo" : "Full Bundle")
+                              : (i18n.language === "es" ? "Categoría Individual" : "Single Category")}
+                          </Badge>
+                        </div>
+                      )}
+
+                      {hasActiveSubscription && profile?.allowedCategories && profile.allowedCategories.length > 0 && (
+                        <div className="space-y-2">
+                          <span className="text-sm text-muted-foreground">
+                            {i18n.language === "es" ? "Categorías Incluidas" : "Included Categories"}
+                          </span>
+                          <div className="flex flex-wrap gap-2">
+                            {profile.allowedCategories.map((category) => {
+                              const Icon = categoryIcons[category as keyof typeof categoryIcons];
+                              return (
+                                <Badge key={category} variant="secondary" className="flex items-center gap-1">
+                                  {Icon && <Icon className="h-3 w-3" />}
+                                  <span className="text-xs">{t(`categories.${category}`)}</span>
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
                       {profile?.subscriptionEndDate && (
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-muted-foreground">

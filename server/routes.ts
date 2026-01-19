@@ -459,6 +459,7 @@ export async function registerRoutes(
             (interval === 'week' ? 'weekly' : interval === 'month' ? 'monthly' : null);
           const subscriptionType = p.metadata?.subscription_type || product?.metadata?.subscription_type;
           const allowedCategoriesStr = p.metadata?.allowed_categories || product?.metadata?.allowed_categories;
+          const allowedCategories = allowedCategoriesStr?.split(',').map((c: string) => c.trim()) || [];
           return {
             id: p.id,
             unit_amount: p.unit_amount,
@@ -468,7 +469,7 @@ export async function registerRoutes(
             product_id: typeof p.product === "string" ? p.product : p.product?.id,
             product_name: product?.name || null,
             subscription_type: subscriptionType,
-            allowed_categories: allowedCategoriesStr?.split(',') || [],
+            allowed_categories: allowedCategories,
             billing_period: billingPeriod,
           };
         });

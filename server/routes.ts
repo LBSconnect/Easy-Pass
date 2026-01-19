@@ -599,6 +599,107 @@ export async function registerRoutes(
     }
   });
 
+  // Sync subscription status from Stripe for current user
+  app.post("/api/stripe/sync-subscription", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getProfile(userId);
+      
+      if (!profile?.stripeCustomerId) {
+        return res.status(400).json({ message: "No Stripe customer found" });
+      }
+      
+      const stripe = await getCachedStripeClient();
+      
+      // Find active subscriptions for this customer
+      const subscriptions = await stripe.subscriptions.list({
+        customer: profile.stripeCustomerId,
+        status: 'active',
+        limit: 1,
+      });
+      
+      if (subscriptions.data.length === 0) {
+        // Check for trialing subscriptions
+        const trialingSubscriptions = await stripe.subscriptions.list({
+          customer: profile.stripeCustomerId,
+          status: 'trialing',
+          limit: 1,
+        });
+        
+        if (trialingSubscriptions.data.length === 0) {
+          return res.json({ message: "No active subscription found", synced: false });
+        }
+        
+        subscriptions.data = trialingSubscriptions.data;
+      }
+      
+      const subscription = subscriptions.data[0];
+      const item = subscription.items?.data?.[0];
+      
+      // Get metadata from product
+      let subscriptionType: 'single' | 'bundle' | undefined;
+      let allowedCategories: string[] | undefined;
+      
+      if (item?.price?.product) {
+        const productId = typeof item.price.product === 'string' 
+          ? item.price.product 
+          : item.price.product.id;
+        
+        const product = await stripe.products.retrieve(productId);
+        subscriptionType = product.metadata?.subscription_type as 'single' | 'bundle' | undefined;
+        const allowedCategoriesStr = product.metadata?.allowed_categories;
+        allowedCategories = allowedCategoriesStr 
+          ? allowedCategoriesStr.split(',').map(c => c.trim()) 
+          : undefined;
+      }
+      
+      // Check price metadata as fallback
+      if (!subscriptionType || !allowedCategories) {
+        const priceMetadata = item?.price?.metadata;
+        if (priceMetadata) {
+          if (!subscriptionType) {
+            subscriptionType = priceMetadata.subscription_type as 'single' | 'bundle' | undefined;
+          }
+          if (!allowedCategories) {
+            const allowedCategoriesStr = priceMetadata.allowed_categories;
+            allowedCategories = allowedCategoriesStr 
+              ? allowedCategoriesStr.split(',').map(c => c.trim()) 
+              : undefined;
+          }
+        }
+      }
+      
+      const interval = item?.price?.recurring?.interval;
+      const plan = interval === 'week' ? 'weekly' : interval === 'month' ? 'monthly' : undefined;
+      
+      const periodEnd = (subscription as any).current_period_end;
+      const endDate = periodEnd ? new Date(periodEnd * 1000) : undefined;
+      
+      await storage.updateProfile(userId, {
+        stripeSubscriptionId: subscription.id,
+        subscriptionStatus: subscription.status === 'active' ? 'active' : 
+                           subscription.status === 'trialing' ? 'trialing' : 'canceled',
+        subscriptionPlan: plan,
+        subscriptionType: subscriptionType,
+        allowedCategories: allowedCategories,
+        subscriptionEndDate: endDate,
+      });
+      
+      console.log(`Synced subscription for user ${userId}: type=${subscriptionType}, categories=${allowedCategories?.join(',')}`);
+      
+      res.json({ 
+        synced: true, 
+        subscriptionType,
+        allowedCategories,
+        plan,
+        status: subscription.status 
+      });
+    } catch (error) {
+      console.error("Error syncing subscription:", error);
+      res.status(500).json({ message: "Failed to sync subscription" });
+    }
+  });
+
   app.get("/api/admin/stats", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

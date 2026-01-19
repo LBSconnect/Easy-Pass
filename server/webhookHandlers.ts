@@ -157,7 +157,7 @@ async function updateUserSubscription(userId: string, subscription: Stripe.Subsc
     ? new Date(periodEnd * 1000) 
     : undefined;
 
-  const { subscriptionType, allowedCategories } = getSubscriptionMetadata(subscription);
+  const { subscriptionType, allowedCategories } = await getSubscriptionMetadata(subscription);
 
   await storage.updateProfile(userId, {
     stripeSubscriptionId: subscription.id,
@@ -187,7 +187,7 @@ async function updateSubscriptionByCustomerId(customerId: string, subscription: 
     ? new Date(periodEnd * 1000) 
     : undefined;
 
-  const { subscriptionType, allowedCategories } = getSubscriptionMetadata(subscription);
+  const { subscriptionType, allowedCategories } = await getSubscriptionMetadata(subscription);
 
   await storage.updateProfile(user.id, {
     stripeSubscriptionId: subscription.id,
@@ -229,21 +229,41 @@ function mapStripeStatus(stripeStatus: Stripe.Subscription.Status): 'active' | '
   }
 }
 
-function getSubscriptionMetadata(subscription: Stripe.Subscription): { 
+async function getSubscriptionMetadata(subscription: Stripe.Subscription): Promise<{ 
   subscriptionType: 'single' | 'bundle' | undefined; 
   allowedCategories: string[] | undefined; 
-} {
+}> {
   const item = subscription.items?.data?.[0];
   if (!item) return { subscriptionType: undefined, allowedCategories: undefined };
 
-  const priceMetadata = item.price?.metadata;
+  const priceMetadata = item.price?.metadata || {};
   
-  if (!priceMetadata) {
-    return { subscriptionType: undefined, allowedCategories: undefined };
+  // First check price metadata
+  let subscriptionType = priceMetadata.subscription_type as 'single' | 'bundle' | undefined;
+  let allowedCategoriesStr = priceMetadata.allowed_categories;
+  
+  // If not found in price, check product metadata
+  if (!subscriptionType || !allowedCategoriesStr) {
+    try {
+      const stripe = await getCachedStripeClient();
+      const productId = typeof item.price?.product === 'string' 
+        ? item.price.product 
+        : item.price?.product?.id;
+      
+      if (productId) {
+        const product = await stripe.products.retrieve(productId);
+        if (!subscriptionType) {
+          subscriptionType = product.metadata?.subscription_type as 'single' | 'bundle' | undefined;
+        }
+        if (!allowedCategoriesStr) {
+          allowedCategoriesStr = product.metadata?.allowed_categories;
+        }
+      }
+    } catch (error) {
+      console.log("Could not fetch product metadata:", error);
+    }
   }
 
-  const subscriptionType = priceMetadata.subscription_type as 'single' | 'bundle' | undefined;
-  const allowedCategoriesStr = priceMetadata.allowed_categories;
   const allowedCategories = allowedCategoriesStr 
     ? allowedCategoriesStr.split(',').map(c => c.trim()) 
     : undefined;

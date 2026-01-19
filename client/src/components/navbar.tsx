@@ -95,7 +95,32 @@ export function Navbar() {
 
           {isLoading ? (
             <div className="h-9 w-20 animate-pulse rounded-md bg-muted" />
-          ) : isAuthenticated ? (
+          ) : !isAuthenticated ? (
+            <>
+              {/* Persistent CTA for non-authenticated users - visible on all screens */}
+              <Button 
+                size="sm"
+                asChild 
+                className="gap-1"
+                data-testid="cta-header-start"
+                data-analytics="header-cta-start"
+              >
+                <Link href="/register">
+                  <span className="hidden sm:inline">Start Practicing</span>
+                  <span className="sm:hidden">Start</span>
+                </Link>
+              </Button>
+              <Button 
+                size="sm"
+                variant="outline" 
+                asChild 
+                className="hidden sm:flex"
+                data-testid="button-login"
+              >
+                <Link href="/login">{t("nav.login")}</Link>
+              </Button>
+            </>
+          ) : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -155,10 +180,6 @@ export function Navbar() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
-            <Button asChild data-testid="button-login">
-              <Link href="/login">{t("nav.login")}</Link>
-            </Button>
           )}
 
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -207,9 +228,23 @@ export function Navbar() {
                     )
                   ))}
                 {!isAuthenticated && (
-                  <Button asChild className="mt-4" onClick={() => setMobileMenuOpen(false)}>
-                    <Link href="/login">{t("nav.login")}</Link>
-                  </Button>
+                  <div className="flex flex-col gap-3 mt-4 pt-4 border-t">
+                    <Button 
+                      asChild 
+                      onClick={() => setMobileMenuOpen(false)}
+                      data-testid="cta-mobile-start"
+                      data-analytics="mobile-cta-start"
+                    >
+                      <Link href="/register">Start Practicing</Link>
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      asChild 
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Link href="/login">{t("nav.login")}</Link>
+                    </Button>
+                  </div>
                 )}
               </div>
             </SheetContent>

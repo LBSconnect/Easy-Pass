@@ -380,7 +380,8 @@ export default function LandingPage() {
                     </CardHeader>
                     <CardContent className="pt-2">
                       <Button 
-                        className="w-full gap-2" 
+                        variant="secondary"
+                        className="w-full gap-2 opacity-80 hover:opacity-100" 
                         asChild
                         data-testid={`cta-category-${category.id}`}
                         data-analytics={`category-cta-${category.id}`}

@@ -1,6 +1,7 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { Link, useSearch } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,8 @@ import { Progress } from "@/components/ui/progress";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useAuth } from "@/hooks/use-auth";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import {
   BookOpen,
   Trophy,
@@ -75,6 +78,9 @@ function getMotivationalMessage(passRate: number, examsTaken: number, language: 
 export default function DashboardPage() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const { toast } = useToast();
+  const searchString = useSearch();
+  const [hasSynced, setHasSynced] = useState(false);
 
   const { data: profile, isLoading: profileLoading } = useQuery<UserProfile>({
     queryKey: ["/api/profile"],
@@ -83,6 +89,44 @@ export default function DashboardPage() {
   const { data: results, isLoading: resultsLoading } = useQuery<ExamResult[]>({
     queryKey: ["/api/results"],
   });
+
+  // Auto-sync subscription after returning from checkout
+  const syncMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/stripe/sync-subscription");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      if (data.synced) {
+        queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
+        toast({
+          title: i18n.language === 'es' ? "¡Suscripción activada!" : "Subscription activated!",
+          description: i18n.language === 'es' 
+            ? "Tu suscripción ha sido sincronizada exitosamente." 
+            : "Your subscription has been synced successfully.",
+        });
+      }
+    },
+  });
+
+  // Auto-sync on page load if coming from checkout or if profile has customer but no subscription
+  useEffect(() => {
+    if (hasSynced) return;
+    
+    const params = new URLSearchParams(searchString);
+    const isFromCheckout = params.get('success') === 'true';
+    const needsSync = profile?.stripeCustomerId && !profile?.subscriptionStatus;
+    
+    if ((isFromCheckout || needsSync) && !syncMutation.isPending) {
+      setHasSynced(true);
+      syncMutation.mutate();
+      
+      // Clean up URL
+      if (isFromCheckout) {
+        window.history.replaceState({}, '', '/dashboard');
+      }
+    }
+  }, [searchString, profile, hasSynced, syncMutation]);
 
   const stats = {
     examsTaken: results?.length || 0,

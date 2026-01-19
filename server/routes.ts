@@ -447,13 +447,18 @@ export async function registerRoutes(
         expand: ["data.product"],
       });
       const formattedPrices = prices.data
-        .filter(p => p.metadata?.subscription_type)
+        .filter(p => {
+          const product = typeof p.product === "object" && !('deleted' in p.product) ? p.product : null;
+          return p.metadata?.subscription_type || product?.metadata?.subscription_type;
+        })
         .map(p => {
           VALID_PRICE_IDS.add(p.id);
           const product = typeof p.product === "object" && !('deleted' in p.product) ? p.product : null;
           const interval = p.recurring?.interval;
-          const billingPeriod = p.metadata?.billing_period || 
+          const billingPeriod = p.metadata?.billing_period || product?.metadata?.billing_period ||
             (interval === 'week' ? 'weekly' : interval === 'month' ? 'monthly' : null);
+          const subscriptionType = p.metadata?.subscription_type || product?.metadata?.subscription_type;
+          const allowedCategoriesStr = p.metadata?.allowed_categories || product?.metadata?.allowed_categories;
           return {
             id: p.id,
             unit_amount: p.unit_amount,
@@ -462,8 +467,8 @@ export async function registerRoutes(
             recurring: p.recurring,
             product_id: typeof p.product === "string" ? p.product : p.product?.id,
             product_name: product?.name || null,
-            subscription_type: p.metadata?.subscription_type,
-            allowed_categories: p.metadata?.allowed_categories?.split(',') || [],
+            subscription_type: subscriptionType,
+            allowed_categories: allowedCategoriesStr?.split(',') || [],
             billing_period: billingPeriod,
           };
         });

@@ -323,249 +323,314 @@ export default function DashboardPage() {
             </Card>
           )}
 
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-6">
+          {/* Subscription Alert for inactive users */}
+          {!hasActiveSubscription && !profileLoading && (
+            <Card className="mb-8 border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-transparent">
+              <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-full bg-amber-500/20">
+                    <CreditCard className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">
+                      {i18n.language === "es" ? "Activa tu suscripción" : "Activate Your Subscription"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {i18n.language === "es" 
+                        ? "Obtén acceso ilimitado a todos los exámenes de práctica" 
+                        : "Get unlimited access to all practice exams"}
+                    </p>
+                  </div>
+                </div>
+                <Button asChild className="shrink-0">
+                  <Link href="/pricing">
+                    {i18n.language === "es" ? "Ver Planes" : "View Plans"}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Main Content Grid */}
+          <div className="grid gap-6 lg:grid-cols-12">
+            {/* Left Column - Main Actions */}
+            <div className="lg:col-span-8 space-y-6">
+              
+              {/* Exam Categories - Combined Practice & Full Mock */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-xl">
                     <Flame className="h-5 w-5 text-primary" />
-                    {t("dashboard.startPracticing")}
+                    {i18n.language === "es" ? "Elige Tu Examen" : "Choose Your Exam"}
                   </CardTitle>
                   <CardDescription>
                     {i18n.language === "es" 
-                      ? "Elige una categoría de examen para comenzar" 
-                      : "Choose an exam category to begin your practice session"}
+                      ? "Selecciona una categoría y modo de práctica" 
+                      : "Select a category and practice mode"}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-3 sm:grid-cols-2">
+                <CardContent className="space-y-4">
                   {categories.map((category) => {
                     const Icon = categoryIcons[category.id];
                     const categoryResults = results?.filter((r) => r.category === category.id) || [];
                     const bestScore = categoryResults.length > 0 
                       ? Math.max(...categoryResults.map(r => r.score)) 
                       : 0;
+                    const passRate = categoryResults.length > 0
+                      ? Math.round((categoryResults.filter(r => r.passed).length / categoryResults.length) * 100)
+                      : 0;
+                    const attempts = categoryResults.length;
                     
                     return (
-                      <Button
+                      <div 
                         key={category.id}
-                        variant="outline"
-                        className={`h-auto py-4 px-4 justify-start ${!hasActiveSubscription ? "opacity-60" : ""}`}
-                        asChild
-                        data-testid={`button-exam-${category.id}`}
+                        className={`p-4 rounded-xl border-2 ${categoryColors[category.id]} ${!hasActiveSubscription ? "opacity-60" : ""}`}
                       >
-                        <Link href={`/exams/${category.id}`}>
-                          <div className={`p-2 rounded-lg mr-3 ${categoryColors[category.id]}`}>
-                            <Icon className="h-5 w-5" />
+                        <div className="flex items-start gap-4">
+                          <div className={`p-3 rounded-xl ${categoryColors[category.id]}`}>
+                            <Icon className="h-6 w-6" />
                           </div>
-                          <div className="flex-1 text-left min-w-0">
-                            <p className="font-medium truncate">
-                              {t(`categories.${category.id}`)}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <h3 className="font-semibold truncate">
+                                {t(`categories.${category.id}`)}
+                              </h3>
+                              {bestScore > 0 && (
+                                <Badge variant="secondary" className="shrink-0">
+                                  {i18n.language === "es" ? "Mejor" : "Best"}: {bestScore}%
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              {category.totalQuestions} {i18n.language === "es" ? "preguntas disponibles" : "questions available"}
+                              {attempts > 0 && ` • ${attempts} ${i18n.language === "es" ? "intentos" : "attempts"}`}
                             </p>
-                            <p className="text-xs text-muted-foreground">
-                              {category.totalQuestions} {i18n.language === "es" ? "preguntas" : "questions"}
-                              {bestScore > 0 && ` • ${i18n.language === "es" ? "Mejor" : "Best"}: ${bestScore}%`}
-                            </p>
+                            
+                            {/* Progress bar */}
+                            {attempts > 0 && (
+                              <div className="mb-3">
+                                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                                  <span>{i18n.language === "es" ? "Tasa de aprobación" : "Pass rate"}</span>
+                                  <span>{passRate}%</span>
+                                </div>
+                                <Progress value={passRate} className="h-1.5" />
+                              </div>
+                            )}
+                            
+                            {/* Action buttons */}
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                size="sm"
+                                asChild
+                                data-testid={`button-practice-${category.id}`}
+                              >
+                                <Link href={`/exams/${category.id}`}>
+                                  <Play className="mr-1.5 h-3.5 w-3.5" />
+                                  {i18n.language === "es" ? "Práctica Rápida" : "Quick Practice"}
+                                </Link>
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                asChild
+                                data-testid={`button-full-mock-${category.id}`}
+                              >
+                                <Link href={`/exams/${category.id}?mode=full`}>
+                                  <Target className="mr-1.5 h-3.5 w-3.5" />
+                                  {i18n.language === "es" ? "Examen Completo" : "Full Mock Exam"}
+                                </Link>
+                              </Button>
+                            </div>
                           </div>
-                          <ArrowRight className="h-4 w-4 ml-2 shrink-0" />
-                        </Link>
-                      </Button>
+                        </div>
+                      </div>
                     );
                   })}
                 </CardContent>
               </Card>
 
+              {/* Study Guide Card */}
               <Card className="bg-gradient-to-r from-primary/5 to-transparent border-primary/20">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                    {i18n.language === "es" ? "Guía de Estudio" : "Study Guide"}
-                  </CardTitle>
-                  <CardDescription>
-                    {i18n.language === "es" 
-                      ? "Aprende a tu propio ritmo con cuestionarios por tema" 
-                      : "Learn at your own pace with topic-based quizzes"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button className="w-full min-h-[44px]" asChild>
+                <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-xl bg-primary/10">
+                      <BookOpen className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">
+                        {i18n.language === "es" ? "Guía de Estudio" : "Study Guide"}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {i18n.language === "es" 
+                          ? "Aprende a tu ritmo con cuestionarios por tema" 
+                          : "Learn at your own pace with topic-based quizzes"}
+                      </p>
+                    </div>
+                  </div>
+                  <Button asChild className="shrink-0">
                     <Link href="/study-guide" data-testid="link-study-guide">
-                      <BookOpen className="mr-2 h-4 w-4" />
-                      {i18n.language === "es" ? "Abrir Guía de Estudio" : "Open Study Guide"}
+                      {i18n.language === "es" ? "Abrir Guía" : "Open Guide"}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                   </Button>
                 </CardContent>
               </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="h-5 w-5 text-primary" />
-                    {t("fullMock.title")}
-                  </CardTitle>
-                  <CardDescription>
-                    {t("fullMock.subtitle")}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-3">
-                  {categories.map((category) => {
-                    const Icon = categoryIcons[category.id];
-                    return (
-                      <Link key={category.id} href={`/exams/${category.id}?mode=full`}>
-                        <div 
-                          className={`flex items-center gap-3 p-3 rounded-lg border hover-elevate cursor-pointer ${
-                            !hasActiveSubscription ? "opacity-60" : ""
-                          }`}
-                          data-testid={`card-full-mock-${category.id}`}
-                        >
-                          <div className={`p-2 rounded-lg ${categoryColors[category.id]}`}>
-                            <Icon className="h-4 w-4" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {t(`categories.${category.id}`)}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {category.totalQuestions} {i18n.language === "es" ? "preguntas" : "questions"}
-                            </p>
-                          </div>
-                          <Badge variant="secondary" className="text-xs shrink-0">
-                            {t("fullMock.badge")}
-                          </Badge>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </CardContent>
-              </Card>
-
             </div>
 
-            <div className="space-y-6">
-              <Card className={hasActiveSubscription ? "border-green-500/20" : "border-amber-500/20"}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" />
-                    {t("dashboard.subscription")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {profileLoading ? (
-                    <Skeleton className="h-20 w-full" />
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Status</span>
-                        <Badge 
-                          variant={hasActiveSubscription ? "default" : "secondary"}
-                          className={hasActiveSubscription ? "bg-green-500" : ""}
-                        >
-                          {hasActiveSubscription
-                            ? t("dashboard.active")
-                            : t("dashboard.inactive")}
-                        </Badge>
-                      </div>
-                      {profile?.subscriptionPlan && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">
-                            {i18n.language === "es" ? "Plan" : "Plan"}
-                          </span>
-                          <span className="font-medium capitalize">
-                            {profile.subscriptionPlan === "weekly" 
-                              ? (i18n.language === "es" ? "Semanal" : "Weekly")
-                              : (i18n.language === "es" ? "Mensual" : "Monthly")}
-                          </span>
-                        </div>
-                      )}
-                      {profile?.subscriptionEndDate && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">
-                            {t("dashboard.expiresOn")}
-                          </span>
-                          <span className="font-medium">
-                            {new Date(profile.subscriptionEndDate).toLocaleDateString(
-                              i18n.language === "es" ? "es-ES" : "en-US"
-                            )}
-                          </span>
-                        </div>
-                      )}
-                      {!hasActiveSubscription && (
-                        <div className="pt-2">
-                          <p className="text-sm text-muted-foreground mb-3">
-                            {i18n.language === "es" 
-                              ? "Suscríbete para acceso ilimitado a todos los exámenes" 
-                              : "Subscribe for unlimited access to all exams"}
-                          </p>
-                          <Button className="w-full" asChild>
-                            <Link href="/pricing">
-                              <CreditCard className="mr-2 h-4 w-4" />
-                              {i18n.language === "es" ? "Suscribirse Ahora" : "Subscribe Now"}
-                            </Link>
-                          </Button>
-                        </div>
-                      )}
-                      {hasActiveSubscription && (
-                        <Button variant="outline" className="w-full" asChild>
+            {/* Right Column - Subscription & Quick Stats */}
+            <div className="lg:col-span-4 space-y-6">
+              
+              {/* Subscription Card */}
+              {hasActiveSubscription && (
+                <Card className="border-green-500/20 bg-gradient-to-br from-green-500/5 to-transparent">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                        {t("dashboard.subscription")}
+                      </CardTitle>
+                      <Badge className="bg-green-500">
+                        {t("dashboard.active")}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {profileLoading ? (
+                      <Skeleton className="h-16 w-full" />
+                    ) : (
+                      <>
+                        {profile?.subscriptionPlan && (
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">
+                              {i18n.language === "es" ? "Plan" : "Plan"}
+                            </span>
+                            <span className="font-medium capitalize">
+                              {profile.subscriptionPlan === "weekly" 
+                                ? (i18n.language === "es" ? "Semanal" : "Weekly")
+                                : (i18n.language === "es" ? "Mensual" : "Monthly")}
+                            </span>
+                          </div>
+                        )}
+                        {profile?.subscriptionEndDate && (
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">
+                              {t("dashboard.expiresOn")}
+                            </span>
+                            <span className="font-medium">
+                              {new Date(profile.subscriptionEndDate).toLocaleDateString(
+                                i18n.language === "es" ? "es-ES" : "en-US"
+                              )}
+                            </span>
+                          </div>
+                        )}
+                        <Button variant="outline" size="sm" className="w-full mt-2" asChild>
                           <Link href="/profile">
                             {t("dashboard.manageSubscription")}
                           </Link>
                         </Button>
-                      )}
-                    </>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Quick Stats Summary */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    {i18n.language === "es" ? "Resumen Rápido" : "Quick Summary"}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {resultsLoading ? (
+                    <Skeleton className="h-24 w-full" />
+                  ) : stats.examsTaken > 0 ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-3 rounded-lg bg-muted/50">
+                        <div className="text-2xl font-bold text-primary">{stats.examsTaken}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {i18n.language === "es" ? "Exámenes" : "Exams"}
+                        </div>
+                      </div>
+                      <div className="text-center p-3 rounded-lg bg-muted/50">
+                        <div className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.passRate}%</div>
+                        <div className="text-xs text-muted-foreground">
+                          {i18n.language === "es" ? "Aprobación" : "Pass Rate"}
+                        </div>
+                      </div>
+                      <div className="text-center p-3 rounded-lg bg-muted/50">
+                        <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.averageScore}%</div>
+                        <div className="text-xs text-muted-foreground">
+                          {i18n.language === "es" ? "Promedio" : "Average"}
+                        </div>
+                      </div>
+                      <div className="text-center p-3 rounded-lg bg-muted/50">
+                        <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.studyTime}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {i18n.language === "es" ? "Minutos" : "Minutes"}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">
+                        {i18n.language === "es" 
+                          ? "Toma tu primer examen para ver estadísticas" 
+                          : "Take your first exam to see stats"}
+                      </p>
+                    </div>
                   )}
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="h-5 w-5 text-primary" />
-                    {t("dashboard.yourProgress")}
-                  </CardTitle>
-                  <CardDescription>
-                    {i18n.language === "es" 
-                      ? "Tasa de aprobación por categoría" 
-                      : "Pass rate by category"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {categories.map((category) => {
-                    const Icon = categoryIcons[category.id];
-                    const categoryResults = results?.filter(
-                      (r) => r.category === category.id
-                    );
-                    const progress = categoryResults?.length
-                      ? Math.round(
-                          (categoryResults.filter((r) => r.passed).length /
-                            categoryResults.length) *
-                            100
-                        )
-                      : 0;
-                    const attempts = categoryResults?.length || 0;
-
-                    return (
-                      <div key={category.id} className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <div className={`p-1 rounded ${categoryColors[category.id]}`}>
+              {/* Recent Activity */}
+              {results && results.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Clock className="h-5 w-5 text-primary" />
+                      {i18n.language === "es" ? "Actividad Reciente" : "Recent Activity"}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {results.slice(0, 3).map((result) => {
+                      const Icon = categoryIcons[result.category as keyof typeof categoryIcons];
+                      return (
+                        <div key={result.id} className="flex items-center gap-3 text-sm">
+                          <div className={`p-1.5 rounded ${categoryColors[result.category as keyof typeof categoryColors]}`}>
                             <Icon className="h-3 w-3" />
                           </div>
-                          <span className="text-sm truncate flex-1">
-                            {t(`categories.${category.id}`)}
-                          </span>
-                          <span className="text-sm font-medium">{progress}%</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="truncate font-medium">{t(`categories.${result.category}`)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(result.completedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold">{result.score}%</span>
+                            {result.passed ? (
+                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <XCircle className="h-4 w-4 text-red-500" />
+                            )}
+                          </div>
                         </div>
-                        <Progress 
-                          value={progress} 
-                          className="h-2"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          {attempts} {i18n.language === "es" ? "intentos" : "attempts"}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
+                      );
+                    })}
+                    {results.length > 3 && (
+                      <Button variant="ghost" size="sm" className="w-full" asChild>
+                        <Link href="/profile">
+                          {i18n.language === "es" ? "Ver Todo" : "View All"}
+                          <ArrowRight className="ml-2 h-3 w-3" />
+                        </Link>
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </div>

@@ -337,7 +337,7 @@ export default function DashboardPage() {
                       : "Choose an exam category to begin your practice session"}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-4 sm:grid-cols-2">
+                <CardContent className="grid gap-3 sm:grid-cols-2">
                   {categories.map((category) => {
                     const Icon = categoryIcons[category.id];
                     const categoryResults = results?.filter((r) => r.category === category.id) || [];
@@ -346,37 +346,29 @@ export default function DashboardPage() {
                       : 0;
                     
                     return (
-                      <Link key={category.id} href={`/exams/${category.id}`}>
-                        <Card 
-                          className={`hover-elevate transition-all cursor-pointer border-2 ${categoryColors[category.id]} ${
-                            !hasActiveSubscription ? "opacity-60" : ""
-                          }`}
-                          data-testid={`card-exam-${category.id}`}
-                        >
-                          <CardHeader className="pb-2">
-                            <div className="flex items-center gap-3">
-                              <div className={`p-2 rounded-lg ${categoryColors[category.id]}`}>
-                                <Icon className="h-5 w-5" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <CardTitle className="text-sm truncate">
-                                  {t(`categories.${category.id}`)}
-                                </CardTitle>
-                              </div>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="pt-0">
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <span>{category.totalQuestions} {i18n.language === "es" ? "preguntas" : "questions"}</span>
-                              {bestScore > 0 && (
-                                <Badge variant="secondary" className="text-xs">
-                                  {i18n.language === "es" ? "Mejor" : "Best"}: {bestScore}%
-                                </Badge>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </Link>
+                      <Button
+                        key={category.id}
+                        variant="outline"
+                        className={`h-auto py-4 px-4 justify-start ${!hasActiveSubscription ? "opacity-60" : ""}`}
+                        asChild
+                        data-testid={`button-exam-${category.id}`}
+                      >
+                        <Link href={`/exams/${category.id}`}>
+                          <div className={`p-2 rounded-lg mr-3 ${categoryColors[category.id]}`}>
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div className="flex-1 text-left min-w-0">
+                            <p className="font-medium truncate">
+                              {t(`categories.${category.id}`)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {category.totalQuestions} {i18n.language === "es" ? "preguntas" : "questions"}
+                              {bestScore > 0 && ` • ${i18n.language === "es" ? "Mejor" : "Best"}: ${bestScore}%`}
+                            </p>
+                          </div>
+                          <ArrowRight className="h-4 w-4 ml-2 shrink-0" />
+                        </Link>
+                      </Button>
                     );
                   })}
                 </CardContent>

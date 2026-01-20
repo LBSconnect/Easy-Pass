@@ -21,6 +21,7 @@ import FAQPage from "@/pages/faq";
 import TermsPage from "@/pages/terms";
 import PrivacyPage from "@/pages/privacy";
 import AuthPage from "@/pages/auth";
+import ResetPasswordPage from "@/pages/reset-password";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -71,6 +72,7 @@ function Router() {
       <Route path="/" component={HomePage} />
       <Route path="/login" component={AuthPage} />
       <Route path="/signup" component={AuthPage} />
+      <Route path="/reset-password" component={ResetPasswordPage} />
       <Route path="/dashboard" component={() => <ProtectedRoute component={DashboardPage} />} />
       <Route path="/exams" component={() => <ProtectedRoute component={ExamsPage} />} />
       <Route path="/exams/:category" component={() => <ProtectedRoute component={ExamsPage} />} />

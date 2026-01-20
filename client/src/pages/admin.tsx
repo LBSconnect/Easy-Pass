@@ -64,6 +64,7 @@ import {
   Check,
   X,
   Eye,
+  Mail,
 } from "lucide-react";
 import type { Question, ExamCategory, QuestionFeedback } from "@shared/schema";
 
@@ -137,6 +138,26 @@ export default function AdminPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/question-feedback"] });
       setSelectedFeedback(null);
       setFeedbackAdminNotes("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const sendPasswordResetMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await apiRequest("POST", `/api/admin/send-password-reset/${userId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: t("common.success"),
+        description: "Password reset email sent successfully",
+      });
     },
     onError: (error: Error) => {
       toast({
@@ -671,6 +692,7 @@ export default function AdminPage() {
                           <TableHead>Subscription</TableHead>
                           <TableHead>Plan</TableHead>
                           <TableHead>Joined</TableHead>
+                          <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -696,6 +718,18 @@ export default function AdminPage() {
                             </TableCell>
                             <TableCell>
                               {new Date(user.createdAt).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => sendPasswordResetMutation.mutate(user.id)}
+                                disabled={sendPasswordResetMutation.isPending}
+                                data-testid={`button-reset-password-${user.id}`}
+                              >
+                                <Mail className="h-4 w-4 mr-1" />
+                                Reset Password
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))}

@@ -1216,7 +1216,7 @@ export async function registerRoutes(
       
       await storage.setPasswordResetToken(user.id, hashedToken, resetExpiry);
       
-      const sent = await sendPasswordResetEmail(user.email!, rawToken, user.firstName || undefined);
+      const sent = await sendPasswordResetEmail(user.email!, rawToken, user.firstName || undefined, false);
       
       if (!sent) {
         console.error("Failed to send password reset email to:", email);
@@ -1252,7 +1252,7 @@ export async function registerRoutes(
       
       await storage.setPasswordResetToken(userId, hashedToken, resetExpiry);
       
-      const sent = await sendPasswordResetEmail(user.email, rawToken, user.firstName || undefined);
+      const sent = await sendPasswordResetEmail(user.email, rawToken, user.firstName || undefined, true);
       
       if (!sent) {
         return res.status(500).json({ message: "Failed to send email" });

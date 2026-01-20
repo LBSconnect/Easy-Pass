@@ -38,7 +38,7 @@ export async function getResendClient() {
   };
 }
 
-export async function sendPasswordResetEmail(toEmail: string, resetToken: string, firstName?: string): Promise<boolean> {
+export async function sendPasswordResetEmail(toEmail: string, resetToken: string, firstName?: string, isAdminInitiated: boolean = false): Promise<boolean> {
   try {
     const { client, fromEmail } = await getResendClient();
     
@@ -46,27 +46,44 @@ export async function sendPasswordResetEmail(toEmail: string, resetToken: string
     const protocol = host.includes('localhost') ? 'http' : 'https';
     const resetLink = `${protocol}://${host}/reset-password?token=${resetToken}`;
     
+    const initiationMessage = isAdminInitiated 
+      ? 'An administrator has initiated a password reset for your MyEasyPass account.'
+      : 'We received a request to reset the password for your MyEasyPass account.';
+    
     const result = await client.emails.send({
       from: fromEmail || 'MyEasyPass <noreply@myeasypass.net>',
       to: toEmail,
       subject: 'Reset Your Password - MyEasyPass',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Password Reset Request</h2>
-          <p>Hi${firstName ? ` ${firstName}` : ''},</p>
-          <p>An administrator has initiated a password reset for your MyEasyPass account.</p>
-          <p>Click the button below to set a new password:</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #2563eb; margin: 0;">MyEasyPass</h1>
+            <p style="color: #666; margin: 5px 0 0 0;">Texas Licensing Exam Prep</p>
+          </div>
+          <h2 style="color: #333; margin-bottom: 20px;">Password Reset Request</h2>
+          <p style="color: #333; line-height: 1.6;">Hi${firstName ? ` ${firstName}` : ''},</p>
+          <p style="color: #333; line-height: 1.6;">${initiationMessage}</p>
+          <p style="color: #333; line-height: 1.6;">Click the button below to set a new password:</p>
           <div style="text-align: center; margin: 30px 0;">
             <a href="${resetLink}" 
-               style="background-color: #2563eb; color: white; padding: 12px 24px; 
-                      text-decoration: none; border-radius: 6px; display: inline-block;">
+               style="background-color: #2563eb; color: white; padding: 14px 28px; 
+                      text-decoration: none; border-radius: 8px; display: inline-block;
+                      font-weight: 600; font-size: 16px;">
               Reset Password
             </a>
           </div>
-          <p style="color: #666; font-size: 14px;">This link will expire in 1 hour.</p>
-          <p style="color: #666; font-size: 14px;">If you didn't request this, you can safely ignore this email.</p>
+          <p style="color: #666; font-size: 14px; line-height: 1.6;">
+            <strong>This link will expire in 1 hour.</strong>
+          </p>
+          <p style="color: #666; font-size: 14px; line-height: 1.6;">
+            If you didn't request this password reset, you can safely ignore this email. 
+            Your password will remain unchanged.
+          </p>
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
-          <p style="color: #999; font-size: 12px;">MyEasyPass - Texas Licensing Exam Prep</p>
+          <p style="color: #999; font-size: 12px; text-align: center;">
+            MyEasyPass - Texas Licensing Exam Prep<br/>
+            <a href="https://myeasypass.net" style="color: #2563eb;">myeasypass.net</a>
+          </p>
         </div>
       `,
     });

@@ -141,21 +141,39 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getQuestions(category?: ExamCategory, limit?: number): Promise<Question[]> {
-    let query = db.select().from(questions).where(eq(questions.isActive, true));
+    // Use raw SQL to avoid prepared statement caching issues with Neon/PgBouncer
+    // Each unique limit value needs a fresh query to prevent stale statement reuse
+    if (category && limit) {
+      return db.execute(sql`
+        SELECT * FROM questions 
+        WHERE is_active = true AND category = ${category}
+        ORDER BY RANDOM() 
+        LIMIT ${limit}
+      `) as unknown as Promise<Question[]>;
+    }
     
     if (category) {
-      query = db.select().from(questions).where(
-        and(eq(questions.isActive, true), eq(questions.category, category))
-      );
+      return db.execute(sql`
+        SELECT * FROM questions 
+        WHERE is_active = true AND category = ${category}
+        ORDER BY RANDOM()
+      `) as unknown as Promise<Question[]>;
     }
     
     if (limit) {
-      const result = await query.orderBy(sql`RANDOM()`).limit(limit);
-      return result;
+      return db.execute(sql`
+        SELECT * FROM questions 
+        WHERE is_active = true
+        ORDER BY RANDOM() 
+        LIMIT ${limit}
+      `) as unknown as Promise<Question[]>;
     }
     
-    const result = await query.orderBy(sql`RANDOM()`);
-    return result;
+    return db.execute(sql`
+      SELECT * FROM questions 
+      WHERE is_active = true
+      ORDER BY RANDOM()
+    `) as unknown as Promise<Question[]>;
   }
 
   async getQuestion(id: string): Promise<Question | undefined> {

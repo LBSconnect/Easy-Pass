@@ -1,4 +1,5 @@
 import { getCachedStripeClient } from './stripeClient';
+import { storage } from './storage';
 
 const REQUIRED_PRICES = [
   {
@@ -121,6 +122,34 @@ export async function initializeStripePrices(): Promise<void> {
       console.log('[Stripe Init] All products and prices already exist.');
     } else {
       console.log(`[Stripe Init] Created ${createdProducts} products and ${createdPrices} prices.`);
+    }
+    
+    // Initialize admin user if specified in environment
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (adminEmail) {
+      try {
+        const user = await storage.getUserByEmail(adminEmail);
+        if (user) {
+          let profile = await storage.getProfile(user.id);
+          if (!profile) {
+            await storage.createProfile({
+              userId: user.id,
+              preferredLanguage: 'en',
+              role: 'admin',
+            });
+            console.log(`[Admin Init] Created admin profile for ${adminEmail}`);
+          } else if (profile.role !== 'admin') {
+            await storage.updateProfile(user.id, { role: 'admin' });
+            console.log(`[Admin Init] Promoted ${adminEmail} to admin`);
+          } else {
+            console.log(`[Admin Init] ${adminEmail} is already an admin`);
+          }
+        } else {
+          console.log(`[Admin Init] User ${adminEmail} not found - register first then restart`);
+        }
+      } catch (adminError) {
+        console.error('[Admin Init] Error setting up admin:', adminError);
+      }
     }
   } catch (error) {
     console.error('[Stripe Init] Error initializing prices:', error);

@@ -701,44 +701,6 @@ export async function registerRoutes(
     }
   });
 
-  // One-time admin setup endpoint (remove after use)
-  app.post("/api/setup-admin", async (req, res) => {
-    try {
-      const { email, secretKey } = req.body;
-      
-      // Security: require a secret key that matches an environment variable
-      if (secretKey !== process.env.ADMIN_SETUP_KEY) {
-        return res.status(403).json({ message: "Invalid setup key" });
-      }
-      
-      if (!email) {
-        return res.status(400).json({ message: "Email required" });
-      }
-      
-      const user = await storage.getUserByEmail(email);
-      if (!user) {
-        return res.status(404).json({ message: "User not found. Please register first." });
-      }
-      
-      let profile = await storage.getProfile(user.id);
-      if (!profile) {
-        profile = await storage.createProfile({
-          userId: user.id,
-          preferredLanguage: "en",
-          role: "admin",
-        });
-      } else {
-        await storage.updateProfile(user.id, { role: "admin" });
-      }
-      
-      console.log(`[Setup] Promoted ${email} to admin`);
-      res.json({ success: true, message: `${email} is now an admin` });
-    } catch (error) {
-      console.error("Error setting up admin:", error);
-      res.status(500).json({ message: "Failed to set up admin" });
-    }
-  });
-
   app.post("/api/admin/init-stripe-prices", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

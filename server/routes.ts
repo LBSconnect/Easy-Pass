@@ -4,6 +4,9 @@ import { storage } from "./storage";
 import { isAuthenticated } from "./simpleAuth";
 import { getCachedStripeClient } from "./stripeClient";
 import { initializeStripePrices } from "./initializeStripePrices";
+import { sendPasswordResetEmail } from "./resendClient";
+import crypto from "crypto";
+import bcrypt from "bcryptjs";
 import { insertQuestionSchema, insertCallbackRequestSchema, insertQuestionFeedbackSchema, insertGuestArticleSchema, callbackRequests, questionFeedback, type ExamCategory, examCategoryEnum, feedbackStatusEnum, guestArticleStatusEnum } from "@shared/schema";
 import { studyTopicsConfig, getTopicById, getTopicsByCategory } from "@shared/studyTopics";
 import { z } from "zod";
@@ -974,6 +977,103 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching callback requests:", error);
       res.status(500).json({ message: "Failed to fetch callback requests" });
+    }
+  });
+
+  // Admin: Send password reset email
+  app.post("/api/admin/send-password-reset/:userId", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminUserId = req.user.claims.sub;
+      const profile = await storage.getProfile(adminUserId);
+      
+      if (profile?.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      const { userId } = req.params;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.email) {
+        return res.status(404).json({ message: "User not found or has no email" });
+      }
+      
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      const resetExpiry = new Date(Date.now() + 60 * 60 * 1000);
+      
+      await storage.setPasswordResetToken(userId, resetToken, resetExpiry);
+      
+      const sent = await sendPasswordResetEmail(user.email, resetToken, user.firstName || undefined);
+      
+      if (!sent) {
+        return res.status(500).json({ message: "Failed to send email" });
+      }
+      
+      res.json({ success: true, message: "Password reset email sent" });
+    } catch (error) {
+      console.error("Error sending password reset:", error);
+      res.status(500).json({ message: "Failed to send password reset" });
+    }
+  });
+  
+  // Public: Reset password with token
+  app.post("/api/reset-password", async (req, res) => {
+    try {
+      const schema = z.object({
+        token: z.string().min(1),
+        password: z.string().min(8, "Password must be at least 8 characters"),
+      });
+      
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid data", errors: parsed.error.errors });
+      }
+      
+      const { token, password } = parsed.data;
+      
+      const user = await storage.getUserByResetToken(token);
+      
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+      
+      if (!user.resetTokenExpiry || new Date(user.resetTokenExpiry) < new Date()) {
+        return res.status(400).json({ message: "Reset token has expired" });
+      }
+      
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await storage.updateUserPassword(user.id, hashedPassword);
+      await storage.clearResetToken(user.id);
+      
+      res.json({ success: true, message: "Password reset successfully" });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      res.status(500).json({ message: "Failed to reset password" });
+    }
+  });
+  
+  // Public: Verify reset token is valid
+  app.get("/api/reset-password/verify", async (req, res) => {
+    try {
+      const token = req.query.token as string;
+      
+      if (!token) {
+        return res.status(400).json({ valid: false, message: "No token provided" });
+      }
+      
+      const user = await storage.getUserByResetToken(token);
+      
+      if (!user) {
+        return res.status(400).json({ valid: false, message: "Invalid reset token" });
+      }
+      
+      if (!user.resetTokenExpiry || new Date(user.resetTokenExpiry) < new Date()) {
+        return res.status(400).json({ valid: false, message: "Reset token has expired" });
+      }
+      
+      res.json({ valid: true });
+    } catch (error) {
+      console.error("Error verifying reset token:", error);
+      res.status(500).json({ valid: false, message: "Failed to verify token" });
     }
   });
 

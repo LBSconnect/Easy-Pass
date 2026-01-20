@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { isAuthenticated } from "./simpleAuth";
 import { getCachedStripeClient } from "./stripeClient";
+import { initializeStripePrices } from "./initializeStripePrices";
 import { insertQuestionSchema, insertCallbackRequestSchema, insertQuestionFeedbackSchema, insertGuestArticleSchema, callbackRequests, questionFeedback, type ExamCategory, examCategoryEnum, feedbackStatusEnum, guestArticleStatusEnum } from "@shared/schema";
 import { studyTopicsConfig, getTopicById, getTopicsByCategory } from "@shared/studyTopics";
 import { z } from "zod";
@@ -697,6 +698,25 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error syncing subscription:", error);
       res.status(500).json({ message: "Failed to sync subscription" });
+    }
+  });
+
+  app.post("/api/admin/init-stripe-prices", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getProfile(userId);
+      
+      if (profile?.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      console.log("[Admin] Manually triggering Stripe price initialization...");
+      await initializeStripePrices();
+      
+      res.json({ success: true, message: "Stripe prices initialized" });
+    } catch (error) {
+      console.error("Error initializing Stripe prices:", error);
+      res.status(500).json({ message: "Failed to initialize Stripe prices" });
     }
   });
 

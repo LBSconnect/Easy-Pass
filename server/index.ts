@@ -72,18 +72,18 @@ async function initStripe() {
       }
     }
 
-    console.log("Syncing Stripe data...");
-    stripeSync
-      .syncBackfill()
-      .then(() => {
-        console.log("Stripe data synced");
-      })
-      .catch((err: Error) => {
-        console.log("Stripe sync skipped:", err.message);
-      });
-
+    // IMPORTANT: Initialize prices FIRST (creates missing products/prices in Stripe)
+    // THEN sync to database so all prices are available locally
     console.log("Initializing Stripe prices...");
     await initializeStripePrices();
+
+    console.log("Syncing Stripe data to database...");
+    try {
+      await stripeSync.syncBackfill();
+      console.log("Stripe data synced");
+    } catch (err: any) {
+      console.log("Stripe sync warning:", err.message);
+    }
   } catch (error: any) {
     console.log("Stripe initialization skipped:", error.message);
     console.log("Stripe features may be limited");

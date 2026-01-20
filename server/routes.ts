@@ -723,6 +723,185 @@ export async function registerRoutes(
       res.status(500).json({ message: "Failed to initialize Stripe prices" });
     }
   });
+  
+  // Diagnostic endpoint to see what products/prices exist in Stripe and create missing ones
+  app.get("/api/admin/stripe-diagnostic", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getProfile(userId);
+      
+      if (profile?.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      const stripe = await getCachedStripeClient();
+      const products = await stripe.products.list({ active: true, limit: 100 });
+      const prices = await stripe.prices.list({ active: true, limit: 100, expand: ['data.product'] });
+      
+      const isProduction = process.env.REPLIT_DEPLOYMENT === "1";
+      
+      const productInfo = products.data.map(p => ({
+        id: p.id,
+        name: p.name,
+        metadata: p.metadata
+      }));
+      
+      const priceInfo = prices.data.map(p => {
+        const product = typeof p.product === 'object' && !('deleted' in p.product) ? p.product : null;
+        return {
+          id: p.id,
+          product_id: typeof p.product === 'string' ? p.product : p.product.id,
+          product_name: product?.name || 'unknown',
+          amount: p.unit_amount,
+          interval: p.recurring?.interval,
+          metadata: p.metadata
+        };
+      });
+      
+      // Determine what's missing
+      const requiredPrices = [
+        { product: 'Real Estate Exam', category: 'real_estate', prices: [{ amount: 699, interval: 'week' }, { amount: 1999, interval: 'month' }] },
+        { product: 'Property & Casualty Exam', category: 'property_casualty', prices: [{ amount: 699, interval: 'week' }, { amount: 1999, interval: 'month' }] },
+        { product: 'Life Insurance Exam', category: 'life_insurance', prices: [{ amount: 699, interval: 'week' }, { amount: 1999, interval: 'month' }] },
+        { product: 'General Lines Exam', category: 'general_lines', prices: [{ amount: 699, interval: 'week' }, { amount: 1999, interval: 'month' }] },
+        { product: 'Bundle', category: 'bundle', prices: [{ amount: 1299, interval: 'week' }, { amount: 3499, interval: 'month' }] }
+      ];
+      
+      const missing: string[] = [];
+      for (const req of requiredPrices) {
+        const matchingProduct = products.data.find(p => 
+          p.metadata?.allowed_categories === req.category ||
+          (req.category === 'bundle' && (p.metadata?.subscription_type === 'bundle' || p.metadata?.allowed_categories?.includes(',')))
+        );
+        
+        if (!matchingProduct) {
+          missing.push(`Product: ${req.product}`);
+        } else {
+          for (const priceReq of req.prices) {
+            const matchingPrice = prices.data.find(pr => {
+              const prodId = typeof pr.product === 'string' ? pr.product : pr.product.id;
+              return prodId === matchingProduct.id && 
+                     pr.recurring?.interval === priceReq.interval &&
+                     pr.unit_amount === priceReq.amount;
+            });
+            if (!matchingPrice) {
+              missing.push(`Price: ${req.product} - $${priceReq.amount / 100}/${priceReq.interval}`);
+            }
+          }
+        }
+      }
+      
+      res.json({
+        environment: isProduction ? 'PRODUCTION' : 'development',
+        products: productInfo,
+        prices: priceInfo,
+        missing,
+        summary: {
+          totalProducts: products.data.length,
+          totalPrices: prices.data.length,
+          missingCount: missing.length
+        }
+      });
+    } catch (error: any) {
+      console.error("Error in stripe diagnostic:", error);
+      res.status(500).json({ message: "Failed to get Stripe diagnostic", error: error.message });
+    }
+  });
+  
+  // Force create missing Stripe products and prices
+  app.post("/api/admin/stripe-force-create", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getProfile(userId);
+      
+      if (profile?.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      const stripe = await getCachedStripeClient();
+      const isProduction = process.env.REPLIT_DEPLOYMENT === "1";
+      
+      const results: string[] = [];
+      
+      const REQUIRED = [
+        { name: 'Real Estate Exam', category: 'real_estate', isBundle: false, prices: [{ amount: 699, interval: 'week' as const }, { amount: 1999, interval: 'month' as const }] },
+        { name: 'Property & Casualty Exam', category: 'property_casualty', isBundle: false, prices: [{ amount: 699, interval: 'week' as const }, { amount: 1999, interval: 'month' as const }] },
+        { name: 'Life Insurance Exam', category: 'life_insurance', isBundle: false, prices: [{ amount: 699, interval: 'week' as const }, { amount: 1999, interval: 'month' as const }] },
+        { name: 'General Lines Exam', category: 'general_lines', isBundle: false, prices: [{ amount: 699, interval: 'week' as const }, { amount: 1999, interval: 'month' as const }] },
+        { name: 'Bundle', category: 'bundle', isBundle: true, prices: [{ amount: 1299, interval: 'week' as const }, { amount: 3499, interval: 'month' as const }] }
+      ];
+      
+      // Get existing products/prices
+      const existingProducts = await stripe.products.list({ active: true, limit: 100 });
+      const existingPrices = await stripe.prices.list({ active: true, limit: 100 });
+      
+      // Build lookup for existing prices
+      const priceKeys = new Set<string>();
+      for (const p of existingPrices.data) {
+        const prodId = typeof p.product === 'string' ? p.product : p.product;
+        priceKeys.add(`${prodId}-${p.recurring?.interval}-${p.unit_amount}`);
+      }
+      
+      for (const config of REQUIRED) {
+        // Find or create product
+        let product = existingProducts.data.find(p => 
+          p.metadata?.allowed_categories === config.category ||
+          (config.isBundle && (p.metadata?.subscription_type === 'bundle' || p.metadata?.allowed_categories?.includes(',')))
+        );
+        
+        if (!product) {
+          try {
+            product = await stripe.products.create({
+              name: config.name,
+              metadata: {
+                subscription_type: config.isBundle ? 'bundle' : 'single',
+                allowed_categories: config.isBundle ? 'real_estate,property_casualty,life_insurance,general_lines' : config.category
+              }
+            });
+            results.push(`Created product: ${config.name} (${product.id})`);
+          } catch (err: any) {
+            results.push(`ERROR creating product ${config.name}: ${err.message}`);
+            continue;
+          }
+        } else {
+          results.push(`Product exists: ${config.name} (${product.id})`);
+        }
+        
+        // Create missing prices
+        for (const priceConfig of config.prices) {
+          const key = `${product.id}-${priceConfig.interval}-${priceConfig.amount}`;
+          if (!priceKeys.has(key)) {
+            try {
+              const price = await stripe.prices.create({
+                product: product.id,
+                unit_amount: priceConfig.amount,
+                currency: 'usd',
+                recurring: { interval: priceConfig.interval },
+                metadata: {
+                  subscription_type: config.isBundle ? 'bundle' : 'single',
+                  allowed_categories: config.isBundle ? 'real_estate,property_casualty,life_insurance,general_lines' : config.category,
+                  billing_period: priceConfig.interval === 'week' ? 'weekly' : 'monthly'
+                }
+              });
+              results.push(`Created price: ${config.name} $${priceConfig.amount / 100}/${priceConfig.interval} (${price.id})`);
+            } catch (err: any) {
+              results.push(`ERROR creating price for ${config.name}: ${err.message}`);
+            }
+          } else {
+            results.push(`Price exists: ${config.name} $${priceConfig.amount / 100}/${priceConfig.interval}`);
+          }
+        }
+      }
+      
+      res.json({
+        environment: isProduction ? 'PRODUCTION' : 'development',
+        results
+      });
+    } catch (error: any) {
+      console.error("Error force creating Stripe prices:", error);
+      res.status(500).json({ message: "Failed to create prices", error: error.message });
+    }
+  });
 
   app.get("/api/admin/stats", isAuthenticated, async (req: any, res) => {
     try {

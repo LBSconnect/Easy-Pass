@@ -443,6 +443,36 @@ export async function registerRoutes(
     }
   });
 
+  // Public diagnostic endpoint to see raw Stripe data (read-only, no sensitive info)
+  app.get("/api/stripe/debug", async (req, res) => {
+    try {
+      const stripe = await getCachedStripeClient();
+      const products = await stripe.products.list({ active: true, limit: 100 });
+      const prices = await stripe.prices.list({ active: true, limit: 100, expand: ['data.product'] });
+      const isProduction = process.env.REPLIT_DEPLOYMENT === "1";
+      
+      res.json({
+        environment: isProduction ? 'PRODUCTION' : 'development',
+        products: products.data.map(p => ({
+          id: p.id,
+          name: p.name,
+          metadata: p.metadata
+        })),
+        prices: prices.data.map(p => ({
+          id: p.id,
+          product_id: typeof p.product === 'string' ? p.product : p.product.id,
+          product_name: typeof p.product === 'object' && !('deleted' in p.product) ? p.product.name : null,
+          amount: p.unit_amount,
+          interval: p.recurring?.interval,
+          price_metadata: p.metadata,
+          product_metadata: typeof p.product === 'object' && !('deleted' in p.product) ? p.product.metadata : null
+        }))
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
   app.get("/api/stripe/prices", async (req, res) => {
     try {
       const stripe = await getCachedStripeClient();
@@ -724,7 +754,7 @@ export async function registerRoutes(
     }
   });
   
-  // Diagnostic endpoint to see what products/prices exist in Stripe and create missing ones
+  // Diagnostic endpoint to see what products/prices exist in Stripe
   app.get("/api/admin/stripe-diagnostic", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

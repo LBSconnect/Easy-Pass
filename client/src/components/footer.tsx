@@ -1,9 +1,15 @@
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
+import type { UserProfile } from "@shared/schema";
 import logoImage from "@assets/EP_logo_1768576610105.png";
 
 export function Footer() {
   const { t } = useTranslation();
+  const { data: profile } = useQuery<UserProfile>({
+    queryKey: ["/api/profile"],
+  });
+  const isAdmin = profile?.role === "admin";
 
   return (
     <footer className="border-t bg-card">
@@ -34,6 +40,15 @@ export function Footer() {
                   <span className="hover:text-primary transition-colors">{t("nav.exams")}</span>
                 </Link>
               </li>
+              {isAdmin && (
+                <li>
+                  <Link href="/admin">
+                    <span className="hover:text-primary transition-colors" data-testid="link-admin">
+                      {t("nav.admin")}
+                    </span>
+                  </Link>
+                </li>
+              )}
             </ul>
           </div>
 

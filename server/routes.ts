@@ -477,6 +477,7 @@ export async function registerRoutes(
             billing_period: billingPeriod,
           };
         });
+      
       res.json(formattedPrices);
     } catch (error) {
       console.error("Error fetching prices:", error);

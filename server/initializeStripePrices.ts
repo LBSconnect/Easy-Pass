@@ -57,47 +57,73 @@ export async function initializeStripePrices(): Promise<void> {
     
     console.log(`[Stripe Init] Found ${existingProducts.data.length} products and ${existingPrices.data.length} prices in Stripe`);
     
-    const productsByName: Record<string, string> = {};
+    // Log all existing product names for debugging
+    console.log(`[Stripe Init] All products in Stripe: ${existingProducts.data.map(p => `"${p.name}" (${p.id})`).join(', ')}`);
+    
+    const productsByCategory: Record<string, string> = {};
+    
     for (const product of existingProducts.data) {
-      if (product.name) {
-        const normalizedName = product.name.toLowerCase().trim();
+      if (!product.name) continue;
+      
+      // Priority 1: Match by metadata (most reliable)
+      if (product.metadata?.allowed_categories) {
+        const categories = product.metadata.allowed_categories;
+        const subType = product.metadata.subscription_type;
         
-        // Use exact name matching or metadata to avoid false positives
-        // Check metadata first (most reliable)
-        if (product.metadata?.allowed_categories) {
-          const categories = product.metadata.allowed_categories;
-          if (product.metadata.subscription_type === 'bundle' || categories.includes(',')) {
-            productsByName['bundle'] = product.id;
-          } else if (categories === 'real_estate') {
-            productsByName['real_estate'] = product.id;
-          } else if (categories === 'property_casualty') {
-            productsByName['property_casualty'] = product.id;
-          } else if (categories === 'life_insurance') {
-            productsByName['life_insurance'] = product.id;
-          } else if (categories === 'general_lines') {
-            productsByName['general_lines'] = product.id;
+        if (subType === 'bundle' || categories.includes(',')) {
+          if (!productsByCategory['bundle']) {
+            productsByCategory['bundle'] = product.id;
+            console.log(`[Stripe Init] Matched bundle via metadata: ${product.name}`);
           }
-        } else {
-          // Fallback to exact name matching (avoid substring issues)
-          if (normalizedName === 'real estate exam' || normalizedName === 'real estate exam prep') {
-            productsByName['real_estate'] = product.id;
-          } else if (normalizedName === 'property & casualty exam' || normalizedName === 'property & casualty insurance exam prep') {
-            productsByName['property_casualty'] = product.id;
-          } else if (normalizedName === 'life insurance exam' || normalizedName === 'life insurance exam prep') {
-            productsByName['life_insurance'] = product.id;
-          } else if (normalizedName === 'general lines exam' || normalizedName === 'general lines insurance exam prep') {
-            productsByName['general_lines'] = product.id;
-          } else if (normalizedName === 'bundle' || normalizedName === 'insurance + real estate bundle') {
-            productsByName['bundle'] = product.id;
-          }
+        } else if (categories === 'real_estate' && !productsByCategory['real_estate']) {
+          productsByCategory['real_estate'] = product.id;
+          console.log(`[Stripe Init] Matched real_estate via metadata: ${product.name}`);
+        } else if (categories === 'property_casualty' && !productsByCategory['property_casualty']) {
+          productsByCategory['property_casualty'] = product.id;
+          console.log(`[Stripe Init] Matched property_casualty via metadata: ${product.name}`);
+        } else if (categories === 'life_insurance' && !productsByCategory['life_insurance']) {
+          productsByCategory['life_insurance'] = product.id;
+          console.log(`[Stripe Init] Matched life_insurance via metadata: ${product.name}`);
+        } else if (categories === 'general_lines' && !productsByCategory['general_lines']) {
+          productsByCategory['general_lines'] = product.id;
+          console.log(`[Stripe Init] Matched general_lines via metadata: ${product.name}`);
         }
       }
     }
     
-    console.log(`[Stripe Init] Existing products found: ${Object.keys(productsByName).join(', ') || 'none'}`)
+    // Priority 2: Match remaining by exact or close name (only if not matched by metadata)
+    for (const product of existingProducts.data) {
+      if (!product.name) continue;
+      const name = product.name.toLowerCase().trim();
+      
+      // Skip bundle-type products when looking for single category products
+      if (name.includes('bundle') || (name.includes('insurance') && name.includes('real estate'))) {
+        if (!productsByCategory['bundle']) {
+          productsByCategory['bundle'] = product.id;
+          console.log(`[Stripe Init] Matched bundle via name: ${product.name}`);
+        }
+        continue; // Don't let bundle match as real_estate!
+      }
+      
+      // Match single-category products by name (not already matched)
+      if (!productsByCategory['real_estate'] && (name === 'real estate exam' || name === 'real estate exam prep')) {
+        productsByCategory['real_estate'] = product.id;
+        console.log(`[Stripe Init] Matched real_estate via name: ${product.name}`);
+      } else if (!productsByCategory['property_casualty'] && (name.includes('property') && name.includes('casualty'))) {
+        productsByCategory['property_casualty'] = product.id;
+        console.log(`[Stripe Init] Matched property_casualty via name: ${product.name}`);
+      } else if (!productsByCategory['life_insurance'] && name.includes('life insurance')) {
+        productsByCategory['life_insurance'] = product.id;
+        console.log(`[Stripe Init] Matched life_insurance via name: ${product.name}`);
+      } else if (!productsByCategory['general_lines'] && name.includes('general lines')) {
+        productsByCategory['general_lines'] = product.id;
+        console.log(`[Stripe Init] Matched general_lines via name: ${product.name}`);
+      }
+    }
     
-    console.log(`[Stripe Init] Product mapping: ${JSON.stringify(productsByName)}`);
+    console.log(`[Stripe Init] Product mapping: ${JSON.stringify(productsByCategory)}`);
     
+    // Build existing price keys
     const existingPriceKeys = new Set<string>();
     for (const price of existingPrices.data) {
       const productId = typeof price.product === 'string' ? price.product : price.product.id;
@@ -105,47 +131,62 @@ export async function initializeStripePrices(): Promise<void> {
       existingPriceKeys.add(key);
     }
     
+    console.log(`[Stripe Init] Existing price keys: ${Array.from(existingPriceKeys).join(', ')}`);
+    
     let createdProducts = 0;
     let createdPrices = 0;
     
     for (const config of REQUIRED_PRICES) {
-      let productId = productsByName[config.category];
+      let productId = productsByCategory[config.category];
       
+      // Create product if missing
       if (!productId) {
-        console.log(`[Stripe Init] CREATING product: ${config.productName}`);
-        const product = await stripe.products.create({
-          name: config.productName,
-          metadata: {
-            subscription_type: config.isBundle ? 'bundle' : 'single',
-            allowed_categories: config.isBundle 
-              ? 'real_estate,property_casualty,life_insurance,general_lines' 
-              : config.category
-          }
-        });
-        productId = product.id;
-        productsByName[config.category] = productId;
-        createdProducts++;
-      }
-      
-      for (const priceConfig of config.prices) {
-        const key = `${productId}-${priceConfig.interval}-${priceConfig.amount}`;
-        
-        if (!existingPriceKeys.has(key)) {
-          console.log(`[Stripe Init] CREATING price: ${config.productName} - $${priceConfig.amount / 100}/${priceConfig.interval}`);
-          await stripe.prices.create({
-            product: productId,
-            unit_amount: priceConfig.amount,
-            currency: 'usd',
-            recurring: { interval: priceConfig.interval },
+        try {
+          console.log(`[Stripe Init] CREATING product: ${config.productName} (category: ${config.category})`);
+          const product = await stripe.products.create({
+            name: config.productName,
             metadata: {
               subscription_type: config.isBundle ? 'bundle' : 'single',
               allowed_categories: config.isBundle 
                 ? 'real_estate,property_casualty,life_insurance,general_lines' 
-                : config.category,
-              billing_period: priceConfig.billingPeriod
+                : config.category
             }
           });
-          createdPrices++;
+          productId = product.id;
+          productsByCategory[config.category] = productId;
+          createdProducts++;
+          console.log(`[Stripe Init] Created product ${config.productName} -> ${productId}`);
+        } catch (err: any) {
+          console.error(`[Stripe Init] ERROR creating product ${config.productName}:`, err.message || err);
+          continue;
+        }
+      }
+      
+      // Create missing prices for this product
+      for (const priceConfig of config.prices) {
+        const key = `${productId}-${priceConfig.interval}-${priceConfig.amount}`;
+        
+        if (!existingPriceKeys.has(key)) {
+          try {
+            console.log(`[Stripe Init] CREATING price: ${config.productName} - $${priceConfig.amount / 100}/${priceConfig.interval}`);
+            const price = await stripe.prices.create({
+              product: productId,
+              unit_amount: priceConfig.amount,
+              currency: 'usd',
+              recurring: { interval: priceConfig.interval },
+              metadata: {
+                subscription_type: config.isBundle ? 'bundle' : 'single',
+                allowed_categories: config.isBundle 
+                  ? 'real_estate,property_casualty,life_insurance,general_lines' 
+                  : config.category,
+                billing_period: priceConfig.billingPeriod
+              }
+            });
+            createdPrices++;
+            console.log(`[Stripe Init] Created price ${price.id} for ${config.productName}`);
+          } catch (err: any) {
+            console.error(`[Stripe Init] ERROR creating price for ${config.productName}:`, err.message || err);
+          }
         }
       }
     }

@@ -48,11 +48,14 @@ const REQUIRED_PRICES = [
 export async function initializeStripePrices(): Promise<void> {
   try {
     const stripe = await getCachedStripeClient();
+    const isProduction = process.env.REPLIT_DEPLOYMENT === "1";
     
-    console.log('[Stripe Init] Checking for missing products and prices...');
+    console.log(`[Stripe Init] Checking for missing products and prices... (env: ${isProduction ? 'PRODUCTION' : 'development'})`);
     
     const existingProducts = await stripe.products.list({ active: true, limit: 100 });
     const existingPrices = await stripe.prices.list({ active: true, limit: 100, expand: ['data.product'] });
+    
+    console.log(`[Stripe Init] Found ${existingProducts.data.length} products and ${existingPrices.data.length} prices in Stripe`);
     
     const productsByName: Record<string, string> = {};
     for (const product of existingProducts.data) {
@@ -65,6 +68,8 @@ export async function initializeStripePrices(): Promise<void> {
         if (normalizedName.includes('bundle')) productsByName['bundle'] = product.id;
       }
     }
+    
+    console.log(`[Stripe Init] Product mapping: ${JSON.stringify(productsByName)}`);
     
     const existingPriceKeys = new Set<string>();
     for (const price of existingPrices.data) {
@@ -80,7 +85,7 @@ export async function initializeStripePrices(): Promise<void> {
       let productId = productsByName[config.category];
       
       if (!productId) {
-        console.log(`[Stripe Init] Creating product: ${config.productName}`);
+        console.log(`[Stripe Init] CREATING product: ${config.productName}`);
         const product = await stripe.products.create({
           name: config.productName,
           metadata: {
@@ -99,7 +104,7 @@ export async function initializeStripePrices(): Promise<void> {
         const key = `${productId}-${priceConfig.interval}-${priceConfig.amount}`;
         
         if (!existingPriceKeys.has(key)) {
-          console.log(`[Stripe Init] Creating price: ${config.productName} - $${priceConfig.amount / 100}/${priceConfig.interval}`);
+          console.log(`[Stripe Init] CREATING price: ${config.productName} - $${priceConfig.amount / 100}/${priceConfig.interval}`);
           await stripe.prices.create({
             product: productId,
             unit_amount: priceConfig.amount,

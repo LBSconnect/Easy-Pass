@@ -37,6 +37,10 @@ import { eq, and, desc, sql } from "drizzle-orm";
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  setPasswordResetToken(userId: string, token: string, expiry: Date): Promise<void>;
+  getUserByResetToken(token: string): Promise<User | undefined>;
+  updateUserPassword(userId: string, hashedPassword: string): Promise<void>;
+  clearResetToken(userId: string): Promise<void>;
   
   getProfile(userId: string): Promise<UserProfile | undefined>;
   createProfile(profile: InsertUserProfile): Promise<UserProfile>;
@@ -98,6 +102,23 @@ export class DatabaseStorage implements IStorage {
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
+  }
+  
+  async setPasswordResetToken(userId: string, token: string, expiry: Date): Promise<void> {
+    await db.update(users).set({ resetToken: token, resetTokenExpiry: expiry }).where(eq(users.id, userId));
+  }
+  
+  async getUserByResetToken(token: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.resetToken, token));
+    return user;
+  }
+  
+  async updateUserPassword(userId: string, hashedPassword: string): Promise<void> {
+    await db.update(users).set({ password: hashedPassword, updatedAt: new Date() }).where(eq(users.id, userId));
+  }
+  
+  async clearResetToken(userId: string): Promise<void> {
+    await db.update(users).set({ resetToken: null, resetTokenExpiry: null }).where(eq(users.id, userId));
   }
 
   async getProfile(userId: string): Promise<UserProfile | undefined> {

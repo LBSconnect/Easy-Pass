@@ -45,10 +45,17 @@ export default function ResetPasswordPage() {
     queryKey: ["/api/reset-password/verify", token],
     queryFn: async () => {
       if (!token) return { valid: false, message: "No token provided" };
-      const res = await fetch(`/api/reset-password/verify?token=${token}`);
-      return res.json();
+      try {
+        const res = await fetch(`/api/reset-password/verify?token=${token}`);
+        const data = await res.json();
+        return data;
+      } catch {
+        return { valid: false, message: "Failed to verify token" };
+      }
     },
-    enabled: !!token,
+    enabled: !!token && !isSuccess,
+    retry: false,
+    staleTime: Infinity,
   });
   
   const form = useForm<ResetPasswordFormValues>({
@@ -65,6 +72,10 @@ export default function ResetPasswordPage() {
         token,
         password: data.password,
       });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Reset failed" }));
+        throw new Error(errorData.message || "Reset failed");
+      }
       return res.json();
     },
     onSuccess: () => {

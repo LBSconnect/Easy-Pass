@@ -997,12 +997,13 @@ export async function registerRoutes(
         return res.status(404).json({ message: "User not found or has no email" });
       }
       
-      const resetToken = crypto.randomBytes(32).toString("hex");
+      const rawToken = crypto.randomBytes(32).toString("hex");
+      const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
       const resetExpiry = new Date(Date.now() + 60 * 60 * 1000);
       
-      await storage.setPasswordResetToken(userId, resetToken, resetExpiry);
+      await storage.setPasswordResetToken(userId, hashedToken, resetExpiry);
       
-      const sent = await sendPasswordResetEmail(user.email, resetToken, user.firstName || undefined);
+      const sent = await sendPasswordResetEmail(user.email, rawToken, user.firstName || undefined);
       
       if (!sent) {
         return res.status(500).json({ message: "Failed to send email" });
@@ -1030,13 +1031,15 @@ export async function registerRoutes(
       
       const { token, password } = parsed.data;
       
-      const user = await storage.getUserByResetToken(token);
+      const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+      const user = await storage.getUserByResetToken(hashedToken);
       
       if (!user) {
         return res.status(400).json({ message: "Invalid or expired reset token" });
       }
       
       if (!user.resetTokenExpiry || new Date(user.resetTokenExpiry) < new Date()) {
+        await storage.clearResetToken(user.id);
         return res.status(400).json({ message: "Reset token has expired" });
       }
       
@@ -1060,7 +1063,8 @@ export async function registerRoutes(
         return res.status(400).json({ valid: false, message: "No token provided" });
       }
       
-      const user = await storage.getUserByResetToken(token);
+      const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+      const user = await storage.getUserByResetToken(hashedToken);
       
       if (!user) {
         return res.status(400).json({ valid: false, message: "Invalid reset token" });

@@ -5,6 +5,7 @@ import { isAuthenticated } from "./simpleAuth";
 import { getCachedStripeClient } from "./stripeClient";
 import { initializeStripePrices } from "./initializeStripePrices";
 import { sendPasswordResetEmail } from "./resendClient";
+import { rateLimit, getClientIp } from "./rateLimit";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { insertQuestionSchema, insertCallbackRequestSchema, insertQuestionFeedbackSchema, insertGuestArticleSchema, callbackRequests, questionFeedback, type ExamCategory, examCategoryEnum, feedbackStatusEnum, guestArticleStatusEnum } from "@shared/schema";
@@ -1193,6 +1194,17 @@ export async function registerRoutes(
   // Public: Request password reset (forgot password)
   app.post("/api/forgot-password", async (req, res) => {
     try {
+      // Rate limit by IP: 5 requests per 15 minutes
+      const clientIp = getClientIp(req);
+      const rateLimitResult = rateLimit(`forgot-password:${clientIp}`, 5, 15 * 60 * 1000);
+      
+      if (!rateLimitResult.allowed) {
+        return res.status(429).json({ 
+          message: "Too many password reset requests. Please try again later.",
+          retryAfter: Math.ceil(rateLimitResult.resetIn / 1000)
+        });
+      }
+      
       const schema = z.object({
         email: z.string().email("Invalid email"),
       });
@@ -1203,6 +1215,14 @@ export async function registerRoutes(
       }
       
       const { email } = parsed.data;
+      
+      // Additional rate limit by email: 3 requests per hour
+      const emailRateLimit = rateLimit(`forgot-password:email:${email.toLowerCase()}`, 3, 60 * 60 * 1000);
+      if (!emailRateLimit.allowed) {
+        // Still return success to prevent email enumeration
+        return res.json({ success: true, message: "If an account exists with this email, a reset link has been sent." });
+      }
+      
       const user = await storage.getUserByEmail(email);
       
       // Always return success to prevent email enumeration attacks
@@ -1268,6 +1288,17 @@ export async function registerRoutes(
   // Public: Reset password with token
   app.post("/api/reset-password", async (req, res) => {
     try {
+      // Rate limit: 10 attempts per 15 minutes per IP
+      const clientIp = getClientIp(req);
+      const rateLimitResult = rateLimit(`reset-password:${clientIp}`, 10, 15 * 60 * 1000);
+      
+      if (!rateLimitResult.allowed) {
+        return res.status(429).json({ 
+          message: "Too many reset attempts. Please try again later.",
+          retryAfter: Math.ceil(rateLimitResult.resetIn / 1000)
+        });
+      }
+      
       const schema = z.object({
         token: z.string().min(1),
         password: z.string().min(8, "Password must be at least 8 characters"),
@@ -1306,6 +1337,17 @@ export async function registerRoutes(
   // Public: Verify reset token is valid
   app.get("/api/reset-password/verify", async (req, res) => {
     try {
+      // Rate limit: 20 attempts per 15 minutes per IP (more lenient for verification)
+      const clientIp = getClientIp(req);
+      const rateLimitResult = rateLimit(`reset-verify:${clientIp}`, 20, 15 * 60 * 1000);
+      
+      if (!rateLimitResult.allowed) {
+        return res.status(429).json({ 
+          valid: false, 
+          message: "Too many verification attempts. Please try again later."
+        });
+      }
+      
       const token = req.query.token as string;
       
       if (!token) {

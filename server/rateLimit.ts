@@ -1,9 +1,26 @@
+import type { Request } from "express";
+
 interface RateLimitEntry {
   count: number;
   resetTime: number;
 }
 
 const rateLimitStore = new Map<string, RateLimitEntry>();
+
+export function getClientIp(req: Request): string {
+  const xForwardedFor = req.headers['x-forwarded-for'];
+  if (xForwardedFor) {
+    const ips = Array.isArray(xForwardedFor) 
+      ? xForwardedFor[0] 
+      : xForwardedFor.split(',')[0];
+    const cleanIp = ips?.trim();
+    if (cleanIp && cleanIp !== 'unknown') {
+      return cleanIp;
+    }
+  }
+  
+  return req.ip || req.socket?.remoteAddress || 'unknown';
+}
 
 export function rateLimit(key: string, maxAttempts: number, windowMs: number): { allowed: boolean; remaining: number; resetIn: number } {
   const now = Date.now();

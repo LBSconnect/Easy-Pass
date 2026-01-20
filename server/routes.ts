@@ -1190,6 +1190,45 @@ export async function registerRoutes(
     }
   });
 
+  // Public: Request password reset (forgot password)
+  app.post("/api/forgot-password", async (req, res) => {
+    try {
+      const schema = z.object({
+        email: z.string().email("Invalid email"),
+      });
+      
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid email address" });
+      }
+      
+      const { email } = parsed.data;
+      const user = await storage.getUserByEmail(email);
+      
+      // Always return success to prevent email enumeration attacks
+      if (!user) {
+        return res.json({ success: true, message: "If an account exists with this email, a reset link has been sent." });
+      }
+      
+      const rawToken = crypto.randomBytes(32).toString("hex");
+      const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+      const resetExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+      
+      await storage.setPasswordResetToken(user.id, hashedToken, resetExpiry);
+      
+      const sent = await sendPasswordResetEmail(user.email!, rawToken, user.firstName || undefined);
+      
+      if (!sent) {
+        console.error("Failed to send password reset email to:", email);
+      }
+      
+      res.json({ success: true, message: "If an account exists with this email, a reset link has been sent." });
+    } catch (error) {
+      console.error("Error in forgot password:", error);
+      res.status(500).json({ message: "Failed to process request" });
+    }
+  });
+
   // Admin: Send password reset email
   app.post("/api/admin/send-password-reset/:userId", isAuthenticated, async (req: any, res) => {
     try {

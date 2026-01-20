@@ -127,6 +127,15 @@ function LoginForm({ onSwitchToSignup }: { onSwitchToSignup: () => void }) {
                 </FormItem>
               )}
             />
+            <div className="flex justify-end">
+              <a
+                href="/forgot-password"
+                className="text-sm text-primary hover:underline"
+                data-testid="link-forgot-password"
+              >
+                {t("auth.forgotPassword", "Forgot password?")}
+              </a>
+            </div>
             <Button 
               type="submit" 
               className="w-full" 

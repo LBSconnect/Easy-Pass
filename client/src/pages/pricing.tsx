@@ -37,7 +37,7 @@ export default function PricingPage() {
   const isSpanish = i18n.language === 'es';
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [billingPeriod, setBillingPeriod] = useState<'weekly' | 'monthly'>('monthly');
+  const billingPeriod = 'monthly' as const;
 
   const { data: prices = [], isLoading: pricesLoading } = useQuery<StripePrice[]>({
     queryKey: ["/api/stripe/prices"],
@@ -207,41 +207,11 @@ export default function PricingPage() {
                 </CardContent>
               </Card>
 
-              <Card className="mb-8" data-testid="card-billing-period">
-                <CardHeader>
-                  <CardTitle className="text-xl">
-                    {isSpanish ? '2. Elija su Período de Facturación' : '2. Choose Your Billing Period'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-4">
-                    <Button
-                      variant={billingPeriod === 'weekly' ? 'default' : 'outline'}
-                      className="flex-1"
-                      onClick={() => setBillingPeriod('weekly')}
-                      data-testid="button-billing-weekly"
-                    >
-                      {isSpanish ? 'Semanal' : 'Weekly'}
-                    </Button>
-                    <Button
-                      variant={billingPeriod === 'monthly' ? 'default' : 'outline'}
-                      className="flex-1 relative"
-                      onClick={() => setBillingPeriod('monthly')}
-                      data-testid="button-billing-monthly"
-                    >
-                      {isSpanish ? 'Mensual' : 'Monthly'}
-                      <Badge className="absolute -top-2 -right-2 text-xs" variant="secondary">
-                        {isSpanish ? 'Ahorra 29%' : 'Save 29%'}
-                      </Badge>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
 
               <Card className={`border-2 ${applicablePrice ? 'border-primary' : 'border-muted'}`} data-testid="card-subscription-summary">
                 <CardHeader>
                   <CardTitle className="text-xl">
-                    {isSpanish ? '3. Resumen de Suscripción' : '3. Subscription Summary'}
+                    {isSpanish ? '2. Resumen de Suscripción' : '2. Subscription Summary'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -270,14 +240,12 @@ export default function PricingPage() {
                       <div className="flex items-center justify-between pt-4 border-t">
                         <div>
                           <p className="text-sm text-muted-foreground">
-                            {billingPeriod === 'weekly' 
-                              ? (isSpanish ? 'Facturado semanalmente' : 'Billed weekly')
-                              : (isSpanish ? 'Facturado mensualmente' : 'Billed monthly')}
+                            {isSpanish ? 'Facturado mensualmente' : 'Billed monthly'}
                           </p>
                           <p className="text-3xl font-bold">
                             {applicablePrice ? formatPrice(applicablePrice.unit_amount) : '--'}
                             <span className="text-base font-normal text-muted-foreground">
-                              /{billingPeriod === 'weekly' ? (isSpanish ? 'semana' : 'week') : (isSpanish ? 'mes' : 'month')}
+                              /{isSpanish ? 'mes' : 'month'}
                             </span>
                           </p>
                         </div>
@@ -321,7 +289,7 @@ export default function PricingPage() {
                       <p className="text-2xl font-bold">
                         {formatPrice(bundlePrice.unit_amount)}
                         <span className="text-sm font-normal text-muted-foreground">
-                          /{billingPeriod === 'weekly' ? (isSpanish ? 'semana' : 'week') : (isSpanish ? 'mes' : 'month')}
+                          /{isSpanish ? 'mes' : 'month'}
                         </span>
                       </p>
                       <Button 

@@ -6,7 +6,6 @@ const REQUIRED_PRICES = [
     productName: 'Real Estate Exam',
     category: 'real_estate',
     prices: [
-      { amount: 699, interval: 'week' as const, billingPeriod: 'weekly' },
       { amount: 1999, interval: 'month' as const, billingPeriod: 'monthly' }
     ]
   },
@@ -14,7 +13,6 @@ const REQUIRED_PRICES = [
     productName: 'Property & Casualty Exam',
     category: 'property_casualty',
     prices: [
-      { amount: 699, interval: 'week' as const, billingPeriod: 'weekly' },
       { amount: 1999, interval: 'month' as const, billingPeriod: 'monthly' }
     ]
   },
@@ -22,7 +20,6 @@ const REQUIRED_PRICES = [
     productName: 'Life Insurance Exam',
     category: 'life_insurance',
     prices: [
-      { amount: 699, interval: 'week' as const, billingPeriod: 'weekly' },
       { amount: 1999, interval: 'month' as const, billingPeriod: 'monthly' }
     ]
   },
@@ -30,7 +27,6 @@ const REQUIRED_PRICES = [
     productName: 'General Lines Exam',
     category: 'general_lines',
     prices: [
-      { amount: 699, interval: 'week' as const, billingPeriod: 'weekly' },
       { amount: 1999, interval: 'month' as const, billingPeriod: 'monthly' }
     ]
   },
@@ -39,7 +35,6 @@ const REQUIRED_PRICES = [
     category: 'bundle',
     isBundle: true,
     prices: [
-      { amount: 1299, interval: 'week' as const, billingPeriod: 'weekly' },
       { amount: 3499, interval: 'month' as const, billingPeriod: 'monthly' }
     ]
   }

@@ -8,7 +8,23 @@ The application follows a subscription-based model with category-specific pricin
 
 ## Recent Changes (January 2026)
 
-### New Category-Based Subscription Model (Latest)
+### Password Reset & Security Hardening (January 20, 2026)
+- **Self-Service Password Reset Flow**: Complete implementation with forgot-password and reset-password pages
+- **Security Features**:
+  - SHA-256 token hashing before database storage
+  - 1-hour token expiry for security
+  - Generic responses prevent email enumeration attacks
+  - Comprehensive rate limiting on all password reset endpoints
+- **Rate Limiting Configuration**:
+  - Forgot password: 5 requests per 15 minutes per IP, 3 per hour per email
+  - Reset password: 10 requests per 15 minutes per IP
+  - Verify token: 20 requests per 15 minutes per IP
+- **Client IP Extraction**: Robust helper for Replit's reverse proxy using X-Forwarded-For headers
+- **Email Integration**: Branded HTML email templates via Resend for password reset notifications
+- **Testing**: 23 automated tests (16 API + 7 browser tests) covering validation, security, and rate limiting
+- **Files Added**: server/rateLimit.ts, client/src/pages/forgot-password.tsx, client/src/pages/reset-password.tsx, tests/password-reset.spec.ts
+
+### New Category-Based Subscription Model
 - **Business Rule**: Customers can subscribe to only ONE exam category per subscription, OR choose the "Insurance + Real Estate" bundle for all 4 categories
 - **Subscription Types**:
   - `single`: Access to one specific exam category ($6.99/week or $19.99/month)

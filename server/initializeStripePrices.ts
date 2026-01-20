@@ -50,6 +50,28 @@ export async function initializeStripePrices(): Promise<void> {
     const existingProducts = await stripe.products.list({ active: true, limit: 100 });
     const existingPrices = await stripe.prices.list({ active: true, limit: 100, expand: ['data.product'] });
     
+    // Deactivate weekly prices (no longer offered)
+    let deactivatedCount = 0;
+    for (const price of existingPrices.data) {
+      if (price.recurring?.interval === 'week' && price.active) {
+        const product = typeof price.product === 'object' && !('deleted' in price.product) ? price.product : null;
+        const hasSubscriptionMetadata = price.metadata?.subscription_type || product?.metadata?.subscription_type;
+        
+        if (hasSubscriptionMetadata) {
+          try {
+            await stripe.prices.update(price.id, { active: false });
+            console.log(`[Stripe Init] Deactivated weekly price: ${price.id} (${product?.name || 'Unknown'})`);
+            deactivatedCount++;
+          } catch (err: any) {
+            console.error(`[Stripe Init] Failed to deactivate price ${price.id}:`, err.message);
+          }
+        }
+      }
+    }
+    if (deactivatedCount > 0) {
+      console.log(`[Stripe Init] Deactivated ${deactivatedCount} weekly prices`);
+    }
+    
     console.log(`[Stripe Init] Found ${existingProducts.data.length} products and ${existingPrices.data.length} prices in Stripe`);
     
     // Log all existing product names for debugging

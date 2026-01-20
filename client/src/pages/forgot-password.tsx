@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { useToast } from "@/hooks/use-toast";
 import { Mail, ArrowLeft, CheckCircle, Loader2 } from "lucide-react";
 
 const forgotPasswordSchema = z.object({
@@ -24,6 +25,7 @@ export default function ForgotPasswordPage() {
   const { t, i18n } = useTranslation();
   const isSpanish = i18n.language === 'es';
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const { toast } = useToast();
 
   const form = useForm<ForgotPasswordFormData>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -37,6 +39,14 @@ export default function ForgotPasswordPage() {
     },
     onSuccess: () => {
       setIsSubmitted(true);
+    },
+    onError: (error: any) => {
+      const message = error?.message || (isSpanish ? 'Error al procesar la solicitud' : 'Failed to process request');
+      toast({
+        title: isSpanish ? 'Error' : 'Error',
+        description: message,
+        variant: 'destructive',
+      });
     },
   });
 

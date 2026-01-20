@@ -60,14 +60,41 @@ export async function initializeStripePrices(): Promise<void> {
     const productsByName: Record<string, string> = {};
     for (const product of existingProducts.data) {
       if (product.name) {
-        const normalizedName = product.name.toLowerCase();
-        if (normalizedName.includes('real estate')) productsByName['real_estate'] = product.id;
-        if (normalizedName.includes('property') || normalizedName.includes('casualty')) productsByName['property_casualty'] = product.id;
-        if (normalizedName.includes('life')) productsByName['life_insurance'] = product.id;
-        if (normalizedName.includes('general')) productsByName['general_lines'] = product.id;
-        if (normalizedName.includes('bundle')) productsByName['bundle'] = product.id;
+        const normalizedName = product.name.toLowerCase().trim();
+        
+        // Use exact name matching or metadata to avoid false positives
+        // Check metadata first (most reliable)
+        if (product.metadata?.allowed_categories) {
+          const categories = product.metadata.allowed_categories;
+          if (product.metadata.subscription_type === 'bundle' || categories.includes(',')) {
+            productsByName['bundle'] = product.id;
+          } else if (categories === 'real_estate') {
+            productsByName['real_estate'] = product.id;
+          } else if (categories === 'property_casualty') {
+            productsByName['property_casualty'] = product.id;
+          } else if (categories === 'life_insurance') {
+            productsByName['life_insurance'] = product.id;
+          } else if (categories === 'general_lines') {
+            productsByName['general_lines'] = product.id;
+          }
+        } else {
+          // Fallback to exact name matching (avoid substring issues)
+          if (normalizedName === 'real estate exam' || normalizedName === 'real estate exam prep') {
+            productsByName['real_estate'] = product.id;
+          } else if (normalizedName === 'property & casualty exam' || normalizedName === 'property & casualty insurance exam prep') {
+            productsByName['property_casualty'] = product.id;
+          } else if (normalizedName === 'life insurance exam' || normalizedName === 'life insurance exam prep') {
+            productsByName['life_insurance'] = product.id;
+          } else if (normalizedName === 'general lines exam' || normalizedName === 'general lines insurance exam prep') {
+            productsByName['general_lines'] = product.id;
+          } else if (normalizedName === 'bundle' || normalizedName === 'insurance + real estate bundle') {
+            productsByName['bundle'] = product.id;
+          }
+        }
       }
     }
+    
+    console.log(`[Stripe Init] Existing products found: ${Object.keys(productsByName).join(', ') || 'none'}`)
     
     console.log(`[Stripe Init] Product mapping: ${JSON.stringify(productsByName)}`);
     

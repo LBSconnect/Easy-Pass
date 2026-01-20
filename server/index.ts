@@ -6,6 +6,7 @@ import { setupAuth } from "./simpleAuth";
 import { runMigrations } from "stripe-replit-sync";
 import { getStripeSync } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
+import { initializeStripePrices } from "./initializeStripePrices";
 
 const app = express();
 const httpServer = createServer(app);
@@ -80,6 +81,9 @@ async function initStripe() {
       .catch((err: Error) => {
         console.log("Stripe sync skipped:", err.message);
       });
+
+    console.log("Initializing Stripe prices...");
+    await initializeStripePrices();
   } catch (error: any) {
     console.log("Stripe initialization skipped:", error.message);
     console.log("Stripe features may be limited");

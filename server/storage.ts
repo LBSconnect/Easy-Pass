@@ -141,39 +141,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getQuestions(category?: ExamCategory, limit?: number): Promise<Question[]> {
-    // Use raw SQL to avoid prepared statement caching issues with Neon/PgBouncer
-    // Each unique limit value needs a fresh query to prevent stale statement reuse
+    // Build separate query each time to avoid prepared statement caching issues with Neon/PgBouncer
+    // Using fresh db.select() calls ensures different limits get separate prepared statements
     if (category && limit) {
-      return db.execute(sql`
-        SELECT * FROM questions 
-        WHERE is_active = true AND category = ${category}
-        ORDER BY RANDOM() 
-        LIMIT ${limit}
-      `) as unknown as Promise<Question[]>;
+      return db.select().from(questions)
+        .where(and(eq(questions.isActive, true), eq(questions.category, category)))
+        .orderBy(sql`RANDOM()`)
+        .limit(limit);
     }
     
     if (category) {
-      return db.execute(sql`
-        SELECT * FROM questions 
-        WHERE is_active = true AND category = ${category}
-        ORDER BY RANDOM()
-      `) as unknown as Promise<Question[]>;
+      return db.select().from(questions)
+        .where(and(eq(questions.isActive, true), eq(questions.category, category)))
+        .orderBy(sql`RANDOM()`);
     }
     
     if (limit) {
-      return db.execute(sql`
-        SELECT * FROM questions 
-        WHERE is_active = true
-        ORDER BY RANDOM() 
-        LIMIT ${limit}
-      `) as unknown as Promise<Question[]>;
+      return db.select().from(questions)
+        .where(eq(questions.isActive, true))
+        .orderBy(sql`RANDOM()`)
+        .limit(limit);
     }
     
-    return db.execute(sql`
-      SELECT * FROM questions 
-      WHERE is_active = true
-      ORDER BY RANDOM()
-    `) as unknown as Promise<Question[]>;
+    return db.select().from(questions)
+      .where(eq(questions.isActive, true))
+      .orderBy(sql`RANDOM()`);
   }
 
   async getQuestion(id: string): Promise<Question | undefined> {

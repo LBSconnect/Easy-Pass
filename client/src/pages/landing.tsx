@@ -196,7 +196,7 @@ export default function LandingPage() {
                   data-testid="cta-hero-start-practicing"
                   data-analytics="hero-cta-start"
                 >
-                  <Link href="/register">
+                  <Link href="/signup">
                     {isSpanish ? "Comenzar a Practicar" : "Start Practicing"}
                     <ArrowRight className="h-5 w-5" />
                   </Link>
@@ -333,7 +333,7 @@ export default function LandingPage() {
                 data-testid="cta-included-start"
                 data-analytics="included-cta-start"
               >
-                <Link href="/register">
+                <Link href="/signup">
                   {isSpanish ? "Comenzar Ahora" : "Get Started Now"}
                   <ArrowRight className="h-5 w-5" />
                 </Link>
@@ -386,7 +386,7 @@ export default function LandingPage() {
                         data-testid={`cta-category-${category.id}`}
                         data-analytics={`category-cta-${category.id}`}
                       >
-                        <Link href="/register">
+                        <Link href="/signup">
                           {isSpanish ? "Comenzar" : "Start Practicing"}
                           <ArrowRight className="h-4 w-4" />
                         </Link>
@@ -536,7 +536,7 @@ export default function LandingPage() {
               data-testid="cta-final-start"
               data-analytics="final-cta-start"
             >
-              <Link href="/register">
+              <Link href="/signup">
                 {isSpanish ? "Comenzar a Practicar Gratis" : "Start Practicing Free"}
                 <ArrowRight className="h-5 w-5" />
               </Link>

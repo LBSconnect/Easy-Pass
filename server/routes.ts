@@ -131,7 +131,9 @@ export async function registerRoutes(
       }
       
       const questionLimit = mode === "full" ? undefined : 50;
+      console.log(`[Exam Start] Category: ${category}, Mode: ${mode}, Limit: ${questionLimit}`);
       const questions = await storage.getQuestions(category, questionLimit);
+      console.log(`[Exam Start] Retrieved ${questions.length} questions for category ${category}`);
       
       if (questions.length === 0) {
         return res.status(404).json({ message: "No questions available for this category" });

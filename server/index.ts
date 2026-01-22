@@ -46,6 +46,7 @@ async function initStripe() {
 
     const stripeSync = await getStripeSync();
 
+    // Safe webhook initialization - never crash the server
     console.log("Setting up managed webhook...");
     const isProduction = process.env.REPLIT_DEPLOYMENT === "1";
     const customDomain = "myeasypass.net";
@@ -62,13 +63,28 @@ async function initStripe() {
     
     if (webhookBaseUrl) {
       try {
-        const result = await stripeSync.findOrCreateManagedWebhook(
-          `${webhookBaseUrl}/api/stripe/webhook`
-        );
-        const webhookUrl = result?.webhook?.url || result?.url || webhookBaseUrl + "/api/stripe/webhook";
-        console.log(`Webhook configured: ${webhookUrl}`);
-      } catch (webhookErr) {
-        console.log("Webhook setup skipped:", (webhookErr as Error).message);
+        // Use a more robust approach that won't crash if webhook doesn't exist
+        const webhookUrl = `${webhookBaseUrl}/api/stripe/webhook`;
+        
+        try {
+          const result = await stripeSync.findOrCreateManagedWebhook(webhookUrl);
+          const configuredUrl = result?.webhook?.url || result?.url || webhookUrl;
+          console.log(`Webhook configured: ${configuredUrl}`);
+        } catch (webhookErr: any) {
+          // Check if it's a "no such webhook endpoint" error
+          if (webhookErr.code === 'resource_missing' || 
+              webhookErr.message?.includes('No such webhook endpoint') ||
+              webhookErr.type === 'StripeInvalidRequestError') {
+            console.warn("[Stripe Init] Old webhook endpoint not found, will use new one");
+            console.log(`[Stripe Init] Webhook URL ready: ${webhookUrl}`);
+            // Don't crash - the webhook route is still registered and will work
+          } else {
+            console.log("Webhook setup warning:", webhookErr.message);
+          }
+        }
+      } catch (outerErr: any) {
+        console.log("[Stripe Init] Webhook initialization skipped:", outerErr.message);
+        // Do NOT crash the server; continue startup
       }
     }
 

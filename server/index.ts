@@ -171,9 +171,14 @@ async function initStripe() {
     throw err;
   });
 
-  if (process.env.NODE_ENV === "production") {
+  // Detect production: REPLIT_DEPLOYMENT is set to "1" in deployed apps
+  const isProduction = process.env.REPLIT_DEPLOYMENT === "1" || process.env.NODE_ENV === "production";
+  
+  if (isProduction) {
+    log(`Running in PRODUCTION mode (REPLIT_DEPLOYMENT=${process.env.REPLIT_DEPLOYMENT}, NODE_ENV=${process.env.NODE_ENV})`);
     serveStatic(app);
   } else {
+    log(`Running in DEVELOPMENT mode`);
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);
   }

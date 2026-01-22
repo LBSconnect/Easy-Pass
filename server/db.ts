@@ -10,10 +10,14 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
+// Detect production: REPLIT_DEPLOYMENT is set to "1" in deployed apps
+const isProduction = process.env.REPLIT_DEPLOYMENT === "1" || process.env.NODE_ENV === "production";
+console.log(`[DB] Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}, REPLIT_DEPLOYMENT=${process.env.REPLIT_DEPLOYMENT}, NODE_ENV=${process.env.NODE_ENV}`);
+
 // Configure pool with SSL for Neon in production
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: isProduction ? { rejectUnauthorized: false } : false,
   // Increase connection limits for production
   max: 20,
   idleTimeoutMillis: 30000,

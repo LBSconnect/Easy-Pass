@@ -43,7 +43,8 @@ export class WebhookHandlers {
       }
     } else {
       console.log("No webhook secret available, parsing event without verification (development only)");
-      if (process.env.NODE_ENV === "production") {
+      const isProduction = process.env.REPLIT_DEPLOYMENT === "1" || process.env.NODE_ENV === "production";
+      if (isProduction) {
         throw new Error("Webhook secret required in production");
       }
       event = JSON.parse(payload.toString()) as Stripe.Event;

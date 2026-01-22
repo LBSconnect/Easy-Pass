@@ -1,0 +1,63 @@
+Update the Stripe initialization logic so the production server no longer crashes when syncing webhook endpoints. The production logs show:
+
+StripeInvalidRequestError: No such webhook endpoint: 'we_1SsQz66zLLCul0SQ1JldCdpT'
+
+This means the server is attempting to retrieve or delete a webhook endpoint that does not exist in the production Stripe account. This causes the Node process to crash during startup, which prevents Express from starting and prevents all API routes (including getQuestions) from running.
+
+Apply the following fixes:
+
+1. Update environment variables in the production deployment:
+   - STRIPE_WEBHOOK_ENDPOINT_ID must be set to the ID of the newly created production webhook endpoint.
+   - STRIPE_WEBHOOK_SECRET must be set to the signing secret of the new production webhook endpoint.
+   - Remove or overwrite any old webhook IDs.
+
+2. Update the Stripe webhook initialization code so it does NOT crash if the webhook endpoint is missing. Instead, it should:
+   - Check whether STRIPE_WEBHOOK_ENDPOINT_ID exists in Stripe.
+   - If it does not exist, create a new webhook endpoint automatically.
+   - If it exists, update it if needed.
+   - Never throw an unhandled exception during startup.
+
+Replace the webhook initialization block with this safe version:
+
+try {
+  const endpointId = process.env.STRIPE_WEBHOOK_ENDPOINT_ID;
+  const webhookUrl = `${process.env.PUBLIC_URL}/api/webhooks/stripe`;
+
+  let endpoint;
+
+  if (endpointId) {
+    try {
+      endpoint = await stripe.webhookEndpoints.retrieve(endpointId);
+    } catch (err) {
+      console.warn("[Stripe Init] Webhook endpoint not found, creating new one...");
+    }
+  }
+
+  if (!endpoint) {
+    endpoint = await stripe.webhookEndpoints.create({
+      url: webhookUrl,
+      enabled_events: ["*"],
+    });
+
+    console.log("[Stripe Init] Created new webhook endpoint:", endpoint.id);
+
+    // IMPORTANT: Output the new ID so it can be added to production env vars
+    console.log("[Stripe Init] Set STRIPE_WEBHOOK_ENDPOINT_ID to:", endpoint.id);
+  } else {
+    console.log("[Stripe Init] Existing webhook endpoint is valid:", endpoint.id);
+  }
+} catch (error) {
+  console.error("[Stripe Init] Failed to initialize webhook endpoint:", error);
+  // Do NOT crash the server; continue startup
+}
+
+3. Redeploy after updating the environment variables.
+
+Expected result after deployment:
+- The server starts without crashing.
+- Express binds to the production port.
+- All API routes load correctly.
+- getQuestions returns the full dataset.
+- No more “signal: terminated” errors.
+
+Apply all changes exactly as written.

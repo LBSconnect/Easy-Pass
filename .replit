@@ -46,3 +46,7 @@ integrations = ["javascript_log_in_with_replit:2.0.0", "javascript_database:1.0.
 
 [userenv.shared]
 ADMIN_EMAIL = "info@lbsconnect.net"
+
+[userenv.production]
+STRIPE_WEBHOOK_SECRET = "<new secret>"
+STRIPE_WEBHOOK_ENDPOINT_ID = "<new endpoint ID>"

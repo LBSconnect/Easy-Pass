@@ -24,4 +24,5 @@ export const pool = new Pool({
   connectionTimeoutMillis: 10000,
 });
 
-export const db = drizzle(pool, { schema });
+// Disable prepared statements for PgBouncer compatibility (Neon uses transaction pooling)
+export const db = drizzle(pool, { schema, logger: false });

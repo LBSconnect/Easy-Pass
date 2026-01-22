@@ -141,31 +141,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getQuestions(category?: ExamCategory, limit?: number): Promise<Question[]> {
-    // Build separate query each time to avoid prepared statement caching issues with Neon/PgBouncer
-    // Using fresh db.select() calls ensures different limits get separate prepared statements
+    // Use raw SQL via pool to completely avoid prepared statement caching issues with Neon/PgBouncer
+    // The limit is interpolated directly into the SQL string (not as a parameter) to prevent
+    // query plan caching issues where different limits return cached results from prior executions
+    const { pool } = await import("./db");
+    
+    let query: string;
+    const params: any[] = [];
+    
     if (category && limit) {
-      return db.select().from(questions)
-        .where(and(eq(questions.isActive, true), eq(questions.category, category)))
-        .orderBy(sql`RANDOM()`)
-        .limit(limit);
+      query = `SELECT * FROM questions WHERE is_active = true AND category = $1 ORDER BY RANDOM() LIMIT ${limit}`;
+      params.push(category);
+    } else if (category) {
+      query = `SELECT * FROM questions WHERE is_active = true AND category = $1 ORDER BY RANDOM()`;
+      params.push(category);
+    } else if (limit) {
+      query = `SELECT * FROM questions WHERE is_active = true ORDER BY RANDOM() LIMIT ${limit}`;
+    } else {
+      query = `SELECT * FROM questions WHERE is_active = true ORDER BY RANDOM()`;
     }
     
-    if (category) {
-      return db.select().from(questions)
-        .where(and(eq(questions.isActive, true), eq(questions.category, category)))
-        .orderBy(sql`RANDOM()`);
-    }
-    
-    if (limit) {
-      return db.select().from(questions)
-        .where(eq(questions.isActive, true))
-        .orderBy(sql`RANDOM()`)
-        .limit(limit);
-    }
-    
-    return db.select().from(questions)
-      .where(eq(questions.isActive, true))
-      .orderBy(sql`RANDOM()`);
+    const result = await pool.query(query, params);
+    return result.rows as Question[];
   }
 
   async getQuestion(id: string): Promise<Question | undefined> {

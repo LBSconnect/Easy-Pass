@@ -141,27 +141,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getQuestions(category?: ExamCategory, limit?: number): Promise<Question[]> {
-    // Use Drizzle ORM for consistent query handling across environments
+    // Prevent bundler from removing Drizzle query code
+    void questions;
+    
     try {
+      console.log("[getQuestions] Production mode:", process.env.REPLIT_DEPLOYMENT === "1");
+      console.log("[getQuestions] DB URL present:", !!process.env.DATABASE_URL);
+      console.log("[getQuestions] Category:", category, "Limit:", limit);
+
       let baseQuery = db.select().from(questions).where(eq(questions.isActive, true));
-      
+
       if (category) {
-        baseQuery = db.select().from(questions).where(
-          and(eq(questions.isActive, true), eq(questions.category, category))
-        );
+        baseQuery = db
+          .select()
+          .from(questions)
+          .where(and(eq(questions.isActive, true), eq(questions.category, category)));
       }
-      
-      if (limit) {
-        const result = await baseQuery.orderBy(sql`RANDOM()`).limit(limit);
-        console.log(`[getQuestions] Category: ${category}, Limit: ${limit}, Retrieved: ${result.length}`);
-        return result;
+
+      const result = limit
+        ? await baseQuery.orderBy(sql`RANDOM()`).limit(limit)
+        : await baseQuery.orderBy(sql`RANDOM()`);
+
+      console.log("[getQuestions] Retrieved:", result.length);
+
+      if (result.length > 0) {
+        console.log("[getQuestions] First question ID:", result[0].id);
+      } else {
+        console.warn("[getQuestions] WARNING: Query returned 0 rows in production");
       }
-      
-      const result = await baseQuery.orderBy(sql`RANDOM()`);
-      console.log(`[getQuestions] Category: ${category}, No limit, Retrieved: ${result.length}`);
+
       return result;
     } catch (error) {
-      console.error(`[getQuestions] ERROR - Category: ${category}, Limit: ${limit}`, error);
+      console.error("[getQuestions] ERROR:", error);
       throw error;
     }
   }

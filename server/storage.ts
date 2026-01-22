@@ -141,27 +141,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getQuestions(category?: ExamCategory, limit?: number): Promise<Question[]> {
-    // Use raw SQL via pool to completely avoid prepared statement caching issues with Neon/PgBouncer
-    // The limit is interpolated directly into the SQL string (not as a parameter) to prevent
-    // query plan caching issues where different limits return cached results from prior executions
-    
-    let query: string;
-    const params: any[] = [];
-    
-    if (category && limit) {
-      query = `SELECT * FROM questions WHERE is_active = true AND category = $1 ORDER BY RANDOM() LIMIT ${limit}`;
-      params.push(category);
-    } else if (category) {
-      query = `SELECT * FROM questions WHERE is_active = true AND category = $1 ORDER BY RANDOM()`;
-      params.push(category);
-    } else if (limit) {
-      query = `SELECT * FROM questions WHERE is_active = true ORDER BY RANDOM() LIMIT ${limit}`;
-    } else {
-      query = `SELECT * FROM questions WHERE is_active = true ORDER BY RANDOM()`;
+    // Use Drizzle ORM for consistent query handling across environments
+    try {
+      let baseQuery = db.select().from(questions).where(eq(questions.isActive, true));
+      
+      if (category) {
+        baseQuery = db.select().from(questions).where(
+          and(eq(questions.isActive, true), eq(questions.category, category))
+        );
+      }
+      
+      if (limit) {
+        const result = await baseQuery.orderBy(sql`RANDOM()`).limit(limit);
+        console.log(`[getQuestions] Category: ${category}, Limit: ${limit}, Retrieved: ${result.length}`);
+        return result;
+      }
+      
+      const result = await baseQuery.orderBy(sql`RANDOM()`);
+      console.log(`[getQuestions] Category: ${category}, No limit, Retrieved: ${result.length}`);
+      return result;
+    } catch (error) {
+      console.error(`[getQuestions] ERROR - Category: ${category}, Limit: ${limit}`, error);
+      throw error;
     }
-    
-    const result = await pool.query(query, params);
-    return result.rows as Question[];
   }
 
   async getQuestion(id: string): Promise<Question | undefined> {

@@ -245,7 +245,7 @@ function QuizView({
   const { data: quizData, isLoading, error } = useQuery<QuizResponse>({
     queryKey: ["/api/study-guide/quiz", topicId],
     queryFn: async () => {
-      const response = await fetch(`/api/study-guide/quiz/${topicId}?limit=10`, {
+      const response = await fetch(`/api/study-guide/quiz/${topicId}`, {
         credentials: "include",
       });
       if (!response.ok) {

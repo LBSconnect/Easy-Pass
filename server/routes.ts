@@ -130,9 +130,9 @@ export async function registerRoutes(
         return res.status(403).json({ message: subscriptionCheck.message });
       }
       
-      const questionLimit = mode === "full" ? undefined : 50;
-      console.log(`[Exam Start] Category: ${category}, Mode: ${mode}, Limit: ${questionLimit}`);
-      const questions = await storage.getQuestions(category, questionLimit);
+      // Both practice and full mock exams now show all available questions
+      console.log(`[Exam Start] Category: ${category}, Mode: ${mode}, Limit: ALL`);
+      const questions = await storage.getQuestions(category);
       console.log(`[Exam Start] Retrieved ${questions.length} questions for category ${category}`);
       
       if (questions.length === 0) {
@@ -1419,7 +1419,7 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const { topicId } = req.params;
-      const limit = parseInt(req.query.limit as string) || 10;
+      // Show all available questions for the topic (no limit)
       
       const topicInfo = getTopicById(topicId);
       if (!topicInfo) {
@@ -1431,7 +1431,8 @@ export async function registerRoutes(
         return res.status(403).json({ message: subscriptionCheck.message });
       }
       
-      const questions = await storage.getQuestions(topicInfo.category.category, Math.min(limit, 20));
+      // Get all questions for this category (no limit)
+      const questions = await storage.getQuestions(topicInfo.category.category);
       
       const questionsWithoutAnswers = questions.map(({ correctAnswer, ...rest }) => rest);
       

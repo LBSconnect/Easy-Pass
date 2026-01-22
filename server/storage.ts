@@ -31,7 +31,7 @@ import {
   type GuestArticleStatus,
 } from "@shared/schema";
 import { users, type User } from "@shared/models/auth";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
@@ -144,7 +144,6 @@ export class DatabaseStorage implements IStorage {
     // Use raw SQL via pool to completely avoid prepared statement caching issues with Neon/PgBouncer
     // The limit is interpolated directly into the SQL string (not as a parameter) to prevent
     // query plan caching issues where different limits return cached results from prior executions
-    const { pool } = await import("./db");
     
     let query: string;
     const params: any[] = [];

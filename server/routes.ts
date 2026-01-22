@@ -130,18 +130,17 @@ export async function registerRoutes(
         return res.status(403).json({ message: subscriptionCheck.message });
       }
       
-      // Both practice and full mock exams now show all available questions
-      console.log(`[Exam Start] Category: ${category}, Mode: ${mode}, Limit: ALL`);
-      const questions = await storage.getQuestions(category);
+      // Practice: 50 random questions, 90 min | Full Mock: 150 random questions, 120 min
+      const questionLimit = mode === "full" ? 150 : 50;
+      const timeLimit = mode === "full" ? 7200 : 5400; // 120 min or 90 min in seconds
+      
+      console.log(`[Exam Start] Category: ${category}, Mode: ${mode}, Limit: ${questionLimit}, Time: ${timeLimit}s`);
+      const questions = await storage.getQuestions(category, questionLimit);
       console.log(`[Exam Start] Retrieved ${questions.length} questions for category ${category}`);
       
       if (questions.length === 0) {
         return res.status(404).json({ message: "No questions available for this category" });
       }
-      
-      const timeLimit = mode === "full" 
-        ? Math.max(questions.length * 108, 5400)
-        : 5400;
       
       const session = await storage.createExamSession({
         userId,
@@ -1419,7 +1418,8 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const { topicId } = req.params;
-      // Show all available questions for the topic (no limit)
+      // Study guide: 150 random questions
+      const questionLimit = 150;
       
       const topicInfo = getTopicById(topicId);
       if (!topicInfo) {
@@ -1431,8 +1431,8 @@ export async function registerRoutes(
         return res.status(403).json({ message: subscriptionCheck.message });
       }
       
-      // Get all questions for this category (no limit)
-      const questions = await storage.getQuestions(topicInfo.category.category);
+      // Get 150 random questions for this category
+      const questions = await storage.getQuestions(topicInfo.category.category, questionLimit);
       
       const questionsWithoutAnswers = questions.map(({ correctAnswer, ...rest }) => rest);
       

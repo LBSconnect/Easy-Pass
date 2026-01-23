@@ -77,3 +77,4 @@ jobs:
           echo "🔗 https://console.aws.amazon.com/elasticbeanstalk/"
           Fix: Update deployment workflow
 Fix: Use correct AWS application Name
+Fix: Update to correct environment name

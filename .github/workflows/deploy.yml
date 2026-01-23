@@ -50,7 +50,7 @@ jobs:
         with:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name: easy-pass
+          application_name: MyEasyPass.net
           environment_name: myeasypass-prod
           version_label: ${{ steps.version.outputs.label }}
           region: us-east-2
@@ -76,3 +76,4 @@ jobs:
           echo "📋 Check AWS Elastic Beanstalk console for detailed logs"
           echo "🔗 https://console.aws.amazon.com/elasticbeanstalk/"
           Fix: Update deployment workflow
+Fix: Use correct AWS application Name

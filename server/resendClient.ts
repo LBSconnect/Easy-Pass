@@ -30,7 +30,6 @@ if (!xReplitToken) {
     throw new Error('Resend not connected');
   }
   return { apiKey: connectionSettings.settings.api_key, fromEmail: connectionSettings.settings.from_email };
-}
 
 export async function getResendClient() {
   const { apiKey } = await getCredentials();

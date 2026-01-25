@@ -636,3 +636,171 @@ app.patch('/api/profile', profileUpdateValidation, async (req, res) => {
   // ... update profile
 });
 */
+// Security Middleware Configuration
+// Add this to your server/index.ts file
+
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import cors from 'cors';
+
+// ==========================================
+// 1. HELMET - Security Headers
+// ==========================================
+// Add this RIGHT AFTER creating your Express app
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://js.stripe.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      frameSrc: ["https://js.stripe.com", "https://hooks.stripe.com"],
+      connectSrc: ["'self'", "https://api.stripe.com"],
+    },
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  },
+}));
+
+// ==========================================
+// 2. CORS - Cross-Origin Resource Sharing
+// ==========================================
+const allowedOrigins = [
+  'https://www.myeasypass.net',
+  'https://myeasypass.net',
+  'https://easy-pass-ht1x.onrender.com',
+  process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : null,
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS] Blocked request from origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+// ==========================================
+// 3. RATE LIMITING
+// ==========================================
+
+// General API rate limit - 100 requests per 15 minutes
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    console.warn(`[Rate Limit] IP ${req.ip} exceeded API limit`);
+    res.status(429).json({
+      error: 'Too many requests',
+      message: 'Please try again later.',
+      retryAfter: 900, // 15 minutes in seconds
+    });
+  },
+});
+
+// Strict rate limit for authentication endpoints - 5 attempts per 15 minutes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: 'Too many login attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // Don't count successful logins
+  handler: (req, res) => {
+    console.warn(`[Rate Limit] IP ${req.ip} exceeded auth limit`);
+    res.status(429).json({
+      error: 'Too many attempts',
+      message: 'Too many login attempts. Please try again in 15 minutes.',
+      retryAfter: 900,
+    });
+  },
+});
+
+// Apply rate limiters
+app.use('/api/', apiLimiter); // General API rate limiting
+app.use('/api/login', authLimiter); // Strict auth rate limiting
+app.use('/api/register', authLimiter);
+app.use('/api/reset-password', authLimiter);
+
+// ==========================================
+// 4. SECURE SESSION COOKIES
+// ==========================================
+// Update your session configuration to this:
+import session from 'express-session';
+
+app.use(session({
+  secret: process.env.SESSION_SECRET!,
+  resave: false,
+  saveUninitialized: false,
+  name: 'sessionId', // Don't use default 'connect.sid'
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    httpOnly: true, // Not accessible via JavaScript
+    sameSite: 'lax', // CSRF protection (use 'strict' for more security)
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    domain: process.env.NODE_ENV === 'production' ? '.myeasypass.net' : undefined,
+  },
+  proxy: true, // Trust Render's proxy
+}));
+
+// ==========================================
+// 5. LOGGING MIDDLEWARE
+// ==========================================
+// Add request logging
+app.use((req, res, next) => {
+  const start = Date.now();
+  
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const logLevel = res.statusCode >= 400 ? 'WARN' : 'INFO';
+    
+    console.log(`[${logLevel}] ${req.method} ${req.path} ${res.statusCode} - ${duration}ms - IP: ${req.ip}`);
+    
+    // Log failed auth attempts
+    if (req.path.includes('/login') && res.statusCode === 401) {
+      console.warn(`[Security] Failed login attempt from IP: ${req.ip}`);
+    }
+  });
+  
+  next();
+});
+
+// ==========================================
+// 6. ERROR HANDLER (Add at the END of all routes)
+// ==========================================
+app.use((err: any, req: any, res: any, next: any) => {
+  // Log the error
+  console.error('[Error]', {
+    message: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+    path: req.path,
+    method: req.method,
+    ip: req.ip,
+    timestamp: new Date().toISOString(),
+  });
+  
+  // Don't leak error details in production
+  const message = process.env.NODE_ENV === 'production' 
+    ? 'Internal server error' 
+    : err.message;
+  
+  res.status(err.status || 500).json({
+    error: message,
+  });
+});

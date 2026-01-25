@@ -10,8 +10,10 @@ async function getCredentials() {
     ? 'depl ' + process.env.WEB_REPL_RENEWAL 
     : null;
 
-  if (!xReplitToken) {
-    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
+if (!xReplitToken) {
+     console.log('Not running on Replit, skipping Resend');
+     return null;
+   }
   }
 
   connectionSettings = await fetch(

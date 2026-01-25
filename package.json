@@ -121,3 +121,7 @@
     "bufferutil": "^4.0.8"
   }
 }
+"helmet": "^7.1.0",
+"express-rate-limit": "^7.1.5",
+"express-validator": "^7.0.1",
+"cors": "^2.8.5"

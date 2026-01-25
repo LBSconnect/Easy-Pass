@@ -1,5 +1,5 @@
-import { Resend } from 'resend';
-
+// Email service for password resets
+   import { Resend } from 'resend';
 let connectionSettings: any;
 
 async function getCredentials() {

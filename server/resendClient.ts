@@ -10,8 +10,20 @@ async function getCredentials() {
     ? 'depl ' + process.env.WEB_REPL_RENEWAL 
     : null;
 
-  if (!xReplitToken) {
-    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
+// Check if running on Replit
+if (!xReplitToken) {
+  console.log('Not running on Replit, using direct Stripe configuration');
+  
+  // Use Stripe keys directly (for non-Replit environments like Render)
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  
+  if (!stripeKey) {
+    throw new Error('STRIPE_SECRET_KEY not found. Please set Stripe environment variables.');
+  }
+  
+  // Return Stripe client without Replit token
+  return require('stripe')(stripeKey);
+}
   }
 
   connectionSettings = await fetch(

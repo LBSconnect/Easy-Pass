@@ -10,10 +10,9 @@ async function getCredentials() {
     ? 'depl ' + process.env.WEB_REPL_RENEWAL 
     : null;
 
-if (!xReplitToken) {
-     console.log('Not running on Replit, skipping Resend');
-     return null;
-   }
+  if (!xReplitToken) {
+    console.log('Not running on Replit, skipping Resend');
+    return null;
   }
 
   connectionSettings = await fetch(
@@ -30,9 +29,17 @@ if (!xReplitToken) {
     throw new Error('Resend not connected');
   }
   return { apiKey: connectionSettings.settings.api_key, fromEmail: connectionSettings.settings.from_email };
+}
 
 export async function getResendClient() {
-  const { apiKey } = await getCredentials();
+  const credentials = await getCredentials();
+  
+  // If not on Replit, return null (email features disabled)
+  if (!credentials) {
+    return null;
+  }
+  
+  const { apiKey } = credentials;
   return {
     client: new Resend(apiKey),
     fromEmail: connectionSettings.settings.from_email
@@ -41,7 +48,15 @@ export async function getResendClient() {
 
 export async function sendPasswordResetEmail(toEmail: string, resetToken: string, firstName?: string, isAdminInitiated: boolean = false): Promise<boolean> {
   try {
-    const { client, fromEmail } = await getResendClient();
+    const resendClient = await getResendClient();
+    
+    // If Resend not configured, skip email
+    if (!resendClient) {
+      console.log('[Email] Resend not configured, skipping email send');
+      return false;
+    }
+    
+    const { client, fromEmail } = resendClient;
     
     const host = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DEPLOYMENT_URL || 'myeasypass.net';
     const protocol = host.includes('localhost') ? 'http' : 'https';
@@ -64,35 +79,4 @@ export async function sendPasswordResetEmail(toEmail: string, resetToken: string
           <h2 style="color: #333; margin-bottom: 20px;">Password Reset Request</h2>
           <p style="color: #333; line-height: 1.6;">Hi${firstName ? ` ${firstName}` : ''},</p>
           <p style="color: #333; line-height: 1.6;">${initiationMessage}</p>
-          <p style="color: #333; line-height: 1.6;">Click the button below to set a new password:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetLink}" 
-               style="background-color: #2563eb; color: white; padding: 14px 28px; 
-                      text-decoration: none; border-radius: 8px; display: inline-block;
-                      font-weight: 600; font-size: 16px;">
-              Reset Password
-            </a>
-          </div>
-          <p style="color: #666; font-size: 14px; line-height: 1.6;">
-            <strong>This link will expire in 1 hour.</strong>
-          </p>
-          <p style="color: #666; font-size: 14px; line-height: 1.6;">
-            If you didn't request this password reset, you can safely ignore this email. 
-            Your password will remain unchanged.
-          </p>
-          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
-          <p style="color: #999; font-size: 12px; text-align: center;">
-            MyEasyPass - Texas Licensing Exam Prep<br/>
-            <a href="https://myeasypass.net" style="color: #2563eb;">myeasypass.net</a>
-          </p>
-        </div>
-      `,
-    });
-    
-    console.log('[Email] Password reset sent to:', toEmail);
-    return true;
-  } catch (error) {
-    console.error('[Email] Failed to send password reset:', error);
-    return false;
-  }
-}
+          <p style="color: #333; line-height: 1.6;">Clic

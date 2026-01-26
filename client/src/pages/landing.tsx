@@ -173,7 +173,7 @@ export default function LandingPage() {
                 ) : (
                   <>
                     Pass Your Texas
-                   <span className="text-primary whitespace-nowrap">Licensing Exam</span>{" "}
+                   <span className="text-primary whitespace-nowrap"> Licensing Exam</span>{" "}
 on the First Try
                   </>
                 )}

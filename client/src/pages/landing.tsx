@@ -166,7 +166,7 @@ export default function LandingPage() {
                 {isSpanish ? (
                   <>
                     Aprueba tu Examen de
-                    <span className="text-primary"> Licencia de Texas</span>
+                    <span className="text-primary"> Licencia de Texas </span>
                     <br className="block sm:hidden" />
                     en el Primer Intento
                   </>

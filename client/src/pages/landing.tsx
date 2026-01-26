@@ -174,7 +174,7 @@ export default function LandingPage() {
                   <>
                     Pass Your Texas
                     <span className="text-primary"> Licensing Exam</span>
-                    <br className="hidden sm:block" />
+                    <br className="block sm:hidden" />
                     on the First Try
                   </>
                 )}

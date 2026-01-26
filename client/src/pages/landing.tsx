@@ -536,7 +536,7 @@ on the First Try
               data-analytics="final-cta-start"
             >
               <Link href="/signup">
-                {isSpanish ? "Comenzar a Practicar Gratis" : "Start Practicing Free"}
+                {isSpanish ? "Comenzar a Practicar" : "Start Practicing Today"}
                 <ArrowRight className="h-5 w-5" />
               </Link>
             </Button>

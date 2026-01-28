@@ -283,9 +283,6 @@ export class DatabaseStorage implements IStorage {
         },
       };
     });
-  }));
-  }
-
     async getAdminStats(): Promise<{
     totalUsers: number;
     activeSubscriptions: number;

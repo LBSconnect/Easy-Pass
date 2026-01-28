@@ -97,6 +97,19 @@ export const paymentHistory = pgTable("payment_history", {
   index("idx_payment_history_user").on(table.userId),
 ]);
 
+export const subscriptions = pgTable("subscriptions", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("userId", { length: 255 }).notNull(),
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 255 }).notNull().unique(),
+  stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
+  stripePriceId: varchar("stripePriceId", { length: 255 }),
+  status: varchar("status", { length: 50 }).notNull(),
+  currentPeriodStart: timestamp("currentPeriodStart"),
+  currentPeriodEnd: timestamp("currentPeriodEnd"),
+  cancelAtPeriodEnd: boolean("cancelAtPeriodEnd").default(false),
+  createdAt: timestamp("createdAt").defaultNow(),
+  updatedAt: timestamp("updatedAt").defaultNow(),
+});
 export const callbackRequests = pgTable("callback_requests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   firstName: varchar("first_name", { length: 100 }).notNull(),
@@ -269,6 +282,7 @@ export type InsertExamResult = z.infer<typeof insertExamResultSchema>;
 export type ExamResult = typeof examResults.$inferSelect;
 export type InsertPaymentHistory = z.infer<typeof insertPaymentHistorySchema>;
 export type PaymentHistory = typeof paymentHistory.$inferSelect;
+export type Subscription = typeof subscriptions.$inferSelect;
 export type InsertCallbackRequest = z.infer<typeof insertCallbackRequestSchema>;
 export type CallbackRequest = typeof callbackRequests.$inferSelect;
 export type InsertQuestionFeedback = z.infer<typeof insertQuestionFeedbackSchema>;

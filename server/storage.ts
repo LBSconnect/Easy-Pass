@@ -8,6 +8,7 @@ import {
   studyProgress,
   examCertificates,
   guestArticles,
+  subscriptions,
   type UserProfile, 
   type InsertUserProfile,
   type Question,

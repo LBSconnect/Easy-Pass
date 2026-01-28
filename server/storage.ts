@@ -144,38 +144,21 @@ export class DatabaseStorage implements IStorage {
   async getQuestions(category?: ExamCategory, limit?: number): Promise<Question[]> {
     // Prevent bundler from removing Drizzle query code
     void questions;
-    
-    try {
-      console.log("[getQuestions] Production mode:", process.env.REPLIT_DEPLOYMENT === "1");
-      console.log("[getQuestions] DB URL present:", !!process.env.DATABASE_URL);
-      console.log("[getQuestions] Category:", category, "Limit:", limit);
 
-      let baseQuery = db.select().from(questions).where(eq(questions.isActive, true));
+    let baseQuery = db.select().from(questions).where(eq(questions.isActive, true));
 
-      if (category) {
-        baseQuery = db
-          .select()
-          .from(questions)
-          .where(and(eq(questions.isActive, true), eq(questions.category, category)));
-      }
-
-      const result = limit
-        ? await baseQuery.orderBy(sql`RANDOM()`).limit(limit)
-        : await baseQuery.orderBy(sql`RANDOM()`);
-
-      console.log("[getQuestions] Retrieved:", result.length);
-
-      if (result.length > 0) {
-        console.log("[getQuestions] First question ID:", result[0].id);
-      } else {
-        console.warn("[getQuestions] WARNING: Query returned 0 rows in production");
-      }
-
-      return result;
-    } catch (error) {
-      console.error("[getQuestions] ERROR:", error);
-      throw error;
+    if (category) {
+      baseQuery = db
+        .select()
+        .from(questions)
+        .where(and(eq(questions.isActive, true), eq(questions.category, category)));
     }
+
+    const result = limit
+      ? await baseQuery.orderBy(sql`RANDOM()`).limit(limit)
+      : await baseQuery.orderBy(sql`RANDOM()`);
+
+    return result;
   }
 
   async getQuestion(id: string): Promise<Question | undefined> {

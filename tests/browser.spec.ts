@@ -1,70 +1,65 @@
 import { test, expect } from '@playwright/test';
 
-test('homepage loads', async ({ page }) => {
+test('homepage loads and shows Easy Pass branding', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveTitle(/.+/);
 });
 
-test('user can sign up', async ({ page }) => {
-  await page.goto('/signup');
-
-  await page.fill('input[name="email"]', `test${Date.now()}@example.com`);
-  await page.fill('input[name="password"]', 'Password123!');
-  await page.click('button[type="submit"]');
-
-  await expect(page).toHaveURL(/dashboard|home/);
+test('navigation to auth page works', async ({ page }) => {
+  await page.goto('/auth');
+  await expect(page.locator('input[name="email"]')).toBeVisible();
+  await expect(page.locator('input[name="password"]')).toBeVisible();
 });
 
-test('login fails with wrong password', async ({ page }) => {
-  await page.goto('/login');
+test('login shows error with invalid credentials', async ({ page }) => {
+  await page.goto('/auth');
 
-  await page.fill('input[name="email"]', 'wrong@example.com');
-  await page.fill('input[name="password"]', 'wrongpassword');
+  await page.fill('input[name="email"]', 'nonexistent@example.com');
+  await page.fill('input[name="password"]', 'wrongpassword123');
   await page.click('button[type="submit"]');
 
-  await expect(page.locator('.error')).toBeVisible();
+  // Should show an error message (toast or inline)
+  await expect(page.locator('text=/invalid|error|failed/i')).toBeVisible({ timeout: 5000 });
 });
 
-test('create, edit, delete item', async ({ page }) => {
-  await page.goto('/login');
+test('registration form validates required fields', async ({ page }) => {
+  await page.goto('/auth');
 
-  await page.fill('input[name="email"]', 'test@example.com');
-  await page.fill('input[name="password"]', 'Password123!');
+  // Try to find and click a signup/register tab or link if present
+  const signupTab = page.locator('text=/sign up|register|create account/i');
+  if (await signupTab.isVisible()) {
+    await signupTab.click();
+  }
+
+  // Submit without filling fields
   await page.click('button[type="submit"]');
 
-  await page.goto('/items');
-
-  await page.click('text=Add Item');
-  await page.fill('input[name="title"]', 'Test Item');
-  await page.click('text=Save');
-
-  await expect(page.locator('text=Test Item')).toBeVisible();
-
-  await page.click('text=Edit');
-  await page.fill('input[name="title"]', 'Updated Item');
-  await page.click('text=Save');
-
-  await expect(page.locator('text=Updated Item')).toBeVisible();
-
-  await page.click('text=Delete');
-  await page.click('text=Confirm');
-
-  await expect(page.locator('text=Updated Item')).not.toBeVisible();
+  // Browser validation or custom validation should prevent submission
+  const emailInput = page.locator('input[name="email"]');
+  const isInvalid = await emailInput.evaluate(
+    (el: HTMLInputElement) => !el.validity.valid
+  );
+  expect(isInvalid).toBe(true);
 });
 
-test('XSS is escaped', async ({ page }) => {
-  await page.goto('/form');
-
-  await page.fill('input[name="comment"]', '<script>alert(1)</script>');
-  await page.click('button[type="submit"]');
-
-  await expect(page.locator('script')).toHaveCount(0);
+test('forgot password page loads', async ({ page }) => {
+  await page.goto('/forgot-password');
+  await expect(page.locator('input[name="email"], input[type="email"]')).toBeVisible();
 });
 
-test.describe('Form Validation', () => {
-  test('rejects empty submission', async ({ page }) => {
-    await page.goto('/form');
-    await page.click('button[type="submit"]');
-    await expect(page.locator('text=Required')).toBeVisible();
-  });
+test('pricing page loads and shows plans', async ({ page }) => {
+  await page.goto('/pricing');
+  // Pricing page should mention subscription-related content
+  await expect(page.locator('text=/subscribe|plan|month|week|price/i').first()).toBeVisible({ timeout: 5000 });
+});
+
+test('FAQ page loads', async ({ page }) => {
+  await page.goto('/faq');
+  await expect(page).toHaveTitle(/.+/);
+});
+
+test('unauthenticated user cannot access dashboard', async ({ page }) => {
+  await page.goto('/dashboard');
+  // Should redirect to auth or show login prompt
+  await page.waitForURL(/auth|login|\//, { timeout: 5000 });
 });

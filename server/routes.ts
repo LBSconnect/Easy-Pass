@@ -14,6 +14,8 @@ import { z } from "zod";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 import { sanitizeHtml } from "./sanitize";
+import { checkSubscriptionActive } from "./subscriptionCheck";
+import { calculateExamScore, calculateTopicBreakdown, type TopicStat } from "./examScoring";
 
 const startExamSchema = z.object({
   category: z.enum(examCategoryEnum.enumValues),
@@ -32,40 +34,7 @@ const VALID_PRICE_IDS = new Set<string>();
 
 async function ensureSubscriptionActive(userId: string, category?: ExamCategory): Promise<{ active: boolean; message?: string }> {
   const profile = await storage.getProfile(userId);
-  
-  if (!profile) {
-    return { active: false, message: "Profile not found" };
-  }
-  
-  if (profile.role === "admin") {
-    return { active: true };
-  }
-  
-  const validStatuses = ["active", "trialing"];
-  if (!validStatuses.includes(profile.subscriptionStatus || "")) {
-    return { active: false, message: "Active subscription required to take exams. Please subscribe to continue." };
-  }
-  
-  if (profile.subscriptionEndDate && new Date(profile.subscriptionEndDate) < new Date()) {
-    return { active: false, message: "Subscription has expired. Please renew to continue." };
-  }
-  
-  if (category) {
-    if (!profile.allowedCategories || profile.allowedCategories.length === 0) {
-      return { 
-        active: false, 
-        message: "Your subscription category access is not configured. Please contact support or resubscribe to continue." 
-      };
-    }
-    if (!profile.allowedCategories.includes(category)) {
-      return { 
-        active: false, 
-        message: `Your subscription does not include access to this exam category. Please upgrade your subscription to access ${category.replace('_', ' ')} exams.` 
-      };
-    }
-  }
-  
-  return { active: true };
+  return checkSubscriptionActive(profile, category);
 }
 
 export async function registerRoutes(
@@ -203,18 +172,17 @@ export async function registerRoutes(
       }
       
       const totalQuestions = questionIds.length;
-      const score = Math.round((correctAnswers / totalQuestions) * 100);
-      const passed = score >= 70;
+      const { score, passed } = calculateExamScore(correctAnswers, totalQuestions);
       const timeTaken = Math.floor(
         (Date.now() - new Date(session.startedAt).getTime()) / 1000
       );
-      
+
       await storage.updateExamSession(sessionId, {
         answers,
         isCompleted: true,
         completedAt: new Date(),
       });
-      
+
       const result = await storage.createExamResult({
         userId,
         sessionId,
@@ -225,13 +193,8 @@ export async function registerRoutes(
         passed,
         timeTaken,
       });
-      
-      const topicBreakdown = Object.entries(topicStats).map(([topic, stats]) => ({
-        topic,
-        correct: stats.correct,
-        total: stats.total,
-        percentage: Math.round((stats.correct / stats.total) * 100),
-      })).sort((a, b) => a.percentage - b.percentage);
+
+      const topicBreakdown = calculateTopicBreakdown(topicStats);
       
       res.json({ result, topicBreakdown });
     } catch (error) {

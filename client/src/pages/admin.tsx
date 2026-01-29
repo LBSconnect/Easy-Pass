@@ -150,8 +150,17 @@ export default function AdminPage() {
   
   const sendPasswordResetMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const res = await apiRequest("POST", `/api/admin/send-password-reset/${userId}`);
-      return res.json();
+      const res = await fetch(`/api/admin/send-password-reset/${userId}`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const body = await res.json();
+      if (res.ok) return body;
+      // Attach status and parsed body so onError can handle 503 vs other errors
+      const err = new Error(body.message || "Failed to send password reset") as any;
+      err.status = res.status;
+      err.resetLink = body.resetLink;
+      throw err;
     },
     onSuccess: () => {
       toast({
@@ -159,12 +168,28 @@ export default function AdminPage() {
         description: "Password reset email sent successfully",
       });
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+    onError: (error: any) => {
+      if (error.status === 503 && error.resetLink) {
+        // Email service unavailable but token was created — show the link
+        navigator.clipboard.writeText(error.resetLink).catch(() => {});
+        toast({
+          title: "Email service unavailable",
+          description: "Reset link copied to clipboard. Share it with the user manually.",
+          variant: "destructive",
+        });
+      } else if (error.status === 401) {
+        toast({
+          title: "Unauthorized",
+          description: "Please log in again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     },
   });
 

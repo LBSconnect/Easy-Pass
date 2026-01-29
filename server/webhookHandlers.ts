@@ -1,6 +1,7 @@
 import { getStripeSync, getCachedStripeClient } from './stripeClient';
 import { storage } from './storage';
 import Stripe from 'stripe';
+import { mapStripeStatus, getPlanFromSubscription } from './stripeHelpers';
 
 let webhookSecret: string | null = null;
 
@@ -202,33 +203,7 @@ async function updateSubscriptionByCustomerId(customerId: string, subscription: 
   console.log(`Updated user ${user.id} (customer ${customerId}) subscription: ${status}, plan: ${plan}, type: ${subscriptionType}, categories: ${allowedCategories?.join(',')}`);
 }
 
-function getPlanFromSubscription(subscription: Stripe.Subscription): 'weekly' | 'monthly' | undefined {
-  const item = subscription.items?.data?.[0];
-  if (!item) return undefined;
-
-  const interval = item.price?.recurring?.interval;
-  if (interval === 'week') return 'weekly';
-  if (interval === 'month') return 'monthly';
-  return undefined;
-}
-
-function mapStripeStatus(stripeStatus: Stripe.Subscription.Status): 'active' | 'canceled' | 'past_due' | 'trialing' {
-  switch (stripeStatus) {
-    case 'active':
-      return 'active';
-    case 'trialing':
-      return 'trialing';
-    case 'past_due':
-    case 'unpaid':
-      return 'past_due';
-    case 'canceled':
-    case 'incomplete':
-    case 'incomplete_expired':
-    case 'paused':
-    default:
-      return 'canceled';
-  }
-}
+// mapStripeStatus and getPlanFromSubscription are imported from ./stripeHelpers
 
 async function getSubscriptionMetadata(subscription: Stripe.Subscription): Promise<{ 
   subscriptionType: 'single' | 'bundle' | undefined; 

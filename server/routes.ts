@@ -919,11 +919,11 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const profile = await storage.getProfile(userId);
-      
+
       if (profile?.role !== "admin") {
         return res.status(403).json({ message: "Forbidden" });
       }
-      
+
       const users = await storage.getAllUsers();
       const formatted = users.map(u => ({
         id: u.id,
@@ -932,13 +932,165 @@ export async function registerRoutes(
         lastName: u.lastName,
         subscriptionStatus: u.profile?.subscriptionStatus,
         subscriptionPlan: u.profile?.subscriptionPlan,
+        subscriptionType: u.profile?.subscriptionType,
+        allowedCategories: u.profile?.allowedCategories,
+        stripeCustomerId: u.profile?.stripeCustomerId,
+        stripeSubscriptionId: u.profile?.stripeSubscriptionId,
         createdAt: u.createdAt,
       }));
-      
+
       res.json(formatted);
     } catch (error) {
       console.error("Error fetching users:", error);
       res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  // Admin: Sync a specific user's subscription from Stripe
+  app.post("/api/admin/sync-user-subscription/:userId", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminUserId = req.user.claims.sub;
+      const adminProfile = await storage.getProfile(adminUserId);
+
+      if (adminProfile?.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const { userId } = req.params;
+      const user = await storage.getUser(userId);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      let profile = await storage.getProfile(userId);
+
+      if (!profile) {
+        profile = await storage.createProfile({
+          userId,
+          preferredLanguage: "en",
+          role: "user",
+        });
+      }
+
+      const stripe = await getCachedStripeClient();
+
+      // If user has a stripeCustomerId, search by that
+      // Otherwise, search by email
+      let customerId = profile.stripeCustomerId;
+
+      if (!customerId && user.email) {
+        // Search for customer by email
+        const customers = await stripe.customers.list({
+          email: user.email,
+          limit: 1,
+        });
+
+        if (customers.data.length > 0) {
+          customerId = customers.data[0].id;
+          // Update profile with found customer ID
+          await storage.updateProfile(userId, { stripeCustomerId: customerId });
+        }
+      }
+
+      if (!customerId) {
+        return res.json({
+          synced: false,
+          message: "No Stripe customer found for this user"
+        });
+      }
+
+      // Find active or trialing subscriptions for this customer
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customerId,
+        limit: 10,
+      });
+
+      // Find an active or trialing subscription
+      const activeSubscription = subscriptions.data.find(
+        s => s.status === 'active' || s.status === 'trialing'
+      );
+
+      if (!activeSubscription) {
+        // No active subscription - update profile to reflect this
+        await storage.updateProfile(userId, {
+          subscriptionStatus: 'canceled',
+          stripeSubscriptionId: undefined,
+          allowedCategories: undefined,
+        });
+
+        return res.json({
+          synced: true,
+          message: "No active subscription found - status updated to canceled",
+          status: 'canceled'
+        });
+      }
+
+      // Get metadata from subscription
+      const item = activeSubscription.items?.data?.[0];
+      let subscriptionType: 'single' | 'bundle' | undefined;
+      let allowedCategories: string[] | undefined;
+
+      if (item?.price?.product) {
+        const productId = typeof item.price.product === 'string'
+          ? item.price.product
+          : item.price.product.id;
+
+        const product = await stripe.products.retrieve(productId);
+        subscriptionType = product.metadata?.subscription_type as 'single' | 'bundle' | undefined;
+        const allowedCategoriesStr = product.metadata?.allowed_categories;
+        allowedCategories = allowedCategoriesStr
+          ? allowedCategoriesStr.split(',').map(c => c.trim())
+          : undefined;
+      }
+
+      // Check price metadata as fallback
+      if (!subscriptionType || !allowedCategories) {
+        const priceMetadata = item?.price?.metadata;
+        if (priceMetadata) {
+          if (!subscriptionType) {
+            subscriptionType = priceMetadata.subscription_type as 'single' | 'bundle' | undefined;
+          }
+          if (!allowedCategories) {
+            const allowedCategoriesStr = priceMetadata.allowed_categories;
+            allowedCategories = allowedCategoriesStr
+              ? allowedCategoriesStr.split(',').map(c => c.trim())
+              : undefined;
+          }
+        }
+      }
+
+      const interval = item?.price?.recurring?.interval;
+      const plan = interval === 'week' ? 'weekly' : interval === 'month' ? 'monthly' : undefined;
+
+      const periodEnd = (activeSubscription as any).current_period_end;
+      const endDate = periodEnd ? new Date(periodEnd * 1000) : undefined;
+
+      await storage.updateProfile(userId, {
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: activeSubscription.id,
+        subscriptionStatus: activeSubscription.status === 'active' ? 'active' :
+                           activeSubscription.status === 'trialing' ? 'trialing' : 'canceled',
+        subscriptionPlan: plan,
+        subscriptionType: subscriptionType,
+        allowedCategories: allowedCategories,
+        subscriptionEndDate: endDate,
+      });
+
+      console.log(`[Admin] Synced subscription for user ${userId}: type=${subscriptionType}, categories=${allowedCategories?.join(',')}, status=${activeSubscription.status}`);
+
+      res.json({
+        synced: true,
+        message: "Subscription synced successfully",
+        status: activeSubscription.status,
+        subscriptionType,
+        allowedCategories,
+        plan,
+        subscriptionEndDate: endDate,
+      });
+    } catch (error: any) {
+      console.error("Error syncing user subscription:", error);
+      res.status(500).json({ message: "Failed to sync subscription", error: error.message });
     }
   });
 

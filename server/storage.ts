@@ -1,15 +1,14 @@
-import { 
-  userProfiles, 
-  questions, 
-  examSessions, 
-  examResults, 
+import {
+  userProfiles,
+  questions,
+  examSessions,
+  examResults,
   paymentHistory,
   questionFeedback,
   studyProgress,
   examCertificates,
   guestArticles,
-  subscriptions,
-  type UserProfile, 
+  type UserProfile,
   type InsertUserProfile,
   type Question,
   type InsertQuestion,
@@ -263,29 +262,19 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(paymentHistory.createdAt));
   }
 
-    async getAllUsers(): Promise<Array<User & { profile?: UserProfile }>> {
+  async getAllUsers(): Promise<Array<User & { profile?: UserProfile }>> {
     const allUsers = await db.select().from(users);
     const allProfiles = await db.select().from(userProfiles);
-    
-    // Get active subscriptions from subscriptions table
-    const allSubscriptions = await db
-      .select()
-      .from(subscriptions)
-      .where(sql`status = 'active' AND "currentPeriodEnd" > NOW()`);
-    
+
     return allUsers.map(user => {
-      const subscription = allSubscriptions.find(s => s.userId === user.id);
+      const profile = allProfiles.find(p => p.userId === user.id);
       return {
         ...user,
-        profile: {
-          ...allProfiles.find(p => p.userId === user.id),
-          subscriptionStatus: subscription ? 'active' : 'none',
-          subscriptionPlan: subscription?.stripePriceId || null,
-        },
+        profile: profile || undefined,
       };
     });
   }
-    async getAdminStats(): Promise<{
+  async getAdminStats(): Promise<{
     totalUsers: number;
     activeSubscriptions: number;
     totalRevenue: number;
@@ -294,24 +283,24 @@ export class DatabaseStorage implements IStorage {
     const allUsers = await db.select().from(users);
     const allResults = await db.select().from(examResults);
     const allPayments = await db.select().from(paymentHistory);
-    
-    // Get active subscriptions from subscriptions table
-    const activeSubscriptions = await db
+
+    // Count active subscriptions from user_profiles
+    const activeProfiles = await db
       .select()
-      .from(subscriptions)
-      .where(sql`status = 'active' AND "currentPeriodEnd" > NOW()`);
-    
+      .from(userProfiles)
+      .where(sql`subscription_status = 'active'`);
+
     const totalRevenue = allPayments
       .filter(p => p.status === "succeeded")
       .reduce((sum, p) => sum + p.amount, 0);
-    
+
     const passRate = allResults.length > 0
       ? Math.round((allResults.filter(r => r.passed).length / allResults.length) * 100)
       : 0;
-    
+
     return {
       totalUsers: allUsers.length,
-      activeSubscriptions: activeSubscriptions.length,
+      activeSubscriptions: activeProfiles.length,
       totalRevenue: totalRevenue / 100, // Convert cents to dollars
       passRate,
     };

@@ -1237,11 +1237,18 @@ export async function registerRoutes(
       await storage.setPasswordResetToken(userId, hashedToken, resetExpiry);
       
       const sent = await sendPasswordResetEmail(user.email, rawToken, user.firstName || undefined, true);
-      
+
       if (!sent) {
-        return res.status(500).json({ message: "Failed to send email" });
+        // Token is already saved — reset will work if user gets the link.
+        // Return 503 so the admin knows email delivery failed.
+        const host = process.env.APP_DOMAIN || 'easy-pass-ht1x.onrender.com';
+        const resetLink = `https://${host}/reset-password?token=${rawToken}`;
+        return res.status(503).json({
+          message: "Email service unavailable. Reset token was created but the email could not be sent. Set RESEND_API_KEY to enable email delivery.",
+          resetLink,
+        });
       }
-      
+
       res.json({ success: true, message: "Password reset email sent" });
     } catch (error) {
       console.error("Error sending password reset:", error);

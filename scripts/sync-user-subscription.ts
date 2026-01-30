@@ -23,7 +23,7 @@ async function syncUserSubscription(email: string) {
   try {
     // Find user by email
     const userResult = await pool.query(
-      'SELECT id, email, "firstName", "lastName" FROM users WHERE LOWER(email) = LOWER($1)',
+      'SELECT id, email, first_name as "firstName", last_name as "lastName" FROM users WHERE LOWER(email) = LOWER($1)',
       [email]
     );
 
@@ -32,10 +32,10 @@ async function syncUserSubscription(email: string) {
 
       // List all users to help find the right one
       const allUsers = await pool.query(
-        'SELECT email, "firstName", "lastName" FROM users ORDER BY "createdAt" DESC LIMIT 20'
+        'SELECT email, first_name, last_name FROM users ORDER BY created_at DESC LIMIT 20'
       );
       console.log('\nRecent users:');
-      allUsers.rows.forEach(u => console.log(`  ${u.firstName} ${u.lastName} - ${u.email}`));
+      allUsers.rows.forEach(u => console.log(`  ${u.first_name} ${u.last_name} - ${u.email}`));
       process.exit(1);
     }
 

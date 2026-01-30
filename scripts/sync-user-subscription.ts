@@ -23,7 +23,7 @@ async function syncUserSubscription(email: string) {
   try {
     // Find user by email
     const userResult = await pool.query(
-      'SELECT id, email, first_name as "firstName", last_name as "lastName" FROM users WHERE LOWER(email) = LOWER($1)',
+      'SELECT id, email, first_name, last_name FROM users WHERE LOWER(email) = LOWER($1)',
       [email]
     );
 
@@ -40,11 +40,11 @@ async function syncUserSubscription(email: string) {
     }
 
     const user = userResult.rows[0];
-    console.log(`Found user: ${user.firstName} ${user.lastName} (${user.email})`);
+    console.log(`Found user: ${user.first_name} ${user.last_name} (${user.email})`);
 
     // Get user profile
     const profileResult = await pool.query(
-      'SELECT * FROM user_profiles WHERE "userId" = $1',
+      'SELECT * FROM user_profiles WHERE user_id = $1',
       [user.id]
     );
 
@@ -53,15 +53,15 @@ async function syncUserSubscription(email: string) {
     if (!profile) {
       // Create profile if doesn't exist
       const createResult = await pool.query(
-        'INSERT INTO user_profiles ("userId", "preferredLanguage", "role") VALUES ($1, $2, $3) RETURNING *',
+        'INSERT INTO user_profiles (user_id, preferred_language, role) VALUES ($1, $2, $3) RETURNING *',
         [user.id, 'en', 'user']
       );
       profile = createResult.rows[0];
       console.log('Created new profile for user');
     }
 
-    console.log(`Current subscription status: ${profile.subscriptionStatus || 'None'}`);
-    console.log(`Current Stripe customer ID: ${profile.stripeCustomerId || 'None'}`);
+    console.log(`Current subscription status: ${profile.subscription_status || 'None'}`);
+    console.log(`Current Stripe customer ID: ${profile.stripe_customer_id || 'None'}`);
 
     // Initialize Stripe
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -73,7 +73,7 @@ async function syncUserSubscription(email: string) {
     const stripe = new Stripe(stripeSecretKey);
 
     // Find or search for Stripe customer
-    let customerId = profile.stripeCustomerId;
+    let customerId = profile.stripe_customer_id;
 
     if (!customerId) {
       console.log(`Searching Stripe for customer with email: ${user.email}`);
@@ -109,7 +109,7 @@ async function syncUserSubscription(email: string) {
     if (!activeSubscription) {
       console.log('No active subscription found - updating status to canceled');
       await pool.query(
-        'UPDATE user_profiles SET "subscriptionStatus" = $1, "stripeCustomerId" = $2 WHERE "userId" = $3',
+        'UPDATE user_profiles SET subscription_status = $1, stripe_customer_id = $2 WHERE user_id = $3',
         ['canceled', customerId, user.id]
       );
       console.log('Done!');
@@ -172,15 +172,15 @@ async function syncUserSubscription(email: string) {
     // Update profile
     await pool.query(`
       UPDATE user_profiles
-      SET "stripeCustomerId" = $1,
-          "stripeSubscriptionId" = $2,
-          "subscriptionStatus" = $3,
-          "subscriptionPlan" = $4,
-          "subscriptionType" = $5,
-          "allowedCategories" = $6,
-          "subscriptionEndDate" = $7,
-          "updatedAt" = NOW()
-      WHERE "userId" = $8
+      SET stripe_customer_id = $1,
+          stripe_subscription_id = $2,
+          subscription_status = $3,
+          subscription_plan = $4,
+          subscription_type = $5,
+          allowed_categories = $6,
+          subscription_end_date = $7,
+          updated_at = NOW()
+      WHERE user_id = $8
     `, [
       customerId,
       activeSubscription.id,
@@ -197,11 +197,11 @@ async function syncUserSubscription(email: string) {
 
     // Verify the update
     const verifyResult = await pool.query(
-      'SELECT "subscriptionStatus", "allowedCategories" FROM user_profiles WHERE "userId" = $1',
+      'SELECT subscription_status, allowed_categories FROM user_profiles WHERE user_id = $1',
       [user.id]
     );
-    console.log(`Verified status: ${verifyResult.rows[0]?.subscriptionStatus}`);
-    console.log(`Verified categories: ${JSON.stringify(verifyResult.rows[0]?.allowedCategories)}`);
+    console.log(`Verified status: ${verifyResult.rows[0]?.subscription_status}`);
+    console.log(`Verified categories: ${JSON.stringify(verifyResult.rows[0]?.allowed_categories)}`);
 
   } catch (error) {
     console.error('Error:', error);

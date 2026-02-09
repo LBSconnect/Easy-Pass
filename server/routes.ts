@@ -1433,13 +1433,18 @@ export async function registerRoutes(
       
       // Get 150 random questions for this category
       const questions = await storage.getQuestions(topicInfo.category.category, questionLimit);
-      
-      const questionsWithoutAnswers = questions.map(({ correctAnswer, ...rest }) => rest);
-      
+
+      // Map database field names to frontend expected names
+      const questionsForClient = questions.map(({ correctAnswer, questionTextEn, questionTextEs, ...rest }) => ({
+        ...rest,
+        questionEn: questionTextEn,
+        questionEs: questionTextEs,
+      }));
+
       res.json({
         topic: topicInfo.topic,
         category: topicInfo.category,
-        questions: questionsWithoutAnswers,
+        questions: questionsForClient,
       });
     } catch (error) {
       console.error("Error fetching quiz questions:", error);

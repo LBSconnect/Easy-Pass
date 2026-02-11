@@ -511,9 +511,9 @@ export async function registerRoutes(
         });
       
       res.json(formattedPrices);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching prices:", error);
-      res.json([]);
+      res.status(500).json({ message: "Failed to fetch pricing information", error: error.message });
     }
   });
 

@@ -39,7 +39,7 @@ export default function PricingPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const billingPeriod = 'monthly' as const;
 
-  const { data: prices = [], isLoading: pricesLoading } = useQuery<StripePrice[]>({
+  const { data: prices = [], isLoading: pricesLoading, error: pricesError } = useQuery<StripePrice[]>({
     queryKey: ["/api/stripe/prices"],
   });
 
@@ -148,6 +148,24 @@ export default function PricingPage() {
             </div>
 
             <div className="max-w-4xl mx-auto">
+              {pricesError && (
+                <div className="mb-8 p-4 bg-red-50 dark:bg-red-950/30 rounded-md border border-red-200 dark:border-red-800">
+                  <div className="flex items-center gap-3">
+                    <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-red-800 dark:text-red-200">
+                        {isSpanish ? 'Error al cargar los precios' : 'Failed to load pricing'}
+                      </p>
+                      <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                        {isSpanish
+                          ? 'Por favor actualice la página o inténtelo de nuevo más tarde.'
+                          : 'Please refresh the page or try again later.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <Card className="mb-8" data-testid="card-category-selection">
                 <CardHeader>
                   <CardTitle className="text-xl">

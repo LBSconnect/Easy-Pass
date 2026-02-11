@@ -139,16 +139,81 @@ export async function initializeStripePrices(): Promise<void> {
     }
     
     console.log(`[Stripe Init] Product mapping: ${JSON.stringify(productsByCategory)}`);
-    
-    // Build existing price keys
+
+    // Update existing products with missing metadata
+    let updatedProducts = 0;
+    for (const config of REQUIRED_PRICES) {
+      const productId = productsByCategory[config.category];
+      if (!productId) continue;
+
+      const existingProduct = existingProducts.data.find(p => p.id === productId);
+      if (!existingProduct) continue;
+
+      // Check if metadata is missing
+      const hasRequiredMetadata = existingProduct.metadata?.subscription_type && existingProduct.metadata?.allowed_categories;
+      if (!hasRequiredMetadata) {
+        try {
+          const newMetadata = {
+            subscription_type: config.isBundle ? 'bundle' : 'single',
+            allowed_categories: config.isBundle
+              ? 'real_estate,property_casualty,life_insurance,general_lines'
+              : config.category
+          };
+          await stripe.products.update(productId, { metadata: newMetadata });
+          console.log(`[Stripe Init] Updated product metadata: ${existingProduct.name} -> ${JSON.stringify(newMetadata)}`);
+          updatedProducts++;
+        } catch (err: any) {
+          console.error(`[Stripe Init] Failed to update product ${existingProduct.name}:`, err.message);
+        }
+      }
+    }
+    if (updatedProducts > 0) {
+      console.log(`[Stripe Init] Updated metadata for ${updatedProducts} existing products`);
+    }
+
+    // Build existing price keys and update prices with missing metadata
     const existingPriceKeys = new Set<string>();
+    const pricesByKey: Record<string, typeof existingPrices.data[0]> = {};
     for (const price of existingPrices.data) {
       const productId = typeof price.product === 'string' ? price.product : price.product.id;
       const key = `${productId}-${price.recurring?.interval}-${price.unit_amount}`;
       existingPriceKeys.add(key);
+      pricesByKey[key] = price;
     }
-    
+
     console.log(`[Stripe Init] Existing price keys: ${Array.from(existingPriceKeys).join(', ')}`);
+
+    // Update existing prices with missing metadata
+    let updatedPrices = 0;
+    for (const config of REQUIRED_PRICES) {
+      const productId = productsByCategory[config.category];
+      if (!productId) continue;
+
+      for (const priceConfig of config.prices) {
+        const key = `${productId}-${priceConfig.interval}-${priceConfig.amount}`;
+        const existingPrice = pricesByKey[key];
+
+        if (existingPrice && !existingPrice.metadata?.subscription_type) {
+          try {
+            const newMetadata = {
+              subscription_type: config.isBundle ? 'bundle' : 'single',
+              allowed_categories: config.isBundle
+                ? 'real_estate,property_casualty,life_insurance,general_lines'
+                : config.category,
+              billing_period: priceConfig.billingPeriod
+            };
+            await stripe.prices.update(existingPrice.id, { metadata: newMetadata });
+            console.log(`[Stripe Init] Updated price metadata: ${existingPrice.id} -> ${JSON.stringify(newMetadata)}`);
+            updatedPrices++;
+          } catch (err: any) {
+            console.error(`[Stripe Init] Failed to update price ${existingPrice.id}:`, err.message);
+          }
+        }
+      }
+    }
+    if (updatedPrices > 0) {
+      console.log(`[Stripe Init] Updated metadata for ${updatedPrices} existing prices`);
+    }
     
     let createdProducts = 0;
     let createdPrices = 0;

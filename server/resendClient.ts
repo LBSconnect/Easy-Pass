@@ -4,15 +4,22 @@ let connectionSettings: any;
 
 async function getCredentials() {
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY 
-    ? 'repl ' + process.env.REPL_IDENTITY 
-    : process.env.WEB_REPL_RENEWAL 
-    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
+  const xReplitToken = process.env.REPL_IDENTITY
+    ? 'repl ' + process.env.REPL_IDENTITY
+    : process.env.WEB_REPL_RENEWAL
+    ? 'depl ' + process.env.WEB_REPL_RENEWAL
     : null;
 
   if (!xReplitToken) {
-    console.log('Not running on Replit, skipping Resend email service');
-    return null;
+    // Not on Replit - fall back to direct environment variable
+    const apiKey = process.env.RESEND_API_KEY;
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'MyEasyPass <noreply@myeasypass.net>';
+    if (!apiKey) {
+      console.log('Not running on Replit and RESEND_API_KEY not set, skipping email service');
+      return null;
+    }
+    console.log('Using RESEND_API_KEY from environment');
+    return { apiKey, fromEmail };
   }
 
   connectionSettings = await fetch(
@@ -42,10 +49,10 @@ export async function getResendClient() {
     return null;
   }
   
-  const { apiKey } = credentials;
+  const { apiKey, fromEmail } = credentials;
   return {
     client: new Resend(apiKey),
-    fromEmail: connectionSettings.settings.from_email
+    fromEmail,
   };
 }
 

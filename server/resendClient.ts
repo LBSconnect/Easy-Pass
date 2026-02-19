@@ -19,9 +19,16 @@ async function getCredentials(): Promise<{ apiKey: string; fromEmail: string } |
     ? 'depl ' + process.env.WEB_REPL_RENEWAL
     : null;
 
-  if (!xReplitToken || !hostname) {
-    console.log('[Email] No RESEND_API_KEY env var and not running on Replit — email service unavailable');
-    return null;
+  if (!xReplitToken) {
+    // Not on Replit - fall back to direct environment variable
+    const apiKey = process.env.RESEND_API_KEY;
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'MyEasyPass <noreply@myeasypass.net>';
+    if (!apiKey) {
+      console.log('Not running on Replit and RESEND_API_KEY not set, skipping email service');
+      return null;
+    }
+    console.log('Using RESEND_API_KEY from environment');
+    return { apiKey, fromEmail };
   }
 
   try {
@@ -56,10 +63,11 @@ export async function getResendClient() {
     console.log('[Email] Resend not available — set RESEND_API_KEY env var to enable');
     return null;
   }
-
+  
+  const { apiKey, fromEmail } = credentials;
   return {
-    client: new Resend(credentials.apiKey),
-    fromEmail: credentials.fromEmail,
+    client: new Resend(apiKey),
+    fromEmail,
   };
 }
 

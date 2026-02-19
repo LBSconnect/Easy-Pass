@@ -148,7 +148,11 @@ function LoginForm({ onSwitchToSignup }: { onSwitchToSignup: () => void }) {
           </form>
         </Form>
 
-        <div className="mt-6 text-center">
+        <p className="mt-4 text-xs text-muted-foreground text-center">
+          {t("auth.caseSensitiveNote", "Login and passwords are case sensitive. Please write down your password in a safe place.")}
+        </p>
+
+        <div className="mt-4 text-center">
           <p className="text-sm text-muted-foreground">
             {t("auth.noAccount", "Don't have an account?")}{" "}
             <button

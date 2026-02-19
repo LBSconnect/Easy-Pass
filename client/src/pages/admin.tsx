@@ -65,6 +65,7 @@ import {
   X,
   Eye,
   Mail,
+  RefreshCw,
 } from "lucide-react";
 import type { Question, ExamCategory, QuestionFeedback } from "@shared/schema";
 
@@ -95,6 +96,10 @@ interface AdminUser {
   lastName: string;
   subscriptionStatus: string;
   subscriptionPlan: string;
+  subscriptionType: string;
+  allowedCategories: string[];
+  stripeCustomerId: string;
+  stripeSubscriptionId: string;
   createdAt: string;
 }
 
@@ -150,14 +155,68 @@ export default function AdminPage() {
   
   const sendPasswordResetMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const res = await apiRequest("POST", `/api/admin/send-password-reset/${userId}`);
-      return res.json();
+      const res = await fetch(`/api/admin/send-password-reset/${userId}`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const body = await res.json();
+      if (res.ok) return body;
+      // Attach status and parsed body so onError can handle 503 vs other errors
+      const err = new Error(body.message || "Failed to send password reset") as any;
+      err.status = res.status;
+      err.resetLink = body.resetLink;
+      throw err;
     },
     onSuccess: () => {
       toast({
         title: t("common.success"),
         description: "Password reset email sent successfully",
       });
+    },
+    onError: (error: any) => {
+      if (error.status === 503 && error.resetLink) {
+        // Email service unavailable but token was created — show the link
+        navigator.clipboard.writeText(error.resetLink).catch(() => {});
+        toast({
+          title: "Email service unavailable",
+          description: "Reset link copied to clipboard. Share it with the user manually.",
+          variant: "destructive",
+        });
+      } else if (error.status === 401) {
+        toast({
+          title: "Unauthorized",
+          description: "Please log in again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    },
+  });
+
+  const syncSubscriptionMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await fetch(`/api/admin/sync-user-subscription/${userId}`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        throw new Error(body.message || "Failed to sync subscription");
+      }
+      return body;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data.synced ? t("common.success") : "Info",
+        description: data.message || "Subscription sync completed",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
     },
     onError: (error: Error) => {
       toast({
@@ -690,7 +749,8 @@ export default function AdminPage() {
                           <TableHead>User</TableHead>
                           <TableHead>Email</TableHead>
                           <TableHead>Subscription</TableHead>
-                          <TableHead>Plan</TableHead>
+                          <TableHead>Plan/Type</TableHead>
+                          <TableHead>Categories</TableHead>
                           <TableHead>Joined</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
@@ -707,6 +767,8 @@ export default function AdminPage() {
                                 variant={
                                   user.subscriptionStatus === "active"
                                     ? "default"
+                                    : user.subscriptionStatus === "trialing"
+                                    ? "outline"
                                     : "secondary"
                                 }
                               >
@@ -714,22 +776,54 @@ export default function AdminPage() {
                               </Badge>
                             </TableCell>
                             <TableCell className="capitalize">
-                              {user.subscriptionPlan || "-"}
+                              <div className="flex flex-col gap-0.5">
+                                <span>{user.subscriptionPlan || "-"}</span>
+                                {user.subscriptionType && (
+                                  <span className="text-xs text-muted-foreground">
+                                    ({user.subscriptionType})
+                                  </span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {user.allowedCategories && user.allowedCategories.length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {user.allowedCategories.map((cat) => (
+                                    <Badge key={cat} variant="outline" className="text-xs">
+                                      {cat.replace("_", " ")}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
                             </TableCell>
                             <TableCell>
                               {new Date(user.createdAt).toLocaleDateString()}
                             </TableCell>
                             <TableCell>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => sendPasswordResetMutation.mutate(user.id)}
-                                disabled={sendPasswordResetMutation.isPending}
-                                data-testid={`button-reset-password-${user.id}`}
-                              >
-                                <Mail className="h-4 w-4 mr-1" />
-                                Reset Password
-                              </Button>
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => syncSubscriptionMutation.mutate(user.id)}
+                                  disabled={syncSubscriptionMutation.isPending}
+                                  title="Sync subscription from Stripe"
+                                  data-testid={`button-sync-subscription-${user.id}`}
+                                >
+                                  <RefreshCw className={`h-4 w-4 ${syncSubscriptionMutation.isPending ? 'animate-spin' : ''}`} />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => sendPasswordResetMutation.mutate(user.id)}
+                                  disabled={sendPasswordResetMutation.isPending}
+                                  title="Send password reset email"
+                                  data-testid={`button-reset-password-${user.id}`}
+                                >
+                                  <Mail className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}

@@ -14,6 +14,8 @@ import { z } from "zod";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 import { sanitizeHtml } from "./sanitize";
+import { checkSubscriptionActive } from "./subscriptionCheck";
+import { calculateExamScore, calculateTopicBreakdown, type TopicStat } from "./examScoring";
 
 const startExamSchema = z.object({
   category: z.enum(examCategoryEnum.enumValues),
@@ -32,40 +34,7 @@ const VALID_PRICE_IDS = new Set<string>();
 
 async function ensureSubscriptionActive(userId: string, category?: ExamCategory): Promise<{ active: boolean; message?: string }> {
   const profile = await storage.getProfile(userId);
-  
-  if (!profile) {
-    return { active: false, message: "Profile not found" };
-  }
-  
-  if (profile.role === "admin") {
-    return { active: true };
-  }
-  
-  const validStatuses = ["active", "trialing"];
-  if (!validStatuses.includes(profile.subscriptionStatus || "")) {
-    return { active: false, message: "Active subscription required to take exams. Please subscribe to continue." };
-  }
-  
-  if (profile.subscriptionEndDate && new Date(profile.subscriptionEndDate) < new Date()) {
-    return { active: false, message: "Subscription has expired. Please renew to continue." };
-  }
-  
-  if (category) {
-    if (!profile.allowedCategories || profile.allowedCategories.length === 0) {
-      return { 
-        active: false, 
-        message: "Your subscription category access is not configured. Please contact support or resubscribe to continue." 
-      };
-    }
-    if (!profile.allowedCategories.includes(category)) {
-      return { 
-        active: false, 
-        message: `Your subscription does not include access to this exam category. Please upgrade your subscription to access ${category.replace('_', ' ')} exams.` 
-      };
-    }
-  }
-  
-  return { active: true };
+  return checkSubscriptionActive(profile, category);
 }
 
 export async function registerRoutes(
@@ -203,18 +172,17 @@ export async function registerRoutes(
       }
       
       const totalQuestions = questionIds.length;
-      const score = Math.round((correctAnswers / totalQuestions) * 100);
-      const passed = score >= 70;
+      const { score, passed } = calculateExamScore(correctAnswers, totalQuestions);
       const timeTaken = Math.floor(
         (Date.now() - new Date(session.startedAt).getTime()) / 1000
       );
-      
+
       await storage.updateExamSession(sessionId, {
         answers,
         isCompleted: true,
         completedAt: new Date(),
       });
-      
+
       const result = await storage.createExamResult({
         userId,
         sessionId,
@@ -225,13 +193,8 @@ export async function registerRoutes(
         passed,
         timeTaken,
       });
-      
-      const topicBreakdown = Object.entries(topicStats).map(([topic, stats]) => ({
-        topic,
-        correct: stats.correct,
-        total: stats.total,
-        percentage: Math.round((stats.correct / stats.total) * 100),
-      })).sort((a, b) => a.percentage - b.percentage);
+
+      const topicBreakdown = calculateTopicBreakdown(topicStats);
       
       res.json({ result, topicBreakdown });
     } catch (error) {
@@ -956,11 +919,11 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const profile = await storage.getProfile(userId);
-      
+
       if (profile?.role !== "admin") {
         return res.status(403).json({ message: "Forbidden" });
       }
-      
+
       const users = await storage.getAllUsers();
       const formatted = users.map(u => ({
         id: u.id,
@@ -969,13 +932,165 @@ export async function registerRoutes(
         lastName: u.lastName,
         subscriptionStatus: u.profile?.subscriptionStatus,
         subscriptionPlan: u.profile?.subscriptionPlan,
+        subscriptionType: u.profile?.subscriptionType,
+        allowedCategories: u.profile?.allowedCategories,
+        stripeCustomerId: u.profile?.stripeCustomerId,
+        stripeSubscriptionId: u.profile?.stripeSubscriptionId,
         createdAt: u.createdAt,
       }));
-      
+
       res.json(formatted);
     } catch (error) {
       console.error("Error fetching users:", error);
       res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  // Admin: Sync a specific user's subscription from Stripe
+  app.post("/api/admin/sync-user-subscription/:userId", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminUserId = req.user.claims.sub;
+      const adminProfile = await storage.getProfile(adminUserId);
+
+      if (adminProfile?.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const { userId } = req.params;
+      const user = await storage.getUser(userId);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      let profile = await storage.getProfile(userId);
+
+      if (!profile) {
+        profile = await storage.createProfile({
+          userId,
+          preferredLanguage: "en",
+          role: "user",
+        });
+      }
+
+      const stripe = await getCachedStripeClient();
+
+      // If user has a stripeCustomerId, search by that
+      // Otherwise, search by email
+      let customerId = profile.stripeCustomerId;
+
+      if (!customerId && user.email) {
+        // Search for customer by email
+        const customers = await stripe.customers.list({
+          email: user.email,
+          limit: 1,
+        });
+
+        if (customers.data.length > 0) {
+          customerId = customers.data[0].id;
+          // Update profile with found customer ID
+          await storage.updateProfile(userId, { stripeCustomerId: customerId });
+        }
+      }
+
+      if (!customerId) {
+        return res.json({
+          synced: false,
+          message: "No Stripe customer found for this user"
+        });
+      }
+
+      // Find active or trialing subscriptions for this customer
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customerId,
+        limit: 10,
+      });
+
+      // Find an active or trialing subscription
+      const activeSubscription = subscriptions.data.find(
+        s => s.status === 'active' || s.status === 'trialing'
+      );
+
+      if (!activeSubscription) {
+        // No active subscription - update profile to reflect this
+        await storage.updateProfile(userId, {
+          subscriptionStatus: 'canceled',
+          stripeSubscriptionId: undefined,
+          allowedCategories: undefined,
+        });
+
+        return res.json({
+          synced: true,
+          message: "No active subscription found - status updated to canceled",
+          status: 'canceled'
+        });
+      }
+
+      // Get metadata from subscription
+      const item = activeSubscription.items?.data?.[0];
+      let subscriptionType: 'single' | 'bundle' | undefined;
+      let allowedCategories: string[] | undefined;
+
+      if (item?.price?.product) {
+        const productId = typeof item.price.product === 'string'
+          ? item.price.product
+          : item.price.product.id;
+
+        const product = await stripe.products.retrieve(productId);
+        subscriptionType = product.metadata?.subscription_type as 'single' | 'bundle' | undefined;
+        const allowedCategoriesStr = product.metadata?.allowed_categories;
+        allowedCategories = allowedCategoriesStr
+          ? allowedCategoriesStr.split(',').map(c => c.trim())
+          : undefined;
+      }
+
+      // Check price metadata as fallback
+      if (!subscriptionType || !allowedCategories) {
+        const priceMetadata = item?.price?.metadata;
+        if (priceMetadata) {
+          if (!subscriptionType) {
+            subscriptionType = priceMetadata.subscription_type as 'single' | 'bundle' | undefined;
+          }
+          if (!allowedCategories) {
+            const allowedCategoriesStr = priceMetadata.allowed_categories;
+            allowedCategories = allowedCategoriesStr
+              ? allowedCategoriesStr.split(',').map(c => c.trim())
+              : undefined;
+          }
+        }
+      }
+
+      const interval = item?.price?.recurring?.interval;
+      const plan = interval === 'week' ? 'weekly' : interval === 'month' ? 'monthly' : undefined;
+
+      const periodEnd = (activeSubscription as any).current_period_end;
+      const endDate = periodEnd ? new Date(periodEnd * 1000) : undefined;
+
+      await storage.updateProfile(userId, {
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: activeSubscription.id,
+        subscriptionStatus: activeSubscription.status === 'active' ? 'active' :
+                           activeSubscription.status === 'trialing' ? 'trialing' : 'canceled',
+        subscriptionPlan: plan,
+        subscriptionType: subscriptionType,
+        allowedCategories: allowedCategories,
+        subscriptionEndDate: endDate,
+      });
+
+      console.log(`[Admin] Synced subscription for user ${userId}: type=${subscriptionType}, categories=${allowedCategories?.join(',')}, status=${activeSubscription.status}`);
+
+      res.json({
+        synced: true,
+        message: "Subscription synced successfully",
+        status: activeSubscription.status,
+        subscriptionType,
+        allowedCategories,
+        plan,
+        subscriptionEndDate: endDate,
+      });
+    } catch (error: any) {
+      console.error("Error syncing user subscription:", error);
+      res.status(500).json({ message: "Failed to sync subscription", error: error.message });
     }
   });
 
@@ -1274,11 +1389,18 @@ export async function registerRoutes(
       await storage.setPasswordResetToken(userId, hashedToken, resetExpiry);
       
       const sent = await sendPasswordResetEmail(user.email, rawToken, user.firstName || undefined, true);
-      
+
       if (!sent) {
-        return res.status(500).json({ message: "Failed to send email" });
+        // Token is already saved — reset will work if user gets the link.
+        // Return 503 so the admin knows email delivery failed.
+        const host = process.env.APP_DOMAIN || 'easy-pass-ht1x.onrender.com';
+        const resetLink = `https://${host}/reset-password?token=${rawToken}`;
+        return res.status(503).json({
+          message: "Email service unavailable. Reset token was created but the email could not be sent. Set RESEND_API_KEY to enable email delivery.",
+          resetLink,
+        });
       }
-      
+
       res.json({ success: true, message: "Password reset email sent" });
     } catch (error) {
       console.error("Error sending password reset:", error);

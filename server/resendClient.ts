@@ -1,8 +1,17 @@
 // Email service for password resets
-   import { Resend } from 'resend';
+import { Resend } from 'resend';
 let connectionSettings: any;
 
-async function getCredentials() {
+async function getCredentials(): Promise<{ apiKey: string; fromEmail: string } | null> {
+  // First, check for direct env var (works on any platform: Render, AWS, etc.)
+  if (process.env.RESEND_API_KEY) {
+    return {
+      apiKey: process.env.RESEND_API_KEY,
+      fromEmail: process.env.RESEND_FROM_EMAIL || 'MyEasyPass <noreply@myeasypass.net>',
+    };
+  }
+
+  // Fallback: Replit Connectors
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY
     ? 'repl ' + process.env.REPL_IDENTITY
@@ -22,30 +31,36 @@ async function getCredentials() {
     return { apiKey, fromEmail };
   }
 
-  connectionSettings = await fetch(
-    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=resend',
-    {
-      headers: {
-        'Accept': 'application/json',
-        'X_REPLIT_TOKEN': xReplitToken
+  try {
+    connectionSettings = await fetch(
+      'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=resend',
+      {
+        headers: {
+          'Accept': 'application/json',
+          'X_REPLIT_TOKEN': xReplitToken
+        }
       }
-    }
-  ).then(res => res.json()).then(data => data.items?.[0]);
+    ).then(res => res.json()).then(data => data.items?.[0]);
 
-  if (!connectionSettings || (!connectionSettings.settings.api_key)) {
-    throw new Error('Resend not connected');
+    if (!connectionSettings || (!connectionSettings.settings.api_key)) {
+      console.error('[Email] Replit Resend connector not configured');
+      return null;
+    }
+    return {
+      apiKey: connectionSettings.settings.api_key,
+      fromEmail: connectionSettings.settings.from_email
+    };
+  } catch (error) {
+    console.error('[Email] Failed to fetch Replit connector credentials:', error);
+    return null;
   }
-  return { 
-    apiKey: connectionSettings.settings.api_key, 
-    fromEmail: connectionSettings.settings.from_email 
-  };
 }
 
 export async function getResendClient() {
   const credentials = await getCredentials();
-  
+
   if (!credentials) {
-    console.log('Resend not available on this platform');
+    console.log('[Email] Resend not available — set RESEND_API_KEY env var to enable');
     return null;
   }
   

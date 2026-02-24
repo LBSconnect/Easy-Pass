@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# Keep auth flows and protected app routes out of the index
+Disallow: /dashboard
+Disallow: /exams
+Disallow: /profile
+Disallow: /admin
+Disallow: /study-guide
+Disallow: /certificates/
+Disallow: /reset-password
+Disallow: /forgot-password
+
+# Sitemap location
+Sitemap: https://www.myeasypass.net/sitemap.xml

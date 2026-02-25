@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- Home / Landing — primary marketing page -->
+  <url>
+    <loc>https://www.myeasypass.net/</loc>
+    <lastmod>2026-02-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <!-- bilingual alternates -->
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.myeasypass.net/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.myeasypass.net/?lang=es" />
+  </url>
+
+  <!-- Pricing — exam cram subscription plans -->
+  <url>
+    <loc>https://www.myeasypass.net/pricing</loc>
+    <lastmod>2026-02-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.myeasypass.net/pricing" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.myeasypass.net/pricing?lang=es" />
+  </url>
+
+  <!-- FAQ — high value for "People Also Ask" signals -->
+  <url>
+    <loc>https://www.myeasypass.net/faq</loc>
+    <lastmod>2026-02-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.myeasypass.net/faq" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.myeasypass.net/faq?lang=es" />
+  </url>
+
+  <!-- Sign Up -->
+  <url>
+    <loc>https://www.myeasypass.net/signup</loc>
+    <lastmod>2026-02-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Login -->
+  <url>
+    <loc>https://www.myeasypass.net/login</loc>
+    <lastmod>2026-02-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Schedule Exam -->
+  <url>
+    <loc>https://www.myeasypass.net/schedule-exam</loc>
+    <lastmod>2026-02-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Legal -->
+  <url>
+    <loc>https://www.myeasypass.net/terms</loc>
+    <lastmod>2026-02-24</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <url>
+    <loc>https://www.myeasypass.net/privacy</loc>
+    <lastmod>2026-02-24</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+</urlset>

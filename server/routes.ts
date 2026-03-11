@@ -443,6 +443,7 @@ export async function registerRoutes(
       const stripe = await getCachedStripeClient();
       const prices = await stripe.prices.list({
         active: true,
+        limit: 100,
         expand: ["data.product"],
       });
       // Helper to read a Stripe metadata field, handling trailing-space key bugs

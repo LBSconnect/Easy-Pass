@@ -445,19 +445,27 @@ export async function registerRoutes(
         active: true,
         expand: ["data.product"],
       });
+      // Helper to read a Stripe metadata field, handling trailing-space key bugs
+      const getMetaField = (meta: Record<string, string> | null | undefined, key: string): string | undefined => {
+        if (!meta) return undefined;
+        if (meta[key] !== undefined) return meta[key];
+        const found = Object.keys(meta).find(k => k.trim() === key);
+        return found ? meta[found] : undefined;
+      };
+
       const formattedPrices = prices.data
         .filter(p => {
           const product = typeof p.product === "object" && !('deleted' in p.product) ? p.product : null;
-          return p.metadata?.subscription_type || product?.metadata?.subscription_type;
+          return getMetaField(p.metadata, 'subscription_type') || getMetaField(product?.metadata, 'subscription_type');
         })
         .map(p => {
           VALID_PRICE_IDS.add(p.id);
           const product = typeof p.product === "object" && !('deleted' in p.product) ? p.product : null;
           const interval = p.recurring?.interval;
-          const billingPeriod = p.metadata?.billing_period || product?.metadata?.billing_period ||
+          const billingPeriod = getMetaField(p.metadata, 'billing_period') || getMetaField(product?.metadata, 'billing_period') ||
             (interval === 'week' ? 'weekly' : interval === 'month' ? 'monthly' : null);
-          const subscriptionType = p.metadata?.subscription_type || product?.metadata?.subscription_type;
-          const allowedCategoriesStr = p.metadata?.allowed_categories || product?.metadata?.allowed_categories;
+          const subscriptionType = getMetaField(p.metadata, 'subscription_type') || getMetaField(product?.metadata, 'subscription_type');
+          const allowedCategoriesStr = getMetaField(p.metadata, 'allowed_categories') || getMetaField(product?.metadata, 'allowed_categories');
           const allowedCategories = allowedCategoriesStr?.split(',').map((c: string) => c.trim()) || [];
           return {
             id: p.id,

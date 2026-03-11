@@ -66,6 +66,9 @@ import {
   Eye,
   Mail,
   RefreshCw,
+  CreditCard,
+  AlertTriangle,
+  Wrench,
 } from "lucide-react";
 import type { Question, ExamCategory, QuestionFeedback } from "@shared/schema";
 
@@ -224,6 +227,51 @@ export default function AdminPage() {
         description: error.message,
         variant: "destructive",
       });
+    },
+  });
+
+  const [stripeDiagnostic, setStripeDiagnostic] = useState<any>(null);
+  const [stripeFixResults, setStripeFixResults] = useState<string[] | null>(null);
+
+  const stripeDiagnosticMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("GET", "/api/admin/stripe-diagnostic");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setStripeDiagnostic(data);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const stripeFixMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/stripe-force-create");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setStripeFixResults(data.results);
+      setStripeDiagnostic(null); // reset so user re-runs diagnostic to see updated state
+      toast({ title: "Done", description: "Stripe fix completed. Run diagnostic to verify." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const stripeInitMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/init-stripe-prices");
+      return res.json();
+    },
+    onSuccess: () => {
+      setStripeDiagnostic(null);
+      toast({ title: "Done", description: "Stripe prices initialized. Run diagnostic to verify." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
@@ -437,6 +485,10 @@ export default function AdminPage() {
               <TabsTrigger value="analytics" className="gap-2">
                 <BarChart3 className="h-4 w-4" />
                 {t("admin.analytics")}
+              </TabsTrigger>
+              <TabsTrigger value="stripe" className="gap-2">
+                <CreditCard className="h-4 w-4" />
+                Stripe Setup
               </TabsTrigger>
               <TabsTrigger value="feedback" className="gap-2">
                 <Flag className="h-4 w-4" />
@@ -968,6 +1020,159 @@ export default function AdminPage() {
                     <div className="text-center py-12 text-muted-foreground">
                       <Flag className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>No feedback submitted yet</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="stripe" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    Stripe Product & Price Configuration
+                  </CardTitle>
+                  <CardDescription>
+                    Diagnose and fix missing Stripe products/prices for each exam category.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-wrap gap-3">
+                    <Button
+                      onClick={() => stripeDiagnosticMutation.mutate()}
+                      disabled={stripeDiagnosticMutation.isPending}
+                      variant="outline"
+                    >
+                      <Search className="mr-2 h-4 w-4" />
+                      {stripeDiagnosticMutation.isPending ? "Running..." : "Run Diagnostic"}
+                    </Button>
+                    <Button
+                      onClick={() => stripeInitMutation.mutate()}
+                      disabled={stripeInitMutation.isPending}
+                      variant="outline"
+                    >
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      {stripeInitMutation.isPending ? "Running..." : "Re-run Price Init"}
+                    </Button>
+                    <Button
+                      onClick={() => stripeFixMutation.mutate()}
+                      disabled={stripeFixMutation.isPending}
+                    >
+                      <Wrench className="mr-2 h-4 w-4" />
+                      {stripeFixMutation.isPending ? "Fixing..." : "Force Create Missing Prices"}
+                    </Button>
+                  </div>
+
+                  {stripeDiagnostic && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={stripeDiagnostic.summary?.missingCount > 0 ? "destructive" : "default"}>
+                          {stripeDiagnostic.environment}
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {stripeDiagnostic.summary?.totalProducts} products · {stripeDiagnostic.summary?.totalPrices} prices
+                          {stripeDiagnostic.summary?.missingCount > 0 && (
+                            <span className="text-destructive ml-2">· {stripeDiagnostic.summary.missingCount} missing</span>
+                          )}
+                        </span>
+                      </div>
+
+                      {stripeDiagnostic.missing?.length > 0 && (
+                        <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-md">
+                          <p className="text-sm font-medium text-destructive flex items-center gap-1 mb-2">
+                            <AlertTriangle className="h-4 w-4" /> Missing items
+                          </p>
+                          <ul className="text-sm space-y-1">
+                            {stripeDiagnostic.missing.map((item: string, i: number) => (
+                              <li key={i} className="text-destructive">• {item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      <div>
+                        <p className="text-sm font-medium mb-2">Products in Stripe</p>
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Name</TableHead>
+                                <TableHead>ID</TableHead>
+                                <TableHead>subscription_type</TableHead>
+                                <TableHead>allowed_categories</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {stripeDiagnostic.products?.map((p: any) => (
+                                <TableRow key={p.id}>
+                                  <TableCell className="font-medium">{p.name}</TableCell>
+                                  <TableCell className="font-mono text-xs">{p.id}</TableCell>
+                                  <TableCell>
+                                    {p.metadata?.subscription_type
+                                      ? <Badge variant="default">{p.metadata.subscription_type}</Badge>
+                                      : <Badge variant="destructive">missing</Badge>}
+                                  </TableCell>
+                                  <TableCell>
+                                    {p.metadata?.allowed_categories
+                                      ? <span className="text-sm">{p.metadata.allowed_categories}</span>
+                                      : <Badge variant="destructive">missing</Badge>}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-medium mb-2">Prices in Stripe</p>
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Product</TableHead>
+                                <TableHead>Amount</TableHead>
+                                <TableHead>Interval</TableHead>
+                                <TableHead>subscription_type</TableHead>
+                                <TableHead>allowed_categories</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {stripeDiagnostic.prices?.map((p: any) => (
+                                <TableRow key={p.id}>
+                                  <TableCell className="font-medium">{p.product_name}</TableCell>
+                                  <TableCell>${(p.amount / 100).toFixed(2)}</TableCell>
+                                  <TableCell>{p.interval}</TableCell>
+                                  <TableCell>
+                                    {p.metadata?.subscription_type
+                                      ? <Badge variant="default">{p.metadata.subscription_type}</Badge>
+                                      : <Badge variant="destructive">missing</Badge>}
+                                  </TableCell>
+                                  <TableCell>
+                                    {p.metadata?.allowed_categories
+                                      ? <span className="text-sm">{p.metadata.allowed_categories}</span>
+                                      : <Badge variant="destructive">missing</Badge>}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {stripeFixResults && (
+                    <div className="p-3 bg-muted rounded-md">
+                      <p className="text-sm font-medium mb-2">Fix Results</p>
+                      <ul className="text-sm space-y-1 font-mono">
+                        {stripeFixResults.map((r, i) => (
+                          <li key={i} className={r.startsWith('ERROR') ? 'text-destructive' : 'text-foreground'}>
+                            {r}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   )}
                 </CardContent>

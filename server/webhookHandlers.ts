@@ -205,34 +205,55 @@ async function updateSubscriptionByCustomerId(customerId: string, subscription: 
 
 // mapStripeStatus and getPlanFromSubscription are imported from ./stripeHelpers
 
-async function getSubscriptionMetadata(subscription: Stripe.Subscription): Promise<{ 
-  subscriptionType: 'single' | 'bundle' | undefined; 
-  allowedCategories: string[] | undefined; 
+// Helper to read a Stripe metadata field, handling trailing-space key bugs
+function getMetaField(meta: Record<string, string> | null | undefined, key: string): string | undefined {
+  if (!meta) return undefined;
+  if (meta[key] !== undefined) return meta[key];
+  const found = Object.keys(meta).find(k => k.trim() === key);
+  return found ? meta[found] : undefined;
+}
+
+// Infer exam category from Stripe product name when allowed_categories metadata is missing
+function inferCategoryFromProductName(productName: string): string[] | undefined {
+  const pname = productName.toLowerCase();
+  if (pname.includes('real estate') && !pname.includes('bundle')) return ['real_estate'];
+  if (pname.includes('property') && pname.includes('casualty')) return ['property_casualty'];
+  if (pname.includes('life insurance')) return ['life_insurance'];
+  if (pname.includes('general lines')) return ['general_lines'];
+  return undefined;
+}
+
+async function getSubscriptionMetadata(subscription: Stripe.Subscription): Promise<{
+  subscriptionType: 'single' | 'bundle' | undefined;
+  allowedCategories: string[] | undefined;
 }> {
   const item = subscription.items?.data?.[0];
   if (!item) return { subscriptionType: undefined, allowedCategories: undefined };
 
   const priceMetadata = item.price?.metadata || {};
-  
-  // First check price metadata
-  let subscriptionType = priceMetadata.subscription_type as 'single' | 'bundle' | undefined;
-  let allowedCategoriesStr = priceMetadata.allowed_categories;
-  
+
+  // First check price metadata (with trailing-space key fallback)
+  let subscriptionType = getMetaField(priceMetadata, 'subscription_type') as 'single' | 'bundle' | undefined;
+  let allowedCategoriesStr = getMetaField(priceMetadata, 'allowed_categories');
+
+  let productName: string | undefined;
+
   // If not found in price, check product metadata
   if (!subscriptionType || !allowedCategoriesStr) {
     try {
       const stripe = await getCachedStripeClient();
-      const productId = typeof item.price?.product === 'string' 
-        ? item.price.product 
+      const productId = typeof item.price?.product === 'string'
+        ? item.price.product
         : item.price?.product?.id;
-      
+
       if (productId) {
         const product = await stripe.products.retrieve(productId);
+        productName = product.name;
         if (!subscriptionType) {
-          subscriptionType = product.metadata?.subscription_type as 'single' | 'bundle' | undefined;
+          subscriptionType = getMetaField(product.metadata, 'subscription_type') as 'single' | 'bundle' | undefined;
         }
         if (!allowedCategoriesStr) {
-          allowedCategoriesStr = product.metadata?.allowed_categories;
+          allowedCategoriesStr = getMetaField(product.metadata, 'allowed_categories');
         }
       }
     } catch (error) {
@@ -240,9 +261,14 @@ async function getSubscriptionMetadata(subscription: Stripe.Subscription): Promi
     }
   }
 
-  const allowedCategories = allowedCategoriesStr 
-    ? allowedCategoriesStr.split(',').map(c => c.trim()) 
+  let allowedCategories = allowedCategoriesStr
+    ? allowedCategoriesStr.split(',').map(c => c.trim())
     : undefined;
+
+  // Fallback: infer category from product name when allowed_categories metadata is missing
+  if (!allowedCategories && subscriptionType === 'single' && productName) {
+    allowedCategories = inferCategoryFromProductName(productName);
+  }
 
   return { subscriptionType, allowedCategories };
 }

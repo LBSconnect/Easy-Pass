@@ -467,6 +467,19 @@ export async function registerRoutes(
           const subscriptionType = getMetaField(p.metadata, 'subscription_type') || getMetaField(product?.metadata, 'subscription_type');
           const allowedCategoriesStr = getMetaField(p.metadata, 'allowed_categories') || getMetaField(product?.metadata, 'allowed_categories');
           const allowedCategories = allowedCategoriesStr?.split(',').map((c: string) => c.trim()) || [];
+          // Fallback: infer category from product name when allowed_categories metadata is missing
+          if (allowedCategories.length === 0 && subscriptionType === 'single' && product?.name) {
+            const pname = product.name.toLowerCase();
+            if (pname.includes('real estate') && !pname.includes('bundle')) {
+              allowedCategories.push('real_estate');
+            } else if (pname.includes('property') && pname.includes('casualty')) {
+              allowedCategories.push('property_casualty');
+            } else if (pname.includes('life insurance')) {
+              allowedCategories.push('life_insurance');
+            } else if (pname.includes('general lines')) {
+              allowedCategories.push('general_lines');
+            }
+          }
           return {
             id: p.id,
             unit_amount: p.unit_amount,

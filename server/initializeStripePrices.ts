@@ -83,9 +83,13 @@ export async function initializeStripePrices(): Promise<void> {
       if (!product.name) continue;
       
       // Priority 1: Match by metadata (most reliable)
-      if (product.metadata?.allowed_categories) {
-        const categories = product.metadata.allowed_categories;
-        const subType = product.metadata.subscription_type;
+      // Use Object.entries to handle potential trailing-space key bugs in Stripe metadata
+      const metaEntries = Object.entries(product.metadata || {});
+      const allowedCategoriesMeta = metaEntries.find(([k]) => k.trim() === 'allowed_categories')?.[1];
+      const subscriptionTypeMeta = metaEntries.find(([k]) => k.trim() === 'subscription_type')?.[1];
+      if (allowedCategoriesMeta) {
+        const categories = allowedCategoriesMeta;
+        const subType = subscriptionTypeMeta;
         
         if (subType === 'bundle' || categories.includes(',')) {
           if (!productsByCategory['bundle']) {
@@ -123,7 +127,7 @@ export async function initializeStripePrices(): Promise<void> {
       }
       
       // Match single-category products by name (not already matched)
-      if (!productsByCategory['real_estate'] && (name === 'real estate exam' || name === 'real estate exam prep')) {
+      if (!productsByCategory['real_estate'] && name.includes('real estate') && !name.includes('bundle')) {
         productsByCategory['real_estate'] = product.id;
         console.log(`[Stripe Init] Matched real_estate via name: ${product.name}`);
       } else if (!productsByCategory['property_casualty'] && (name.includes('property') && name.includes('casualty'))) {
@@ -193,7 +197,13 @@ export async function initializeStripePrices(): Promise<void> {
         const key = `${productId}-${priceConfig.interval}-${priceConfig.amount}`;
         const existingPrice = pricesByKey[key];
 
-        if (existingPrice && !existingPrice.metadata?.subscription_type) {
+        // Update if any required metadata field is missing (handles partial metadata and trailing-space key bugs)
+        const priceMeta = existingPrice?.metadata || {};
+        const hasAllPriceMetadata =
+          priceMeta['subscription_type'] &&
+          priceMeta['allowed_categories'] &&
+          priceMeta['billing_period'];
+        if (existingPrice && !hasAllPriceMetadata) {
           try {
             const newMetadata = {
               subscription_type: config.isBundle ? 'bundle' : 'single',

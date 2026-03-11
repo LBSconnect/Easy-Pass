@@ -453,10 +453,24 @@ export async function registerRoutes(
         return found ? meta[found] : undefined;
       };
 
+      // Helper: does this product name match a known exam category or bundle?
+      const isKnownExamProduct = (name: string | null | undefined): boolean => {
+        if (!name) return false;
+        const n = name.toLowerCase();
+        return n.includes('real estate') || n.includes('general lines') ||
+               (n.includes('property') && n.includes('casualty')) ||
+               n.includes('life insurance') || n.includes('bundle');
+      };
+
       const formattedPrices = prices.data
         .filter(p => {
           const product = typeof p.product === "object" && !('deleted' in p.product) ? p.product : null;
-          return getMetaField(p.metadata, 'subscription_type') || getMetaField(product?.metadata, 'subscription_type');
+          // Include if subscription_type metadata is present (handles trailing-space keys)
+          if (getMetaField(p.metadata, 'subscription_type') || getMetaField(product?.metadata, 'subscription_type')) {
+            return true;
+          }
+          // Fallback: include recurring prices for known exam product names even if metadata is absent
+          return !!p.recurring && isKnownExamProduct(product?.name);
         })
         .map(p => {
           VALID_PRICE_IDS.add(p.id);
@@ -464,7 +478,9 @@ export async function registerRoutes(
           const interval = p.recurring?.interval;
           const billingPeriod = getMetaField(p.metadata, 'billing_period') || getMetaField(product?.metadata, 'billing_period') ||
             (interval === 'week' ? 'weekly' : interval === 'month' ? 'monthly' : null);
-          const subscriptionType = getMetaField(p.metadata, 'subscription_type') || getMetaField(product?.metadata, 'subscription_type');
+          const subscriptionType = getMetaField(p.metadata, 'subscription_type') || getMetaField(product?.metadata, 'subscription_type') ||
+            // Infer subscription type from product name when metadata is entirely absent
+            (product?.name ? (product.name.toLowerCase().includes('bundle') ? 'bundle' : 'single') : undefined);
           const allowedCategoriesStr = getMetaField(p.metadata, 'allowed_categories') || getMetaField(product?.metadata, 'allowed_categories');
           const allowedCategories = allowedCategoriesStr?.split(',').map((c: string) => c.trim()) || [];
           // Fallback: infer category from product name when allowed_categories metadata is missing

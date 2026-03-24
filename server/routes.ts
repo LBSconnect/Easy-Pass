@@ -623,14 +623,11 @@ export async function registerRoutes(
       }
       
       const stripe = await getCachedStripeClient();
-      await stripe.subscriptions.cancel(profile.stripeSubscriptionId);
-      
-      await storage.updateProfile(userId, {
-        subscriptionStatus: "canceled",
-        stripeSubscriptionId: undefined,
+      await stripe.subscriptions.update(profile.stripeSubscriptionId, {
+        cancel_at_period_end: true,
       });
-      
-      res.json({ success: true });
+
+      res.json({ success: true, message: "Subscription will be cancelled at the end of the billing period" });
     } catch (error) {
       console.error("Error canceling subscription:", error);
       res.status(500).json({ message: "Failed to cancel subscription" });

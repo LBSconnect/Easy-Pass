@@ -27,7 +27,7 @@ const callbackFormSchema = z.object({
 
 type CallbackFormData = z.infer<typeof callbackFormSchema>;
 
-const TESTING_CENTER_ADDRESS = "616 Cypress Creek Road, Suite 575, Houston, TX 77090";
+const TESTING_CENTER_ADDRESS = "616 FM 1960 RD W STE 101, Houston, TX 77090-3048";
 const ENCODED_DESTINATION = encodeURIComponent(TESTING_CENTER_ADDRESS);
 
 export default function ScheduleExamPage() {
@@ -118,9 +118,8 @@ export default function ScheduleExamPage() {
                   <CardContent className="space-y-4">
                     <div className="bg-muted/50 p-4 rounded-lg">
                       <p className="font-semibold text-lg" data-testid="text-address">LBS Exam Testing Center</p>
-                      <p className="text-muted-foreground">616 Cypress Creek Road</p>
-                      <p className="text-muted-foreground">Suite 575</p>
-                      <p className="text-muted-foreground">Houston, Texas 77090</p>
+                      <p className="text-muted-foreground">616 FM 1960 RD W STE 101</p>
+                      <p className="text-muted-foreground">Houston, TX 77090-3048</p>
                     </div>
                     
                     <div className="space-y-3">

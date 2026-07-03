@@ -91,7 +91,8 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>Support@LBSconnect.net</li>
               <li>281-836-5357</li>
-              <li>Houston, Texas</li>
+              <li>616 FM 1960 RD W STE 101</li>
+              <li>Houston, TX 77090-3048</li>
             </ul>
           </div>
         </div>

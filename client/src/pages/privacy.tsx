@@ -256,7 +256,7 @@ export default function PrivacyPage() {
               <li><strong>LBS EasyPass</strong></li>
               <li>{language === "es" ? "Correo electrónico" : "Email"}: Support@LBSconnect.net</li>
               <li>{language === "es" ? "Teléfono" : "Phone"}: 281-836-5357</li>
-              <li>{language === "es" ? "Ubicación" : "Location"}: Houston, Texas</li>
+              <li>{language === "es" ? "Ubicación" : "Location"}: 616 FM 1960 RD W STE 101, Houston, TX 77090-3048</li>
             </ul>
           </section>
         </div>

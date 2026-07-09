@@ -209,19 +209,26 @@ export const examSessionsRelations = relations(examSessions, ({ one }) => ({
   }),
 }));
 
-export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
+export const insertUserProfileSchema = createInsertSchema(userProfiles, {
+  allowedCategories: z.array(z.string()).nullable().optional(),
+}).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 });
 
-export const insertQuestionSchema = createInsertSchema(questions).omit({
+export const insertQuestionSchema = createInsertSchema(questions, {
+  optionsEn: z.array(z.string()),
+  optionsEs: z.array(z.string()),
+}).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 });
 
-export const insertExamSessionSchema = createInsertSchema(examSessions).omit({
+export const insertExamSessionSchema = createInsertSchema(examSessions, {
+  questionIds: z.array(z.string()),
+}).omit({
   id: true,
   startedAt: true,
 });

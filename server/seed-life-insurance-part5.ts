@@ -1,7 +1,7 @@
 import { db } from "./db";
-import { questions } from "@shared/schema";
+import { questions, type InsertQuestion } from "@shared/schema";
 
-const lifeInsuranceQuestions = [
+const lifeInsuranceQuestions: InsertQuestion[] = [
   {
     category: "life_insurance",
     questionTextEn: "Under Texas law, what is the maximum period for a life insurance policy's suicide exclusion clause?",

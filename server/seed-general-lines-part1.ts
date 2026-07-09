@@ -1,7 +1,7 @@
 import { db } from "./db";
-import { questions } from "@shared/schema";
+import { questions, type InsertQuestion } from "@shared/schema";
 
-const generalLinesQuestions = [
+const generalLinesQuestions: InsertQuestion[] = [
   {
     category: "general_lines",
     questionTextEn: "What is General Lines insurance in Texas?",

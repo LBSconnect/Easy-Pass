@@ -28,8 +28,6 @@ export const pool = new Pool({
   allowExitOnIdle: true
 });
 
-// Required for Neon + PgBouncer: disable prepared statements
 export const db = drizzle(pool, {
   schema,
-  prepare: false
 });

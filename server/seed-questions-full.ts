@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { db } from "./db";
 import { questions } from "@shared/schema";
 
@@ -1300,7 +1301,7 @@ async function seedQuestions() {
 
   console.log("Question seeding completed!");
   
-  const countResult = await db.execute({ sql: "SELECT category, COUNT(*) as count FROM questions GROUP BY category", args: [] });
+  const countResult = await db.execute(sql`SELECT category, COUNT(*) as count FROM questions GROUP BY category`);
   console.log("Questions per category:", countResult.rows);
 }
 

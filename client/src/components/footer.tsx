@@ -49,6 +49,19 @@ export function Footer() {
                   </Link>
                 </li>
               )}
+              {isAdmin && (
+                <li>
+                  <a
+                    href="https://linton-timekeeping.onrender.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-primary transition-colors"
+                    data-testid="link-time-clock"
+                  >
+                    {t("nav.timeClock")}
+                  </a>
+                </li>
+              )}
             </ul>
           </div>
 

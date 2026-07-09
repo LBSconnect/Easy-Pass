@@ -1,7 +1,5 @@
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
-import type { UserProfile } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
@@ -21,22 +19,15 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Menu, User, LogOut, Settings, LayoutDashboard, Clock } from "lucide-react";
+import { Menu, User, LogOut, Settings, LayoutDashboard } from "lucide-react";
 import logoImage from "@assets/EP_logo_1768576610105.png";
 import { useState } from "react";
-
-const TIME_CLOCK_URL = "https://linton-timekeeping.onrender.com/";
 
 export function Navbar() {
   const { t } = useTranslation();
   const [location] = useLocation();
   const { user, isAuthenticated, isLoading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { data: profile } = useQuery<UserProfile>({
-    queryKey: ["/api/profile"],
-    enabled: isAuthenticated,
-  });
-  const isAdmin = profile?.role === "admin";
 
   const navLinks = [
     { href: "/", label: t("nav.home"), show: true, external: false },
@@ -180,19 +171,6 @@ export function Navbar() {
                     Settings
                   </DropdownMenuItem>
                 </Link>
-                {isAdmin && (
-                  <DropdownMenuItem asChild>
-                    <a
-                      href={TIME_CLOCK_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      data-testid="menu-item-time-clock"
-                    >
-                      <Clock className="mr-2 h-4 w-4" />
-                      {t("nav.timeClock")}
-                    </a>
-                  </DropdownMenuItem>
-                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <a href="/api/logout" data-testid="menu-item-logout">
@@ -249,18 +227,6 @@ export function Navbar() {
                       </Link>
                     )
                   ))}
-                {isAdmin && (
-                  <a
-                    href={TIME_CLOCK_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block py-2 text-lg font-medium text-muted-foreground"
-                    data-testid="link-mobile-time-clock"
-                  >
-                    {t("nav.timeClock")}
-                  </a>
-                )}
                 {!isAuthenticated && (
                   <div className="flex flex-col gap-3 mt-4 pt-4 border-t">
                     <Button 

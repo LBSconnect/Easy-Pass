@@ -49,7 +49,7 @@ const categoryColors = {
 };
 
 function getGreeting(language: string): string {
-  const hour = new Date().getHours();
+  const hour = parseInt(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago', hour: 'numeric', hour12: false }), 10);
   if (language === "es") {
     if (hour < 12) return "Buenos días";
     if (hour < 18) return "Buenas tardes";

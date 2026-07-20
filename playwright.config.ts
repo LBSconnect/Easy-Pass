@@ -1,4 +1,8 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
+import path from 'path';
+
+// Use the pre-installed Chromium binary in the remote execution environment
+const chromiumExecutable = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 
 export default defineConfig({
   testDir: './tests',
@@ -9,5 +13,9 @@ export default defineConfig({
     headless: true,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    launchOptions: {
+      executablePath: chromiumExecutable,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    },
   },
 });

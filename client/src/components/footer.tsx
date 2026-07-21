@@ -51,7 +51,7 @@ export function Footer() {
               )}
               <li>
                 <a
-                  href="https://linton-timekeeping.onrender.com/"
+                  href="https://time-keeper-tnb8.onrender.com/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-primary transition-colors"

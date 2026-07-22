@@ -119,8 +119,11 @@ export async function registerRoutes(
         timeLimit,
         isCompleted: false,
       });
-      
-      res.json({ session, questions });
+
+      // Never send answers/explanations to the client before the exam is submitted
+      const questionsForClient = questions.map(({ correctAnswer, explanationEn, explanationEs, ...rest }) => rest);
+
+      res.json({ session, questions: questionsForClient });
     } catch (error) {
       console.error("Error starting exam:", error);
       res.status(500).json({ message: "Failed to start exam" });

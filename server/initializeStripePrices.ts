@@ -43,7 +43,7 @@ const REQUIRED_PRICES = [
 export async function initializeStripePrices(): Promise<void> {
   try {
     const stripe = await getCachedStripeClient();
-    const isProduction = process.env.REPLIT_DEPLOYMENT === "1";
+    const isProduction = process.env.REPLIT_DEPLOYMENT === "1" || process.env.NODE_ENV === "production";
     
     console.log(`[Stripe Init] Checking for missing products and prices... (env: ${isProduction ? 'PRODUCTION' : 'development'})`);
     

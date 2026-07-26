@@ -18,7 +18,7 @@ async function getCredentials() {
       : null;
 
   if (!xReplitToken) {
-    console.log('Not running on Replit, using direct Stripe keys');
+    console.log('Using Stripe credentials from environment variables');
     
     const stripeSecret = process.env.STRIPE_SECRET_KEY;
     const stripePublishable = process.env.STRIPE_PUBLISHABLE_KEY;

@@ -1,4 +1,4 @@
-import { getStripeSync, getCachedStripeClient } from './stripeClient';
+import { getStripeSync, getCachedStripeClient, getWebhookUrl } from './stripeClient';
 import { storage } from './storage';
 import Stripe from 'stripe';
 import { mapStripeStatus, getPlanFromSubscription } from './stripeHelpers';
@@ -8,9 +8,15 @@ let webhookSecret: string | null = null;
 async function getWebhookSecret(): Promise<string | null> {
   if (webhookSecret) return webhookSecret;
   
+  const webhookUrl = getWebhookUrl();
+  if (!webhookUrl) {
+    console.log("No webhook URL configured for this environment");
+    return null;
+  }
+
   try {
     const sync = await getStripeSync();
-    const webhook = await sync.getManagedWebhook();
+    const webhook = await sync.getManagedWebhookByUrl(webhookUrl);
     webhookSecret = webhook?.secret || null;
     return webhookSecret;
   } catch (error) {

@@ -7,7 +7,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { setupAuth } from "./simpleAuth";
 import { runMigrations } from "stripe-replit-sync";
-import { getStripeSync } from "./stripeClient";
+import { getStripeSync, getWebhookUrl } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
 import { initializeStripePrices } from "./initializeStripePrices";
 
@@ -134,39 +134,22 @@ async function initStripe() {
     const stripeSync = await getStripeSync();
 
     console.log("Setting up managed webhook...");
-    const isProduction = process.env.REPLIT_DEPLOYMENT === "1";
-    const customDomain = "myeasypass.net";
-    
-    let webhookBaseUrl: string | null = null;
-    if (isProduction) {
-      webhookBaseUrl = `https://${customDomain}`;
-    } else {
-      const domains = process.env.REPLIT_DOMAINS?.split(",") || [];
-      if (domains.length > 0) {
-        webhookBaseUrl = `https://${domains[0]}`;
-      }
-    }
-    
-    if (webhookBaseUrl) {
+    const webhookUrl = getWebhookUrl();
+
+    if (webhookUrl) {
       try {
-        const webhookUrl = `${webhookBaseUrl}/api/stripe/webhook`;
-        
-        try {
-          const result = await stripeSync.findOrCreateManagedWebhook(webhookUrl);
-          const configuredUrl = result?.webhook?.url || result?.url || webhookUrl;
-          console.log(`Webhook configured: ${configuredUrl}`);
-        } catch (webhookErr: any) {
-          if (webhookErr.code === 'resource_missing' || 
-              webhookErr.message?.includes('No such webhook endpoint') ||
-              webhookErr.type === 'StripeInvalidRequestError') {
-            console.warn("[Stripe Init] Old webhook endpoint not found, will use new one");
-            console.log(`[Stripe Init] Webhook URL ready: ${webhookUrl}`);
-          } else {
-            console.log("Webhook setup warning:", webhookErr.message);
-          }
+        const result = await stripeSync.findOrCreateManagedWebhook(webhookUrl);
+        const configuredUrl = result?.webhook?.url || result?.url || webhookUrl;
+        console.log(`Webhook configured: ${configuredUrl}`);
+      } catch (webhookErr: any) {
+        if (webhookErr.code === 'resource_missing' ||
+            webhookErr.message?.includes('No such webhook endpoint') ||
+            webhookErr.type === 'StripeInvalidRequestError') {
+          console.warn("[Stripe Init] Old webhook endpoint not found, will use new one");
+          console.log(`[Stripe Init] Webhook URL ready: ${webhookUrl}`);
+        } else {
+          console.log("Webhook setup warning:", webhookErr.message);
         }
-      } catch (outerErr: any) {
-        console.log("[Stripe Init] Webhook initialization skipped:", outerErr.message);
       }
     }
 

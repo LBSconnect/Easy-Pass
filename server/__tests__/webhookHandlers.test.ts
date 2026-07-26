@@ -13,6 +13,7 @@ vi.mock('../storage', () => ({
 vi.mock('../stripeClient', () => ({
   getCachedStripeClient: vi.fn(),
   getStripeSync: vi.fn(),
+  getWebhookUrl: vi.fn(() => 'https://test.example.com/api/stripe/webhook'),
 }));
 
 // Now import after mocks are set up
@@ -40,7 +41,7 @@ describe('WebhookHandlers.processWebhook', () => {
     process.env.REPLIT_DEPLOYMENT = '1';
 
     mockGetStripeSync.mockResolvedValue({
-      getManagedWebhook: vi.fn().mockResolvedValue({ secret: null }),
+      getManagedWebhookByUrl: vi.fn().mockResolvedValue({ secret: null }),
       processWebhook: vi.fn(),
     } as any);
 
@@ -67,7 +68,7 @@ describe('WebhookHandlers.processWebhook', () => {
     process.env.NODE_ENV = 'development';
 
     mockGetStripeSync.mockResolvedValue({
-      getManagedWebhook: vi.fn().mockResolvedValue({ secret: null }),
+      getManagedWebhookByUrl: vi.fn().mockResolvedValue({ secret: null }),
       processWebhook: vi.fn(),
     } as any);
 
@@ -126,7 +127,7 @@ describe('WebhookHandlers.processWebhook', () => {
     process.env.NODE_ENV = 'development';
 
     mockGetStripeSync.mockResolvedValue({
-      getManagedWebhook: vi.fn().mockResolvedValue({ secret: null }),
+      getManagedWebhookByUrl: vi.fn().mockResolvedValue({ secret: null }),
       processWebhook: vi.fn(),
     } as any);
 
@@ -177,7 +178,7 @@ describe('WebhookHandlers.processWebhook', () => {
     process.env.NODE_ENV = 'development';
 
     mockGetStripeSync.mockResolvedValue({
-      getManagedWebhook: vi.fn().mockResolvedValue({ secret: null }),
+      getManagedWebhookByUrl: vi.fn().mockResolvedValue({ secret: null }),
       processWebhook: vi.fn(),
     } as any);
 
@@ -231,7 +232,7 @@ describe('WebhookHandlers.processWebhook', () => {
     process.env.NODE_ENV = 'development';
 
     mockGetStripeSync.mockResolvedValue({
-      getManagedWebhook: vi.fn().mockResolvedValue({ secret: null }),
+      getManagedWebhookByUrl: vi.fn().mockResolvedValue({ secret: null }),
       processWebhook: vi.fn(),
     } as any);
 
@@ -281,7 +282,7 @@ describe('WebhookHandlers.processWebhook', () => {
     process.env.NODE_ENV = 'development';
 
     mockGetStripeSync.mockResolvedValue({
-      getManagedWebhook: vi.fn().mockResolvedValue({ secret: null }),
+      getManagedWebhookByUrl: vi.fn().mockResolvedValue({ secret: null }),
       processWebhook: vi.fn(),
     } as any);
 
@@ -321,7 +322,7 @@ describe('WebhookHandlers.processWebhook', () => {
     process.env.NODE_ENV = 'development';
 
     mockGetStripeSync.mockResolvedValue({
-      getManagedWebhook: vi.fn().mockResolvedValue({ secret: null }),
+      getManagedWebhookByUrl: vi.fn().mockResolvedValue({ secret: null }),
       processWebhook: vi.fn(),
     } as any);
 
@@ -381,7 +382,7 @@ describe('WebhookHandlers.processWebhook', () => {
     process.env.NODE_ENV = 'development';
 
     mockGetStripeSync.mockResolvedValue({
-      getManagedWebhook: vi.fn().mockResolvedValue({ secret: null }),
+      getManagedWebhookByUrl: vi.fn().mockResolvedValue({ secret: null }),
       processWebhook: vi.fn(),
     } as any);
 
@@ -414,7 +415,7 @@ describe('WebhookHandlers.processWebhook', () => {
     process.env.NODE_ENV = 'development';
 
     mockGetStripeSync.mockResolvedValue({
-      getManagedWebhook: vi.fn().mockResolvedValue({ secret: null }),
+      getManagedWebhookByUrl: vi.fn().mockResolvedValue({ secret: null }),
       processWebhook: vi.fn(),
     } as any);
 
@@ -452,7 +453,7 @@ describe('WebhookHandlers.processWebhook', () => {
     process.env.NODE_ENV = 'development';
 
     mockGetStripeSync.mockResolvedValue({
-      getManagedWebhook: vi.fn().mockResolvedValue({ secret: null }),
+      getManagedWebhookByUrl: vi.fn().mockResolvedValue({ secret: null }),
       processWebhook: vi.fn(),
     } as any);
 

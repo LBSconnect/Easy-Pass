@@ -97,6 +97,23 @@ export async function getStripeSecretKey() {
   return secretKey;
 }
 
+export function getWebhookUrl(): string | null {
+  const isProduction =
+    process.env.REPLIT_DEPLOYMENT === "1" || process.env.NODE_ENV === "production";
+  const customDomain = "myeasypass.net";
+
+  if (isProduction) {
+    return `https://${customDomain}/api/stripe/webhook`;
+  }
+
+  const domains = process.env.REPLIT_DOMAINS?.split(",") || [];
+  if (domains.length > 0) {
+    return `https://${domains[0]}/api/stripe/webhook`;
+  }
+
+  return null;
+}
+
 let stripeSync: any = null;
 
 export async function getStripeSync() {

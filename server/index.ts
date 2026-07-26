@@ -259,7 +259,7 @@ async function initStripe() {
   const isProduction = process.env.REPLIT_DEPLOYMENT === "1" || process.env.NODE_ENV === "production";
   
   if (isProduction) {
-    log(`Running in PRODUCTION mode (REPLIT_DEPLOYMENT=${process.env.REPLIT_DEPLOYMENT}, NODE_ENV=${process.env.NODE_ENV})`);
+    log(`Running in PRODUCTION mode (NODE_ENV=${process.env.NODE_ENV})`);
     serveStatic(app);
   } else {
     log(`Running in DEVELOPMENT mode`);

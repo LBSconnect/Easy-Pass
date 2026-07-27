@@ -230,6 +230,35 @@ export default function AdminPage() {
     },
   });
 
+  const clearExamHistoryMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await fetch(`/api/admin/users/${userId}/exam-history`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        throw new Error(body.message || "Failed to clear exam history");
+      }
+      return body;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: t("common.success"),
+        description: data.message || "Exam history cleared",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const [stripeDiagnostic, setStripeDiagnostic] = useState<any>(null);
   const [stripeFixResults, setStripeFixResults] = useState<string[] | null>(null);
 
@@ -269,6 +298,23 @@ export default function AdminPage() {
     onSuccess: () => {
       setStripeDiagnostic(null);
       toast({ title: "Done", description: "Stripe prices initialized. Run diagnostic to verify." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const shuffleAnswersMutation = useMutation({
+    mutationFn: async () => {
+      const url = selectedCategory === "all"
+        ? "/api/admin/questions/shuffle-answers"
+        : `/api/admin/questions/shuffle-answers?category=${selectedCategory}`;
+      const res = await apiRequest("POST", url);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/questions"] });
+      toast({ title: "Done", description: data.message });
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -527,6 +573,15 @@ export default function AdminPage() {
                           <SelectItem value="general_lines">General Lines</SelectItem>
                         </SelectContent>
                       </Select>
+                      <Button
+                        variant="outline"
+                        onClick={() => shuffleAnswersMutation.mutate()}
+                        disabled={shuffleAnswersMutation.isPending}
+                        data-testid="button-shuffle-answers"
+                      >
+                        <RefreshCw className={`mr-2 h-4 w-4 ${shuffleAnswersMutation.isPending ? "animate-spin" : ""}`} />
+                        Shuffle Answer Positions
+                      </Button>
                       <Dialog open={isQuestionDialogOpen} onOpenChange={setIsQuestionDialogOpen}>
                         <DialogTrigger asChild>
                           <Button
@@ -874,6 +929,24 @@ export default function AdminPage() {
                                   data-testid={`button-reset-password-${user.id}`}
                                 >
                                   <Mail className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    if (
+                                      window.confirm(
+                                        `Clear all exam history (sessions, results, study progress, and certificates) for ${user.email}? This cannot be undone.`
+                                      )
+                                    ) {
+                                      clearExamHistoryMutation.mutate(user.id);
+                                    }
+                                  }}
+                                  disabled={clearExamHistoryMutation.isPending}
+                                  title="Clear exam history"
+                                  data-testid={`button-clear-history-${user.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                             </TableCell>

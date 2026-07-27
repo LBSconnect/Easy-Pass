@@ -112,19 +112,40 @@ export async function registerRoutes(
         return res.status(404).json({ message: "No questions available for this category" });
       }
       
+      // Randomize each question's option order for this session only - the
+      // shared question bank is never modified, so every attempt (by any
+      // user, or the same user retaking the exam) gets its own fresh order.
+      const answerOrder: Record<string, number> = {};
+      const questionsForClient = questions.map((question) => {
+        const shuffled = shuffleQuestionOptions(
+          question.optionsEn,
+          question.optionsEs,
+          question.correctAnswer,
+        );
+        answerOrder[question.id] = shuffled.correctAnswer;
+
+        const { correctAnswer, explanationEn, explanationEs, ...rest } = question;
+        return {
+          ...rest,
+          optionsEn: shuffled.optionsEn,
+          optionsEs: shuffled.optionsEs,
+        };
+      });
+
       const session = await storage.createExamSession({
         userId,
         category,
         questionIds: questions.map(q => q.id),
+        answerOrder,
         currentQuestionIndex: 0,
         timeLimit,
         isCompleted: false,
       });
 
-      // Never send answers/explanations to the client before the exam is submitted
-      const questionsForClient = questions.map(({ correctAnswer, explanationEn, explanationEs, ...rest }) => rest);
+      // Never send the per-session shuffled correct-answer mapping to the client
+      const { answerOrder: _answerOrder, ...sessionForClient } = session;
 
-      res.json({ session, questions: questionsForClient });
+      res.json({ session: sessionForClient, questions: questionsForClient });
     } catch (error) {
       console.error("Error starting exam:", error);
       res.status(500).json({ message: "Failed to start exam" });
@@ -159,6 +180,8 @@ export async function registerRoutes(
       const questionIds = session.questionIds as string[];
       const topicStats: Record<string, { correct: number; total: number }> = {};
       
+      const answerOrder = session.answerOrder as Record<string, number> | null;
+
       for (const questionId of questionIds) {
         const question = await storage.getQuestion(questionId);
         if (question) {
@@ -167,8 +190,13 @@ export async function registerRoutes(
             topicStats[topic] = { correct: 0, total: 0 };
           }
           topicStats[topic].total++;
-          
-          if (answers[questionId] === question.correctAnswer) {
+
+          // Score against this session's own shuffled option order, not the
+          // shared question bank's order, since the client was shown options
+          // shuffled specifically for this session.
+          const correctIndex = answerOrder?.[questionId] ?? question.correctAnswer;
+
+          if (answers[questionId] === correctIndex) {
             correctAnswers++;
             topicStats[topic].correct++;
           }

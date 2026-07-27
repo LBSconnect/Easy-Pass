@@ -8,7 +8,7 @@ import { sendPasswordResetEmail } from "./resendClient";
 import { rateLimit, getClientIp } from "./rateLimit";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
-import { insertQuestionSchema, insertCallbackRequestSchema, insertQuestionFeedbackSchema, insertGuestArticleSchema, callbackRequests, questionFeedback, type ExamCategory, examCategoryEnum, feedbackStatusEnum, guestArticleStatusEnum } from "@shared/schema";
+import { insertQuestionSchema, insertCallbackRequestSchema, insertQuestionFeedbackSchema, insertGuestArticleSchema, insertEmployerInquirySchema, callbackRequests, questionFeedback, type ExamCategory, examCategoryEnum, feedbackStatusEnum, guestArticleStatusEnum, employerInquiryStatusEnum } from "@shared/schema";
 import { studyTopicsConfig, getTopicById, getTopicsByCategory } from "@shared/studyTopics";
 import { z } from "zod";
 import { db } from "./db";
@@ -42,6 +42,37 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // Public marketing endpoint: returns one real, illustrative question for a
+  // category (or set of categories) so landing pages can show a genuine
+  // sample question instead of an invented one. Not part of a graded exam
+  // session, so including the answer/explanation here is intentional.
+  app.get("/api/questions/sample", async (req, res) => {
+    try {
+      const categoriesParam = (req.query.categories as string | undefined) ?? "";
+      const requested = categoriesParam
+        .split(",")
+        .map((c) => c.trim())
+        .filter((c): c is ExamCategory => examCategoryEnum.enumValues.includes(c as ExamCategory));
+
+      const categories = requested.length > 0 ? requested : [...examCategoryEnum.enumValues];
+
+      const pools = await Promise.all(
+        categories.map((category) => storage.getQuestions(category, 5))
+      );
+      const pool = pools.flat();
+
+      if (pool.length === 0) {
+        return res.status(404).json({ message: "No sample question available" });
+      }
+
+      const question = pool[Math.floor(Math.random() * pool.length)];
+      res.json(question);
+    } catch (error) {
+      console.error("Error fetching sample question:", error);
+      res.status(500).json({ message: "Failed to fetch sample question" });
+    }
+  });
 
   app.get("/api/profile", isAuthenticated, async (req: any, res) => {
     try {
@@ -437,6 +468,115 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error updating guest article:", error);
       res.status(500).json({ message: "Failed to update guest article" });
+    }
+  });
+
+  // Employer inquiry lead form - public submission
+  app.post("/api/employer-inquiries", async (req, res) => {
+    try {
+      const parsed = insertEmployerInquirySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid submission", errors: parsed.error.errors });
+      }
+
+      const sanitizedData = {
+        ...parsed.data,
+        companyName: sanitizeHtml(parsed.data.companyName) ?? parsed.data.companyName,
+        contactName: sanitizeHtml(parsed.data.contactName) ?? parsed.data.contactName,
+        email: parsed.data.email,
+        phone: parsed.data.phone ? sanitizeHtml(parsed.data.phone) ?? parsed.data.phone : undefined,
+        teamSize: parsed.data.teamSize ? sanitizeHtml(parsed.data.teamSize) ?? parsed.data.teamSize : undefined,
+        message: parsed.data.message ? sanitizeHtml(parsed.data.message) ?? parsed.data.message : undefined,
+      };
+
+      const inquiry = await storage.createEmployerInquiry(sanitizedData);
+      res.status(201).json({ message: "Inquiry received", id: inquiry.id });
+    } catch (error) {
+      console.error("Error submitting employer inquiry:", error);
+      res.status(500).json({ message: "Failed to submit inquiry" });
+    }
+  });
+
+  // Admin: Get all employer inquiries
+  app.get("/api/admin/employer-inquiries", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getProfile(userId);
+
+      if (!profile || profile.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const inquiries = await storage.getAllEmployerInquiries();
+      res.json(inquiries);
+    } catch (error) {
+      console.error("Error fetching employer inquiries:", error);
+      res.status(500).json({ message: "Failed to fetch employer inquiries" });
+    }
+  });
+
+  // Admin: Update employer inquiry status
+  app.patch("/api/admin/employer-inquiries/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getProfile(userId);
+
+      if (!profile || profile.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { id } = req.params;
+      const statusSchema = z.object({
+        status: z.enum(employerInquiryStatusEnum.enumValues),
+        adminNotes: z.string().optional(),
+      });
+
+      const parsed = statusSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid status", errors: parsed.error.errors });
+      }
+
+      const inquiry = await storage.updateEmployerInquiryStatus(id, parsed.data.status, parsed.data.adminNotes);
+      if (!inquiry) {
+        return res.status(404).json({ message: "Inquiry not found" });
+      }
+
+      res.json(inquiry);
+    } catch (error) {
+      console.error("Error updating employer inquiry:", error);
+      res.status(500).json({ message: "Failed to update employer inquiry" });
+    }
+  });
+
+  // Analytics: lightweight self-hosted event log (no third-party platform
+  // configured - see Phase 1 audit). Accepts events from both anonymous and
+  // authenticated visitors; failures here must never break the page.
+  const analyticsEventSchema = z.object({
+    event: z.string().min(1).max(100),
+    path: z.string().max(500).optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
+  });
+
+  app.post("/api/analytics/events", async (req: any, res) => {
+    try {
+      const parsed = analyticsEventSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid event" });
+      }
+
+      const userId = req.user?.claims?.sub;
+
+      await storage.createAnalyticsEvent({
+        event: parsed.data.event,
+        path: parsed.data.path,
+        metadata: parsed.data.metadata,
+        userId,
+      });
+
+      res.status(204).end();
+    } catch (error) {
+      console.error("Error logging analytics event:", error);
+      res.status(500).json({ message: "Failed to log event" });
     }
   });
 

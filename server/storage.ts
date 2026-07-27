@@ -8,6 +8,8 @@ import {
   studyProgress,
   examCertificates,
   guestArticles,
+  employerInquiries,
+  analyticsEvents,
   type UserProfile,
   type InsertUserProfile,
   type Question,
@@ -29,6 +31,11 @@ import {
   type GuestArticle,
   type InsertGuestArticle,
   type GuestArticleStatus,
+  type EmployerInquiry,
+  type InsertEmployerInquiry,
+  type EmployerInquiryStatus,
+  type InsertAnalyticsEvent,
+  type AnalyticsEvent,
 } from "@shared/schema";
 import { users, type User } from "@shared/models/auth";
 import { db, pool } from "./db";
@@ -97,6 +104,12 @@ export interface IStorage {
   createGuestArticle(article: InsertGuestArticle): Promise<GuestArticle>;
   getAllGuestArticles(): Promise<GuestArticle[]>;
   updateGuestArticleStatus(id: string, status: GuestArticleStatus, adminNotes?: string): Promise<GuestArticle | undefined>;
+
+  createEmployerInquiry(inquiry: InsertEmployerInquiry): Promise<EmployerInquiry>;
+  getAllEmployerInquiries(): Promise<EmployerInquiry[]>;
+  updateEmployerInquiryStatus(id: string, status: EmployerInquiryStatus, adminNotes?: string): Promise<EmployerInquiry | undefined>;
+
+  createAnalyticsEvent(event: InsertAnalyticsEvent): Promise<AnalyticsEvent>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -465,6 +478,32 @@ export class DatabaseStorage implements IStorage {
       .where(eq(guestArticles.id, id))
       .returning();
     return updated;
+  }
+
+  async createEmployerInquiry(inquiry: InsertEmployerInquiry): Promise<EmployerInquiry> {
+    const [created] = await db.insert(employerInquiries).values(inquiry).returning();
+    return created;
+  }
+
+  async getAllEmployerInquiries(): Promise<EmployerInquiry[]> {
+    return db
+      .select()
+      .from(employerInquiries)
+      .orderBy(desc(employerInquiries.createdAt));
+  }
+
+  async updateEmployerInquiryStatus(id: string, status: EmployerInquiryStatus, adminNotes?: string): Promise<EmployerInquiry | undefined> {
+    const [updated] = await db
+      .update(employerInquiries)
+      .set({ status, adminNotes })
+      .where(eq(employerInquiries.id, id))
+      .returning();
+    return updated;
+  }
+
+  async createAnalyticsEvent(event: InsertAnalyticsEvent): Promise<AnalyticsEvent> {
+    const [created] = await db.insert(analyticsEvents).values(event).returning();
+    return created;
   }
 }
 

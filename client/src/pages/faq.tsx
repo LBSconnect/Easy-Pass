@@ -34,20 +34,18 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Link } from "wouter";
-import { 
-  HelpCircle, 
-  BookOpen, 
-  Clock, 
-  Brain, 
-  Shield, 
-  Users, 
+import {
+  HelpCircle,
+  BookOpen,
+  Clock,
+  Brain,
+  Shield,
   MessageSquare,
   ExternalLink,
   Pen,
   CheckCircle,
   Lock,
-  Star
+  Languages
 } from "lucide-react";
 import { SiReddit, SiQuora } from "react-icons/si";
 
@@ -222,14 +220,14 @@ export default function FAQPage() {
               <CardContent className="pt-6">
                 <div className="flex justify-center mb-3">
                   <div className="p-3 rounded-full bg-primary/10">
-                    <Users className="h-6 w-6 text-primary" />
+                    <BookOpen className="h-6 w-6 text-primary" />
                   </div>
                 </div>
-                <p className="font-bold text-2xl" data-testid="text-trust-users">10,000+</p>
-                <p className="text-sm text-muted-foreground">{t("faq.trust.users")}</p>
+                <p className="font-bold text-2xl" data-testid="text-trust-questions">800+</p>
+                <p className="text-sm text-muted-foreground">{t("faq.trust.questions")}</p>
               </CardContent>
             </Card>
-            
+
             <Card className="text-center">
               <CardContent className="pt-6">
                 <div className="flex justify-center mb-3">
@@ -241,20 +239,16 @@ export default function FAQPage() {
                 <p className="text-sm text-muted-foreground">{t("faq.trust.secureDesc")}</p>
               </CardContent>
             </Card>
-            
+
             <Card className="text-center">
               <CardContent className="pt-6">
                 <div className="flex justify-center mb-3">
                   <div className="p-3 rounded-full bg-yellow-500/10">
-                    <Star className="h-6 w-6 text-yellow-500" />
+                    <Languages className="h-6 w-6 text-yellow-500" />
                   </div>
                 </div>
-                <Link href="/#testimonials">
-                  <Button variant="ghost" className="p-0 h-auto" data-testid="link-testimonials">
-                    {t("faq.trust.testimonials")}
-                  </Button>
-                </Link>
-                <p className="text-sm text-muted-foreground">{t("faq.trust.testimonialsDesc")}</p>
+                <p className="font-bold text-lg" data-testid="text-trust-bilingual">{t("faq.trust.bilingualTitle")}</p>
+                <p className="text-sm text-muted-foreground">{t("faq.trust.bilingualDesc")}</p>
               </CardContent>
             </Card>
           </div>

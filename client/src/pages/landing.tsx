@@ -3,7 +3,6 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
   Languages, 
   Zap, 
@@ -116,34 +115,13 @@ export default function LandingPage() {
     { id: "general_lines" as const, questions: 196 },
   ];
 
-  const testimonials = [
-    {
-      name: "Maria G.",
-      exam: isSpanish ? "Real Estate - Aprobada" : "Real Estate - Passed",
-      quote: isSpanish 
-        ? "Estudié en español y aprobé en mi primer intento. Las preguntas eran muy similares al examen real." 
-        : "I studied in Spanish and passed on my first try. The questions were very similar to the real exam.",
-    },
-    {
-      name: "James T.",
-      exam: isSpanish ? "Property & Casualty - Aprobado" : "Property & Casualty - Passed",
-      quote: isSpanish 
-        ? "Los exámenes simulados me prepararon perfectamente. Valió cada centavo." 
-        : "The mock exams prepared me perfectly. Worth every penny.",
-    },
-    {
-      name: "Sandra L.",
-      exam: isSpanish ? "Life Insurance - Aprobada" : "Life Insurance - Passed",
-      quote: isSpanish 
-        ? "Podía practicar en mi teléfono durante mis descansos. Muy conveniente." 
-        : "I could practice on my phone during breaks. So convenient.",
-    },
-  ];
-
+  // TODO(owner): trust indicators intentionally limited to verifiable facts.
+  // Do not add student counts, pass rates, or testimonials without real,
+  // owner-supplied and substantiated data.
   const trustIndicators = [
-    { value: "5,000+", label: isSpanish ? "Estudiantes" : "Students" },
-    { value: "92%", label: isSpanish ? "Tasa de Aprobación" : "Pass Rate" },
-    { value: "800+", label: isSpanish ? "Preguntas" : "Questions" },
+    { value: "800+", label: isSpanish ? "Preguntas de Práctica" : "Practice Questions" },
+    { value: "4", label: isSpanish ? "Categorías de Examen" : "Exam Categories" },
+    { value: "EN/ES", label: isSpanish ? "Bilingüe" : "Bilingual" },
   ];
 
   return (
@@ -158,7 +136,7 @@ export default function LandingPage() {
               {/* Trust Badge */}
               <Badge variant="secondary" className="px-4 py-2 text-sm">
                 <Star className="mr-1.5 h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
-                {isSpanish ? "Más de 5,000 estudiantes confían en nosotros" : "Trusted by 5,000+ Texas students"}
+                {isSpanish ? "Disponible en Inglés y Español" : "Available in English & Spanish"}
               </Badge>
 
               {/* Main Headline - Who it's for & what problem it solves */}
@@ -398,49 +376,8 @@ on the First Try
           </div>
         </section>
 
-        {/* Testimonials */}
-        <section className="py-16 md:py-24 bg-muted/30" id="testimonials">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-12 md:mb-16">
-              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4">
-                {isSpanish ? "Lo Que Dicen Nuestros Estudiantes" : "What Our Students Say"}
-              </h2>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
-              {testimonials.map((review, index) => (
-                <Card key={index} className="border">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-12 w-12">
-                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                          {review.name[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <CardTitle className="text-base">{review.name}</CardTitle>
-                        <CardDescription className="flex items-center gap-1">
-                          <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-                          {review.exam}
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex gap-0.5 mb-3">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      ))}
-                    </div>
-                    <p className="text-muted-foreground leading-relaxed">
-                      "{review.quote}"
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* TODO(owner): Testimonials section removed - fabricated placeholder reviews were previously
+            shown here. Reintroduce only with real, permissioned customer testimonials. */}
 
         {/* Final CTA Section */}
         <section className="py-16 md:py-24 bg-primary text-primary-foreground">

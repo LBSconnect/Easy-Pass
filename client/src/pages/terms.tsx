@@ -26,9 +26,9 @@ export default function TermsPage() {
               {language === "es" ? "1. Aceptación de los Términos" : "1. Acceptance of Terms"}
             </h2>
             <p className="text-muted-foreground">
-              {language === "es" 
-                ? "Al acceder y utilizar LBS EasyPass (el \"Servicio\"), usted acepta estar sujeto a estos Términos de Servicio. Si no está de acuerdo con alguna parte de estos términos, no podrá acceder al Servicio. LBS EasyPass es una plataforma de preparación para exámenes de licencias de Texas que ofrece materiales de práctica para exámenes de Bienes Raíces, Seguros de Propiedad y Accidentes, Seguros de Vida y Líneas Generales."
-                : "By accessing and using LBS EasyPass (the \"Service\"), you agree to be bound by these Terms of Service. If you disagree with any part of these terms, you may not access the Service. LBS EasyPass is a Texas licensing exam preparation platform offering practice materials for Real Estate, Property & Casualty Insurance, Life Insurance, and General Lines Insurance exams."}
+              {language === "es"
+                ? "Al acceder y utilizar MyEasyPass (el \"Servicio\"), propiedad de y operado por LBS, LLC (\"nosotros\", \"nos\" o \"nuestro\"), usted acepta estar sujeto a estos Términos de Servicio. Si no está de acuerdo con alguna parte de estos términos, no podrá acceder al Servicio. MyEasyPass es una plataforma de preparación para exámenes de licencias de Texas que ofrece materiales de práctica para exámenes de Bienes Raíces, Seguros de Propiedad y Accidentes, Seguros de Vida y Líneas Generales."
+                : "By accessing and using MyEasyPass (the \"Service\"), owned and operated by LBS, LLC (\"we,\" \"us,\" or \"our\"), you agree to be bound by these Terms of Service. If you disagree with any part of these terms, you may not access the Service. MyEasyPass is a Texas licensing exam preparation platform offering practice materials for Real Estate, Property & Casualty Insurance, Life Insurance, and General Lines Insurance exams."}
             </p>
           </section>
 
@@ -38,8 +38,8 @@ export default function TermsPage() {
             </h2>
             <p className="text-muted-foreground">
               {language === "es"
-                ? "LBS EasyPass proporciona:"
-                : "LBS EasyPass provides:"}
+                ? "MyEasyPass proporciona:"
+                : "MyEasyPass provides:"}
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
               <li>{language === "es" ? "Exámenes de práctica cronometrados para licencias de Texas" : "Timed practice exams for Texas licensing"}</li>
@@ -57,8 +57,8 @@ export default function TermsPage() {
             </h2>
             <p className="text-muted-foreground">
               {language === "es"
-                ? "Para acceder a ciertas funciones del Servicio, debe crear una cuenta utilizando Replit Auth. Usted es responsable de mantener la confidencialidad de su cuenta y de todas las actividades que ocurran bajo su cuenta. Debe notificarnos inmediatamente sobre cualquier uso no autorizado de su cuenta."
-                : "To access certain features of the Service, you must create an account using Replit Auth. You are responsible for maintaining the confidentiality of your account and for all activities that occur under your account. You must notify us immediately of any unauthorized use of your account."}
+                ? "Para acceder a ciertas funciones del Servicio, debe crear una cuenta con su correo electrónico y contraseña. Usted es responsable de mantener la confidencialidad de su cuenta y de todas las actividades que ocurran bajo su cuenta. Debe notificarnos inmediatamente sobre cualquier uso no autorizado de su cuenta."
+                : "To access certain features of the Service, you must create an account with your email address and password. You are responsible for maintaining the confidentiality of your account and for all activities that occur under your account. You must notify us immediately of any unauthorized use of your account."}
             </p>
           </section>
 
@@ -68,8 +68,8 @@ export default function TermsPage() {
             </h2>
             <p className="text-muted-foreground">
               {language === "es"
-                ? "LBS EasyPass ofrece los siguientes planes de suscripción:"
-                : "LBS EasyPass offers the following subscription plans:"}
+                ? "MyEasyPass ofrece los siguientes planes de suscripción:"
+                : "MyEasyPass offers the following subscription plans:"}
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
               <li>{language === "es" ? "Plan Semanal: $6.99 por semana" : "Weekly Plan: $6.99 per week"}</li>
@@ -105,8 +105,8 @@ export default function TermsPage() {
             </h2>
             <p className="text-muted-foreground">
               {language === "es"
-                ? "Todo el contenido del Servicio, incluyendo pero no limitado a texto, gráficos, logotipos, preguntas de exámenes y software, es propiedad de LBS EasyPass o sus licenciantes y está protegido por las leyes de propiedad intelectual. No puede usar, reproducir o distribuir ningún contenido sin nuestro consentimiento previo por escrito."
-                : "All content on the Service, including but not limited to text, graphics, logos, exam questions, and software, is the property of LBS EasyPass or its licensors and is protected by intellectual property laws. You may not use, reproduce, or distribute any content without our prior written consent."}
+                ? "Todo el contenido del Servicio, incluyendo pero no limitado a texto, gráficos, logotipos, preguntas de exámenes y software, es propiedad de LBS, LLC o sus licenciantes y está protegido por las leyes de propiedad intelectual. No puede usar, reproducir o distribuir ningún contenido sin nuestro consentimiento previo por escrito."
+                : "All content on the Service, including but not limited to text, graphics, logos, exam questions, and software, is the property of LBS, LLC or its licensors and is protected by intellectual property laws. You may not use, reproduce, or distribute any content without our prior written consent."}
             </p>
           </section>
 
@@ -116,8 +116,8 @@ export default function TermsPage() {
             </h2>
             <p className="text-muted-foreground">
               {language === "es"
-                ? "LBS EasyPass es una herramienta de preparación para exámenes y NO garantiza que aprobará su examen de licencia de Texas. Nuestros materiales de práctica están diseñados para ayudarlo a prepararse, pero los resultados reales del examen dependen de muchos factores. Las preguntas de práctica son representativas del contenido del examen pero pueden no reflejar las preguntas exactas de los exámenes oficiales de licencias de Texas."
-                : "LBS EasyPass is an exam preparation tool and does NOT guarantee that you will pass your Texas licensing exam. Our practice materials are designed to help you prepare, but actual exam results depend on many factors. Practice questions are representative of exam content but may not reflect exact questions on official Texas licensing exams."}
+                ? "MyEasyPass es una herramienta de preparación para exámenes y NO garantiza que aprobará su examen de licencia de Texas. Nuestros materiales de práctica están diseñados para ayudarlo a prepararse, pero los resultados reales del examen dependen de muchos factores. Las preguntas de práctica son representativas del contenido del examen pero pueden no reflejar las preguntas exactas de los exámenes oficiales de licencias de Texas."
+                : "MyEasyPass is an exam preparation tool and does NOT guarantee that you will pass your Texas licensing exam. Our practice materials are designed to help you prepare, but actual exam results depend on many factors. Practice questions are representative of exam content but may not reflect exact questions on official Texas licensing exams."}
             </p>
           </section>
 
@@ -127,8 +127,8 @@ export default function TermsPage() {
             </h2>
             <p className="text-muted-foreground">
               {language === "es"
-                ? "En la máxima medida permitida por la ley, LBS EasyPass no será responsable de ningún daño indirecto, incidental, especial, consecuente o punitivo, incluyendo pérdida de ganancias, datos u otras pérdidas intangibles, que resulten de su uso o incapacidad de usar el Servicio."
-                : "To the maximum extent permitted by law, LBS EasyPass shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or other intangible losses, resulting from your use or inability to use the Service."}
+                ? "En la máxima medida permitida por la ley, LBS, LLC no será responsable de ningún daño indirecto, incidental, especial, consecuente o punitivo, incluyendo pérdida de ganancias, datos u otras pérdidas intangibles, que resulten de su uso o incapacidad de usar el Servicio."
+                : "To the maximum extent permitted by law, LBS, LLC shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or other intangible losses, resulting from your use or inability to use the Service."}
             </p>
           </section>
 
@@ -164,6 +164,7 @@ export default function TermsPage() {
                 : "If you have any questions about these Terms of Service, please contact us:"}
             </p>
             <ul className="list-none text-muted-foreground space-y-1">
+              <li><strong>{language === "es" ? "MyEasyPass, operado por LBS, LLC" : "MyEasyPass, operated by LBS, LLC"}</strong></li>
               <li>{language === "es" ? "Correo electrónico" : "Email"}: Support@LBSconnect.net</li>
               <li>{language === "es" ? "Teléfono" : "Phone"}: 281-836-5357</li>
               <li>{language === "es" ? "Ubicación" : "Location"}: 616 FM 1960 RD W STE 101, Houston, TX 77090-3048</li>

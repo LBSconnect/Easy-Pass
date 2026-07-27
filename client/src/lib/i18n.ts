@@ -26,7 +26,6 @@ const resources = {
         subtitle: "Practice with confidence using our comprehensive exam preparation platform. Available in English and Spanish.",
         cta: "Start Practicing",
         viewPricing: "View Pricing",
-        trustedBy: "Trusted by 10,000+ successful test takers",
         bilingual: "Available in English & Spanish",
       },
       categories: {
@@ -46,7 +45,7 @@ const resources = {
         startExam: "Start Full Exam",
       },
       features: {
-        title: "Why Choose LBS EasyPass",
+        title: "Why Choose MyEasyPass",
         subtitle: "Everything you need to succeed on your licensing exam",
         bilingual: {
           title: "Bilingual Support",
@@ -92,28 +91,8 @@ const resources = {
         subscribe: "Subscribe Now",
         cancelAnytime: "Cancel anytime",
       },
-      testimonials: {
-        title: "What Our Students Say",
-        reviews: [
-          {
-            name: "Maria G.",
-            exam: "Real Estate Exam",
-            quote: "LBS EasyPass helped me pass my real estate exam on the first try. The Spanish language option was a game changer!",
-          },
-          {
-            name: "John D.",
-            exam: "Property & Casualty",
-            quote: "The practice tests were incredibly similar to the actual exam. I felt completely prepared.",
-          },
-          {
-            name: "Carlos R.",
-            exam: "Life Insurance",
-            quote: "Affordable and effective. I recommend LBS EasyPass to everyone preparing for their licensing exam.",
-          },
-        ],
-      },
       footer: {
-        company: "LBS EasyPass",
+        company: "MyEasyPass",
         tagline: "Your path to professional licensing success",
         quickLinks: "Quick Links",
         examCategories: "Exam Categories",
@@ -315,11 +294,11 @@ const resources = {
         subtitle: "Expert tips and resources to help you pass your Texas licensing exam",
         externalResources: "Additional Resources",
         trust: {
-          users: "Trusted by students",
+          questions: "Practice Questions",
           secureTitle: "Confidential & Secure",
           secureDesc: "Your data is protected",
-          testimonials: "Read Testimonials",
-          testimonialsDesc: "See what others say",
+          bilingualTitle: "Bilingual",
+          bilingualDesc: "Available in English & Spanish",
         },
         topics: {
           realEstate: {
@@ -419,7 +398,6 @@ const resources = {
         subtitle: "Practica con confianza usando nuestra plataforma integral de preparación para exámenes. Disponible en inglés y español.",
         cta: "Comenzar a Practicar",
         viewPricing: "Ver Precios",
-        trustedBy: "Más de 10,000 estudiantes aprobados confían en nosotros",
         bilingual: "Disponible en Inglés y Español",
       },
       categories: {
@@ -439,7 +417,7 @@ const resources = {
         startExam: "Comenzar Examen Completo",
       },
       features: {
-        title: "Por Qué Elegir LBS EasyPass",
+        title: "Por Qué Elegir MyEasyPass",
         subtitle: "Todo lo que necesitas para aprobar tu examen de licencia",
         bilingual: {
           title: "Soporte Bilingüe",
@@ -485,28 +463,8 @@ const resources = {
         subscribe: "Suscribirse Ahora",
         cancelAnytime: "Cancela en cualquier momento",
       },
-      testimonials: {
-        title: "Lo Que Dicen Nuestros Estudiantes",
-        reviews: [
-          {
-            name: "María G.",
-            exam: "Examen de Bienes Raíces",
-            quote: "LBS EasyPass me ayudó a aprobar mi examen de bienes raíces en el primer intento. ¡La opción en español fue increíble!",
-          },
-          {
-            name: "Juan D.",
-            exam: "Propiedad y Accidentes",
-            quote: "Los exámenes de práctica eran increíblemente similares al examen real. Me sentí completamente preparado.",
-          },
-          {
-            name: "Carlos R.",
-            exam: "Seguro de Vida",
-            quote: "Económico y efectivo. Recomiendo LBS EasyPass a todos los que se preparan para su examen de licencia.",
-          },
-        ],
-      },
       footer: {
-        company: "LBS EasyPass",
+        company: "MyEasyPass",
         tagline: "Tu camino hacia el éxito en licencias profesionales",
         quickLinks: "Enlaces Rápidos",
         examCategories: "Categorías de Exámenes",
@@ -708,11 +666,11 @@ const resources = {
         subtitle: "Consejos y recursos de expertos para ayudarte a aprobar tu examen de licencia de Texas",
         externalResources: "Recursos Adicionales",
         trust: {
-          users: "Estudiantes confían en nosotros",
+          questions: "Preguntas de Práctica",
           secureTitle: "Confidencial y Seguro",
           secureDesc: "Tus datos están protegidos",
-          testimonials: "Leer Testimonios",
-          testimonialsDesc: "Ve lo que dicen otros",
+          bilingualTitle: "Bilingüe",
+          bilingualDesc: "Disponible en Inglés y Español",
         },
         topics: {
           realEstate: {

@@ -26,9 +26,9 @@ export default function PrivacyPage() {
               {language === "es" ? "1. Introducción" : "1. Introduction"}
             </h2>
             <p className="text-muted-foreground">
-              {language === "es" 
-                ? "LBS EasyPass (\"nosotros\", \"nos\" o \"nuestro\") opera la plataforma de preparación para exámenes de licencias de Texas en LBSEasyPass.com. Esta Política de Privacidad explica cómo recopilamos, usamos, divulgamos y protegemos su información cuando utiliza nuestro Servicio. Nos comprometemos a proteger su privacidad y garantizar la seguridad de su información personal."
-                : "LBS EasyPass (\"we,\" \"us,\" or \"our\") operates the Texas licensing exam preparation platform at LBSEasyPass.com. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Service. We are committed to protecting your privacy and ensuring the security of your personal information."}
+              {language === "es"
+                ? "MyEasyPass (\"nosotros\", \"nos\" o \"nuestro\"), propiedad de y operado por LBS, LLC, opera la plataforma de preparación para exámenes de licencias de Texas en myeasypass.net. Esta Política de Privacidad explica cómo recopilamos, usamos, divulgamos y protegemos su información cuando utiliza nuestro Servicio. Nos comprometemos a proteger su privacidad y garantizar la seguridad de su información personal."
+                : "MyEasyPass (\"we,\" \"us,\" or \"our\"), owned and operated by LBS, LLC, operates the Texas licensing exam preparation platform at myeasypass.net. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Service. We are committed to protecting your privacy and ensuring the security of your personal information."}
             </p>
           </section>
 
@@ -42,12 +42,13 @@ export default function PrivacyPage() {
             </h3>
             <p className="text-muted-foreground">
               {language === "es"
-                ? "Cuando crea una cuenta a través de Replit Auth, recopilamos:"
-                : "When you create an account through Replit Auth, we collect:"}
+                ? "Cuando crea una cuenta, recopilamos:"
+                : "When you create an account, we collect:"}
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-              <li>{language === "es" ? "Nombre de usuario e ID de Replit" : "Username and Replit ID"}</li>
-              <li>{language === "es" ? "Foto de perfil (si está disponible)" : "Profile picture (if available)"}</li>
+              <li>{language === "es" ? "Nombre y apellido" : "First and last name"}</li>
+              <li>{language === "es" ? "Dirección de correo electrónico" : "Email address"}</li>
+              <li>{language === "es" ? "Contraseña (almacenada de forma segura mediante hash, nunca en texto plano)" : "Password (securely hashed, never stored in plain text)"}</li>
               <li>{language === "es" ? "Preferencia de idioma" : "Language preference"}</li>
               <li>{language === "es" ? "Número de teléfono (opcional, para programación de exámenes)" : "Phone number (optional, for exam scheduling)"}</li>
             </ul>
@@ -116,9 +117,9 @@ export default function PrivacyPage() {
                   : "For secure payment processing"}
               </li>
               <li>
-                <strong>Replit:</strong> {language === "es"
-                  ? "Para servicios de autenticación"
-                  : "For authentication services"}
+                <strong>Resend:</strong> {language === "es"
+                  ? "Para enviar correos electrónicos transaccionales (por ejemplo, restablecimiento de contraseña)"
+                  : "For sending transactional emails (e.g. password resets)"}
               </li>
               <li>
                 <strong>{language === "es" ? "Requisitos Legales" : "Legal Requirements"}:</strong> {language === "es"
@@ -253,7 +254,7 @@ export default function PrivacyPage() {
                 : "If you have questions about this Privacy Policy or our data practices, contact us:"}
             </p>
             <ul className="list-none text-muted-foreground space-y-1">
-              <li><strong>LBS EasyPass</strong></li>
+              <li><strong>{language === "es" ? "MyEasyPass, operado por LBS, LLC" : "MyEasyPass, operated by LBS, LLC"}</strong></li>
               <li>{language === "es" ? "Correo electrónico" : "Email"}: Support@LBSconnect.net</li>
               <li>{language === "es" ? "Teléfono" : "Phone"}: 281-836-5357</li>
               <li>{language === "es" ? "Ubicación" : "Location"}: 616 FM 1960 RD W STE 101, Houston, TX 77090-3048</li>

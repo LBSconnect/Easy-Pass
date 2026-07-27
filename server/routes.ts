@@ -16,6 +16,7 @@ import { sql } from "drizzle-orm";
 import { sanitizeHtml } from "./sanitize";
 import { checkSubscriptionActive } from "./subscriptionCheck";
 import { calculateExamScore, calculateTopicBreakdown, type TopicStat } from "./examScoring";
+import { shuffleQuestionOptions } from "./shuffleQuestionOptions";
 
 const startExamSchema = z.object({
   category: z.enum(examCategoryEnum.enumValues),
@@ -1132,6 +1133,37 @@ export async function registerRoutes(
     }
   });
 
+  // Clear a user's exam history (sessions, results, study progress, certificates).
+  // For cases like a customer's practice results being invalidated by a data
+  // issue (e.g. the exam-answer-position bug) and needing a clean slate.
+  app.delete("/api/admin/users/:userId/exam-history", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminUserId = req.user.claims.sub;
+      const adminProfile = await storage.getProfile(adminUserId);
+
+      if (adminProfile?.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const { userId } = req.params;
+      const user = await storage.getUser(userId);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const deleted = await storage.clearUserExamHistory(userId);
+
+      res.json({
+        message: `Cleared exam history for ${user.email}`,
+        deleted,
+      });
+    } catch (error: any) {
+      console.error("Error clearing user exam history:", error);
+      res.status(500).json({ message: "Failed to clear exam history", error: error.message });
+    }
+  });
+
   app.get("/api/admin/questions", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -1148,6 +1180,45 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching questions:", error);
       res.status(500).json({ message: "Failed to fetch questions" });
+    }
+  });
+
+  // One-time maintenance action: randomize each question's answer position.
+  // Question content was originally authored/imported with the correct answer
+  // heavily concentrated in one option position per category (e.g. almost
+  // always option A for real estate) rather than randomized.
+  app.post("/api/admin/questions/shuffle-answers", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getProfile(userId);
+
+      if (profile?.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const categoryParam = req.query.category as string | undefined;
+      const category = categoryParam && categoryParam !== "all" ? categoryParam as ExamCategory : undefined;
+      const questions = await storage.getQuestions(category);
+
+      let updated = 0;
+      for (const question of questions) {
+        const shuffled = shuffleQuestionOptions(
+          question.optionsEn,
+          question.optionsEs,
+          question.correctAnswer,
+        );
+        await storage.updateQuestion(question.id, {
+          optionsEn: shuffled.optionsEn,
+          optionsEs: shuffled.optionsEs,
+          correctAnswer: shuffled.correctAnswer,
+        });
+        updated++;
+      }
+
+      res.json({ message: `Shuffled answer positions for ${updated} questions`, updated });
+    } catch (error) {
+      console.error("Error shuffling question answers:", error);
+      res.status(500).json({ message: "Failed to shuffle question answers" });
     }
   });
 

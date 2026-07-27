@@ -60,6 +60,12 @@ export interface IStorage {
   createExamResult(result: InsertExamResult): Promise<ExamResult>;
   getExamResults(userId: string): Promise<ExamResult[]>;
   getAllExamResults(): Promise<ExamResult[]>;
+  clearUserExamHistory(userId: string): Promise<{
+    examSessions: number;
+    examResults: number;
+    studyProgress: number;
+    examCertificates: number;
+  }>;
   
   createPaymentHistory(payment: InsertPaymentHistory): Promise<PaymentHistory>;
   getPaymentHistory(userId: string): Promise<PaymentHistory[]>;
@@ -230,6 +236,25 @@ export class DatabaseStorage implements IStorage {
 
   async getAllExamResults(): Promise<ExamResult[]> {
     return db.select().from(examResults).orderBy(desc(examResults.completedAt));
+  }
+
+  async clearUserExamHistory(userId: string): Promise<{
+    examSessions: number;
+    examResults: number;
+    studyProgress: number;
+    examCertificates: number;
+  }> {
+    const deletedSessions = await db.delete(examSessions).where(eq(examSessions.userId, userId)).returning();
+    const deletedResults = await db.delete(examResults).where(eq(examResults.userId, userId)).returning();
+    const deletedProgress = await db.delete(studyProgress).where(eq(studyProgress.userId, userId)).returning();
+    const deletedCertificates = await db.delete(examCertificates).where(eq(examCertificates.userId, userId)).returning();
+
+    return {
+      examSessions: deletedSessions.length,
+      examResults: deletedResults.length,
+      studyProgress: deletedProgress.length,
+      examCertificates: deletedCertificates.length,
+    };
   }
 
   async createPaymentHistory(payment: InsertPaymentHistory): Promise<PaymentHistory> {

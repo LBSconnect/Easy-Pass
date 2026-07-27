@@ -58,6 +58,7 @@ export const examSessions = pgTable("exam_sessions", {
   category: examCategoryEnum("category").notNull(),
   questionIds: jsonb("question_ids").notNull().$type<string[]>(),
   answers: jsonb("answers").$type<Record<string, number>>(),
+  answerOrder: jsonb("answer_order").$type<Record<string, number>>(),
   currentQuestionIndex: integer("current_question_index").default(0).notNull(),
   startedAt: timestamp("started_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),

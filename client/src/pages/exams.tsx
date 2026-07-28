@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Link, useParams, useLocation } from "wouter";
+import { Link, useParams, useLocation, useSearch } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
@@ -208,9 +208,9 @@ function ExamSession() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const category = params.category as ExamCategory;
-  
-  const searchParams = new URLSearchParams(window.location.search);
-  const mode = searchParams.get("mode") === "full" ? "full" : "practice";
+
+  const search = useSearch();
+  const mode = new URLSearchParams(search).get("mode") === "full" ? "full" : "practice";
 
   const [session, setSession] = useState<ExamSession | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -362,7 +362,7 @@ function ExamSession() {
 
   useEffect(() => {
     startExamMutation.mutate();
-  }, [category]);
+  }, [category, mode]);
 
   useEffect(() => {
     if (!session || result) return;

@@ -203,6 +203,20 @@ const resources = {
         title: "Schedule Your Exam",
         subtitle: "Visit our testing center in Houston or request a callback to schedule your appointment",
         visitTestCenter: "Visit Test Center Website",
+        pathChooser: {
+          heading: "How Can We Help You Today?",
+          subheading: "Choose the option that fits where you are in your journey",
+          preparePath: {
+            title: "Prepare for Your Exam",
+            description: "Not ready yet? Practice with real exam questions and mock exams until you feel confident.",
+            cta: "Start Practicing",
+          },
+          schedulePath: {
+            title: "Schedule Your Official Exam",
+            description: "Ready to test? Find our Houston testing center, get directions, or request a callback.",
+            cta: "Schedule Now",
+          },
+        },
         location: {
           title: "Testing Center Location",
           description: "Visit our conveniently located testing center in Houston",
@@ -575,6 +589,20 @@ const resources = {
         title: "Agenda Tu Examen",
         subtitle: "Visita nuestro centro de pruebas en Houston o solicita una llamada para agendar tu cita",
         visitTestCenter: "Visitar Sitio Web del Centro de Pruebas",
+        pathChooser: {
+          heading: "¿Cómo Podemos Ayudarte Hoy?",
+          subheading: "Elige la opción que se ajuste a tu etapa actual",
+          preparePath: {
+            title: "Prepárate para tu Examen",
+            description: "¿Aún no estás listo? Practica con preguntas reales y exámenes simulados hasta sentirte seguro.",
+            cta: "Comenzar a Practicar",
+          },
+          schedulePath: {
+            title: "Agenda tu Examen Oficial",
+            description: "¿Listo para presentar? Encuentra nuestro centro de pruebas en Houston, obtén direcciones o solicita una llamada.",
+            cta: "Agendar Ahora",
+          },
+        },
         location: {
           title: "Ubicación del Centro de Pruebas",
           description: "Visita nuestro centro de pruebas convenientemente ubicado en Houston",

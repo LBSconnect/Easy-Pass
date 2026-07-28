@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -14,7 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { MapPin, Phone, Clock, Calendar, ExternalLink, CheckCircle } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
+import { MapPin, Phone, Clock, Calendar, ExternalLink, CheckCircle, BookOpen } from "lucide-react";
 
 const callbackFormSchema = z.object({
   firstName: z.string().min(1, "First name is required").max(100),
@@ -80,6 +82,11 @@ export default function ScheduleExamPage() {
     }
   };
 
+  const handleScheduleOfficialClick = () => {
+    trackEvent("official_exam_schedule_click", { step: "path_selected" });
+    document.getElementById("schedule-official")?.scrollIntoView({ behavior: "smooth" });
+  };
+
   const encodedOrigin = encodeURIComponent(origin);
   const externalMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodedOrigin}&destination=${ENCODED_DESTINATION}`;
   const locationOnlyUrl = `https://www.google.com/maps?q=${ENCODED_DESTINATION}&output=embed`;
@@ -101,7 +108,59 @@ export default function ScheduleExamPage() {
           </div>
         </section>
 
-        <section className="py-6 sm:py-8 md:py-12 safe-area-inset">
+        <section className="py-8 sm:py-10 md:py-14 border-b">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-8 sm:mb-10">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2" data-testid="text-path-chooser-heading">
+                {t("scheduleExam.pathChooser.heading")}
+              </h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                {t("scheduleExam.pathChooser.subheading")}
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 max-w-4xl mx-auto">
+              <Card className="flex flex-col">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                    {t("scheduleExam.pathChooser.preparePath.title")}
+                  </CardTitle>
+                  <CardDescription>
+                    {t("scheduleExam.pathChooser.preparePath.description")}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="mt-auto">
+                  <Button className="w-full min-h-[44px]" asChild data-testid="button-path-prepare">
+                    <Link href="/exams">{t("scheduleExam.pathChooser.preparePath.cta")}</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="flex flex-col">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-primary" />
+                    {t("scheduleExam.pathChooser.schedulePath.title")}
+                  </CardTitle>
+                  <CardDescription>
+                    {t("scheduleExam.pathChooser.schedulePath.description")}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="mt-auto">
+                  <Button
+                    className="w-full min-h-[44px]"
+                    onClick={handleScheduleOfficialClick}
+                    data-testid="button-path-schedule"
+                  >
+                    {t("scheduleExam.pathChooser.schedulePath.cta")}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        <section id="schedule-official" className="py-6 sm:py-8 md:py-12 safe-area-inset scroll-mt-16">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
               <div className="space-y-6">
@@ -325,7 +384,13 @@ export default function ScheduleExamPage() {
                           </Button>
 
                           <Button className="w-full min-h-[44px] text-base bg-green-600 hover:bg-green-700 text-white" asChild>
-                            <a href="https://www.lbs4.com/" target="_blank" rel="noopener noreferrer" data-testid="link-ready-to-book">
+                            <a
+                              href="https://www.lbs4.com/"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              data-testid="link-ready-to-book"
+                              onClick={() => trackEvent("official_exam_schedule_click", { step: "book_now_click" })}
+                            >
                               <ExternalLink className="h-4 w-4 mr-2" />
                               {t("scheduleExam.form.readyToBook")}
                             </a>

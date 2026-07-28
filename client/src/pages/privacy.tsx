@@ -178,8 +178,8 @@ export default function PrivacyPage() {
             </ul>
             <p className="text-muted-foreground">
               {language === "es"
-                ? "Para ejercer estos derechos, contáctenos en Support@LBSconnect.net."
-                : "To exercise these rights, contact us at Support@LBSconnect.net."}
+                ? "Para ejercer estos derechos, contáctenos en info@LBSconnect.net."
+                : "To exercise these rights, contact us at info@LBSconnect.net."}
             </p>
           </section>
 
@@ -255,7 +255,7 @@ export default function PrivacyPage() {
             </p>
             <ul className="list-none text-muted-foreground space-y-1">
               <li><strong>{language === "es" ? "MyEasyPass, operado por LBS, LLC" : "MyEasyPass, operated by LBS, LLC"}</strong></li>
-              <li>{language === "es" ? "Correo electrónico" : "Email"}: Support@LBSconnect.net</li>
+              <li>{language === "es" ? "Correo electrónico" : "Email"}: info@LBSconnect.net</li>
               <li>{language === "es" ? "Teléfono" : "Phone"}: 281-836-5357</li>
               <li>{language === "es" ? "Ubicación" : "Location"}: 616 FM 1960 RD W STE 101, Houston, TX 77090-3048</li>
             </ul>

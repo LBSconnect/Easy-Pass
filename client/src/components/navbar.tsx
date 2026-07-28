@@ -52,12 +52,12 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <nav className="container mx-auto flex h-16 items-center justify-between gap-4 px-4">
+      <nav className="container mx-auto flex h-14 items-center justify-between gap-4 px-4">
         <Link href="/" className="flex items-center gap-2">
-          <img src={logoImage} alt="MyEasyPass" className="h-12 object-contain" />
+          <img src={logoImage} alt="MyEasyPass" className="h-10 object-contain" />
         </Link>
 
-        <div className="hidden md:flex items-center gap-6">
+        <div className="hidden md:flex items-center gap-7">
           {navLinks
             .filter((link) => link.show)
             .map((link) => (

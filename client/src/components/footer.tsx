@@ -67,28 +67,28 @@ export function Footer() {
             <h3 className="mb-4 text-sm font-semibold">{t("footer.examCategories")}</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <Link href="/exams">
+                <Link href="/texas-real-estate-exam-prep">
                   <span className="hover:text-primary cursor-pointer transition-colors">
                     {t("categories.real_estate")}
                   </span>
                 </Link>
               </li>
               <li>
-                <Link href="/exams">
+                <Link href="/texas-property-casualty-exam-prep">
                   <span className="hover:text-primary cursor-pointer transition-colors">
                     {t("categories.property_casualty")}
                   </span>
                 </Link>
               </li>
               <li>
-                <Link href="/exams">
+                <Link href="/texas-life-insurance-exam-prep">
                   <span className="hover:text-primary cursor-pointer transition-colors">
                     {t("categories.life_insurance")}
                   </span>
                 </Link>
               </li>
               <li>
-                <Link href="/exams">
+                <Link href="/texas-general-lines-exam-prep">
                   <span className="hover:text-primary cursor-pointer transition-colors">
                     {t("categories.general_lines")}
                   </span>

@@ -33,6 +33,82 @@
     <xhtml:link rel="alternate" hreflang="es" href="https://www.myeasypass.net/faq?lang=es" />
   </url>
 
+  <!-- Texas exam-prep landing pages (English) -->
+  <url>
+    <loc>https://www.myeasypass.net/texas-real-estate-exam-prep</loc>
+    <lastmod>2026-07-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.myeasypass.net/texas-real-estate-exam-prep" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.myeasypass.net/es/preparacion-examen-bienes-raices-texas" />
+  </url>
+
+  <url>
+    <loc>https://www.myeasypass.net/texas-property-casualty-exam-prep</loc>
+    <lastmod>2026-07-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.myeasypass.net/texas-property-casualty-exam-prep" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.myeasypass.net/es/preparacion-examen-seguros-texas" />
+  </url>
+
+  <url>
+    <loc>https://www.myeasypass.net/texas-life-insurance-exam-prep</loc>
+    <lastmod>2026-07-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.myeasypass.net/texas-life-insurance-exam-prep" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.myeasypass.net/es/preparacion-examen-seguros-texas" />
+  </url>
+
+  <url>
+    <loc>https://www.myeasypass.net/texas-general-lines-exam-prep</loc>
+    <lastmod>2026-07-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.myeasypass.net/texas-general-lines-exam-prep" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.myeasypass.net/es/preparacion-examen-seguros-texas" />
+  </url>
+
+  <!-- Texas exam-prep landing pages (Spanish) -->
+  <url>
+    <loc>https://www.myeasypass.net/es/preparacion-examen-bienes-raices-texas</loc>
+    <lastmod>2026-07-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.myeasypass.net/texas-real-estate-exam-prep" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.myeasypass.net/es/preparacion-examen-bienes-raices-texas" />
+  </url>
+
+  <url>
+    <loc>https://www.myeasypass.net/es/preparacion-examen-seguros-texas</loc>
+    <lastmod>2026-07-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.myeasypass.net/texas-property-casualty-exam-prep" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.myeasypass.net/es/preparacion-examen-seguros-texas" />
+  </url>
+
+  <!-- Readiness / diagnostic assessment -->
+  <url>
+    <loc>https://www.myeasypass.net/readiness-check</loc>
+    <lastmod>2026-07-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.myeasypass.net/readiness-check" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.myeasypass.net/readiness-check?lang=es" />
+  </url>
+
+  <!-- Employer / team licensing inquiry -->
+  <url>
+    <loc>https://www.myeasypass.net/employer-inquiry</loc>
+    <lastmod>2026-07-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.myeasypass.net/employer-inquiry" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.myeasypass.net/employer-inquiry?lang=es" />
+  </url>
+
   <!-- Sign Up -->
   <url>
     <loc>https://www.myeasypass.net/signup</loc>

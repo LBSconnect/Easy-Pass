@@ -39,13 +39,6 @@ const categoryIcons = {
   general_lines: FileText,
 };
 
-const categoryNames = {
-  real_estate: { en: "Real Estate", es: "Bienes Raíces" },
-  property_casualty: { en: "Property & Casualty", es: "Propiedad y Accidentes" },
-  life_insurance: { en: "Life Insurance", es: "Seguro de Vida" },
-  general_lines: { en: "General Lines", es: "Líneas Generales" },
-};
-
 const categoryColors = {
   real_estate: "from-blue-600 to-blue-800",
   property_casualty: "from-amber-600 to-amber-800",
@@ -99,8 +92,8 @@ export default function CertificatePage() {
 
   const handleShareLinkedIn = () => {
     const text = language === "es"
-      ? `Acabo de aprobar mi examen de ${categoryNames[certificate?.category as keyof typeof categoryNames]?.es || certificate?.category} con una puntuación del ${certificate?.score}%!`
-      : `I just passed my ${categoryNames[certificate?.category as keyof typeof categoryNames]?.en || certificate?.category} exam with a score of ${certificate?.score}%!`;
+      ? `Acabo de aprobar mi examen de ${t(`categories.${certificate?.category}`, certificate?.category ?? "")} con una puntuación del ${certificate?.score}%!`
+      : `I just passed my ${t(`categories.${certificate?.category}`, certificate?.category ?? "")} exam with a score of ${certificate?.score}%!`;
     window.open(
       `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`,
       "_blank"
@@ -109,8 +102,8 @@ export default function CertificatePage() {
 
   const handleShareTwitter = () => {
     const text = language === "es"
-      ? `Acabo de aprobar mi examen de ${categoryNames[certificate?.category as keyof typeof categoryNames]?.es || certificate?.category} con una puntuación del ${certificate?.score}%! #TexasLicense #ExamPass`
-      : `I just passed my ${categoryNames[certificate?.category as keyof typeof categoryNames]?.en || certificate?.category} exam with a score of ${certificate?.score}%! #TexasLicense #ExamPass`;
+      ? `Acabo de aprobar mi examen de ${t(`categories.${certificate?.category}`, certificate?.category ?? "")} con una puntuación del ${certificate?.score}%! #TexasLicense #ExamPass`
+      : `I just passed my ${t(`categories.${certificate?.category}`, certificate?.category ?? "")} exam with a score of ${certificate?.score}%! #TexasLicense #ExamPass`;
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`,
       "_blank"
@@ -177,7 +170,7 @@ export default function CertificatePage() {
   }
 
   const CategoryIcon = categoryIcons[certificate.category as keyof typeof categoryIcons] || FileText;
-  const categoryName = categoryNames[certificate.category as keyof typeof categoryNames]?.[language] || certificate.category;
+  const categoryName = t(`categories.${certificate.category}`, certificate.category);
   const categoryGradient = categoryColors[certificate.category as keyof typeof categoryColors] || "from-slate-600 to-slate-800";
 
   return (

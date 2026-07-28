@@ -123,7 +123,7 @@ export default function AdminPage() {
   });
 
   const { data: questions, isLoading: questionsLoading } = useQuery<Question[]>({
-    queryKey: ["/api/admin/questions", selectedCategory],
+    queryKey: ["/api/admin/questions"],
   });
 
   const { data: feedback, isLoading: feedbackLoading } = useQuery<QuestionFeedback[]>({

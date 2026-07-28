@@ -13,7 +13,7 @@ export function Footer() {
 
   return (
     <footer className="border-t bg-card">
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-10">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           <div className="space-y-4">
             <Link href="/" className="flex items-center gap-2">
@@ -100,7 +100,7 @@ export function Footer() {
           <div>
             <h3 className="mb-4 text-sm font-semibold">{t("footer.contact")}</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>Support@LBSconnect.net</li>
+              <li>info@LBSconnect.net</li>
               <li>281-836-5357</li>
               <li>616 FM 1960 RD W STE 101</li>
               <li>Houston, TX 77090-3048</li>
@@ -108,7 +108,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t pt-8 md:flex-row">
+        <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t pt-6 md:flex-row">
           <p className="text-sm text-muted-foreground">{t("footer.copyright")}</p>
           <div className="flex gap-6 text-sm text-muted-foreground">
             <Link href="/terms">

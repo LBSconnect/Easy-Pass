@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -51,8 +51,8 @@ function LoginForm({ onSwitchToSignup }: { onSwitchToSignup: () => void }) {
       const response = await apiRequest("POST", "/api/login", data);
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    onSuccess: (data) => {
+      queryClient.setQueryData(["/api/auth/user"], data);
       toast({ title: t("auth.loginSuccess", "Login successful!") });
       navigate("/dashboard");
     },
@@ -194,8 +194,8 @@ function SignupForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
       const response = await apiRequest("POST", "/api/register", payload);
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    onSuccess: (data) => {
+      queryClient.setQueryData(["/api/auth/user"], data);
       toast({ title: t("auth.signupSuccess", "Account created successfully!") });
       navigate("/dashboard");
     },
@@ -358,7 +358,12 @@ function SignupForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
 }
 
 export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [location] = useLocation();
+  const [isLogin, setIsLogin] = useState(location !== "/signup");
+
+  useEffect(() => {
+    setIsLogin(location !== "/signup");
+  }, [location]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">

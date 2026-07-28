@@ -537,7 +537,7 @@ export default function LandingPage() {
         <section className="py-12 md:py-16">
           <div className="container mx-auto px-4 max-w-4xl grid gap-5 md:grid-cols-2">
             <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <CardTitle className="text-lg">
                   {isSpanish ? "¿Prefieres un Bootcamp en Vivo?" : "Prefer a Live Bootcamp?"}
                 </CardTitle>
@@ -547,7 +547,7 @@ export default function LandingPage() {
                     : "Connect with live exam-cram bootcamps and our Houston testing center."}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 <a href={BOOTCAMP_HREF} target="_blank" rel="noopener noreferrer">
                   <Button
                     variant="outline"
@@ -562,7 +562,7 @@ export default function LandingPage() {
               </CardContent>
             </Card>
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <CardTitle className="text-lg">
                   {isSpanish ? "Preparando a tu Equipo" : "Preparing Your Team"}
                 </CardTitle>
@@ -572,7 +572,7 @@ export default function LandingPage() {
                     : "Licensing prep options for teams and organizations."}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 <Button variant="outline" className="w-full gap-2" asChild data-testid="button-homepage-employer-cta">
                   <Link href="/employer-inquiry">
                     {isSpanish ? "Solicitar Información" : "Request Team Information"}

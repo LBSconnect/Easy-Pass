@@ -30,6 +30,7 @@ import TexasGeneralLinesExamPrepPage from "@/pages/landing-texas-general-lines";
 import TexasRealEstateExamPrepEsPage from "@/pages/landing-texas-real-estate-es";
 import TexasInsuranceExamPrepEsPage from "@/pages/landing-texas-insurance-es";
 import EmployerInquiryPage from "@/pages/employer-inquiry";
+import DiagnosticPage from "@/pages/diagnostic";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -93,6 +94,7 @@ function Router() {
       <Route path="/es/preparacion-examen-bienes-raices-texas" component={TexasRealEstateExamPrepEsPage} />
       <Route path="/es/preparacion-examen-seguros-texas" component={TexasInsuranceExamPrepEsPage} />
       <Route path="/employer-inquiry" component={EmployerInquiryPage} />
+      <Route path="/readiness-check" component={DiagnosticPage} />
       <Route path="/schedule-exam" component={ScheduleExamPage} />
       <Route path="/study-guide" component={() => <ProtectedRoute component={StudyGuidePage} />} />
       <Route path="/profile" component={() => <ProtectedRoute component={ProfilePage} />} />

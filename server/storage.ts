@@ -10,6 +10,7 @@ import {
   guestArticles,
   employerInquiries,
   analyticsEvents,
+  diagnosticAttempts,
   type UserProfile,
   type InsertUserProfile,
   type Question,
@@ -36,6 +37,8 @@ import {
   type EmployerInquiryStatus,
   type InsertAnalyticsEvent,
   type AnalyticsEvent,
+  type DiagnosticAttempt,
+  type InsertDiagnosticAttempt,
 } from "@shared/schema";
 import { users, type User } from "@shared/models/auth";
 import { db, pool } from "./db";
@@ -110,6 +113,10 @@ export interface IStorage {
   updateEmployerInquiryStatus(id: string, status: EmployerInquiryStatus, adminNotes?: string): Promise<EmployerInquiry | undefined>;
 
   createAnalyticsEvent(event: InsertAnalyticsEvent): Promise<AnalyticsEvent>;
+
+  createDiagnosticAttempt(attempt: InsertDiagnosticAttempt): Promise<DiagnosticAttempt>;
+  getDiagnosticAttempt(id: string): Promise<DiagnosticAttempt | undefined>;
+  completeDiagnosticAttempt(id: string, data: { score: number; correctAnswers: number }): Promise<DiagnosticAttempt | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -504,6 +511,25 @@ export class DatabaseStorage implements IStorage {
   async createAnalyticsEvent(event: InsertAnalyticsEvent): Promise<AnalyticsEvent> {
     const [created] = await db.insert(analyticsEvents).values(event).returning();
     return created;
+  }
+
+  async createDiagnosticAttempt(attempt: InsertDiagnosticAttempt): Promise<DiagnosticAttempt> {
+    const [created] = await db.insert(diagnosticAttempts).values(attempt).returning();
+    return created;
+  }
+
+  async getDiagnosticAttempt(id: string): Promise<DiagnosticAttempt | undefined> {
+    const [attempt] = await db.select().from(diagnosticAttempts).where(eq(diagnosticAttempts.id, id));
+    return attempt;
+  }
+
+  async completeDiagnosticAttempt(id: string, data: { score: number; correctAnswers: number }): Promise<DiagnosticAttempt | undefined> {
+    const [updated] = await db
+      .update(diagnosticAttempts)
+      .set({ score: data.score, correctAnswers: data.correctAnswers, completedAt: new Date() })
+      .where(eq(diagnosticAttempts.id, id))
+      .returning();
+    return updated;
   }
 }
 

@@ -19,6 +19,8 @@ import {
   ClipboardCheck,
   PlayCircle,
   CheckCircle2,
+  GraduationCap,
+  Users,
 } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
@@ -351,6 +353,55 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Diagnostic assessment teaser */}
+        <section className="py-10 md:py-12 bg-primary text-primary-foreground">
+          <div className="container mx-auto px-4">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4 text-center md:text-left">
+                <div className="hidden sm:flex shrink-0 items-center justify-center w-14 h-14 rounded-2xl bg-primary-foreground/10">
+                  <ClipboardCheck className="h-7 w-7" />
+                </div>
+                <div>
+                  <h2 className="text-xl md:text-2xl font-bold mb-1">
+                    {isSpanish ? "¿No Sabes si Estás Listo?" : "Not Sure If You're Ready?"}
+                  </h2>
+                  <p className="text-primary-foreground/80">
+                    {isSpanish
+                      ? "Responde 10 preguntas rápidas para ver cómo te desempeñarías. Sin necesidad de suscripción."
+                      : "Take a short 10-question check to see how you'd do. No subscription required."}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  asChild
+                  className="gap-2"
+                  onClick={() => trackEvent("diagnostic_cta_click", { source: "homepage_banner" })}
+                  data-testid="cta-homepage-diagnostic"
+                >
+                  <Link href="/readiness-check">
+                    {isSpanish ? "Verificar mi Preparación" : "Check My Readiness"}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  asChild
+                  className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+                  data-testid="cta-homepage-explore-exam-prep"
+                >
+                  <Link href="#exams">
+                    {isSpanish ? "Explorar Preparación" : "Explore Exam Prep"}
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Platform Preview - real screenshot of the practice-question interface */}
         <section className="py-12 md:py-16 bg-muted/30" id="platform-preview">
           <div className="container mx-auto px-4">
@@ -490,7 +541,12 @@ export default function LandingPage() {
                   </Card>
                 )}
                 {bundlePrice && (
-                  <Card className="border-2 border-primary bg-gradient-to-br from-primary/5 to-primary/10" data-testid="card-pricing-preview-bundle">
+                  <Card className="relative overflow-hidden border-2 border-primary bg-gradient-to-br from-primary/5 to-primary/10" data-testid="card-pricing-preview-bundle">
+                    <div className="absolute top-0 right-0">
+                      <Badge className="rounded-none rounded-bl-lg">
+                        {isSpanish ? "Más Popular" : "Most Popular"}
+                      </Badge>
+                    </div>
                     <CardHeader>
                       <CardTitle className="text-lg">
                         {isSpanish ? "Paquete Completo" : "Complete Bundle"}
@@ -533,54 +589,84 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Live Bootcamp + Team Licensing */}
-        <section className="py-12 md:py-16">
-          <div className="container mx-auto px-4 max-w-4xl grid gap-5 md:grid-cols-2">
-            <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">
-                  {isSpanish ? "¿Prefieres un Bootcamp en Vivo?" : "Prefer a Live Bootcamp?"}
-                </CardTitle>
-                <CardDescription>
-                  {isSpanish
-                    ? "Conéctate con bootcamps de repaso de examen en vivo y nuestro centro de exámenes en Houston."
-                    : "Connect with live exam-cram bootcamps and our Houston testing center."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <a href={BOOTCAMP_HREF} target="_blank" rel="noopener noreferrer">
-                  <Button
-                    variant="outline"
-                    className="w-full gap-2"
-                    onClick={() => trackEvent("bootcamp_cta_click", { source: "homepage" })}
-                    data-testid="button-homepage-bootcamp-cta"
-                  >
-                    {isSpanish ? "Ver Bootcamps en Vivo" : "See Live Exam Bootcamps"}
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                </a>
-              </CardContent>
+        {/* Live Bootcamp */}
+        <section className="py-12 md:py-16 bg-muted/30">
+          <div className="container mx-auto px-4 max-w-4xl">
+            <Card className="overflow-hidden border-2">
+              <div className="grid md:grid-cols-[auto_1fr] items-center gap-6 p-6 md:p-8">
+                <div className="hidden md:flex shrink-0 items-center justify-center w-28 h-28 rounded-2xl bg-primary/10">
+                  <GraduationCap className="h-14 w-14 text-primary" />
+                </div>
+                <div>
+                  <Badge variant="secondary" className="mb-3">
+                    {isSpanish ? "INSTRUCCIÓN EN VIVO" : "LIVE INSTRUCTION"}
+                  </Badge>
+                  <h2 className="text-xl md:text-2xl font-bold mb-2">
+                    {isSpanish ? "¿Prefieres un Bootcamp en Vivo?" : "Prefer a Live Bootcamp?"}
+                  </h2>
+                  <p className="text-muted-foreground mb-4">
+                    {isSpanish
+                      ? "Conéctate con bootcamps de repaso de examen en vivo y nuestro centro de exámenes en Houston."
+                      : "Connect with live exam-cram bootcamps and our Houston testing center."}
+                  </p>
+                  <div className="flex flex-wrap gap-x-5 gap-y-2 mb-5 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <span>{isSpanish ? "Instrucción en vivo" : "Live, in-person instruction"}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <span>{isSpanish ? "Ubicación en Houston" : "Houston location"}</span>
+                    </div>
+                  </div>
+                  <a href={BOOTCAMP_HREF} target="_blank" rel="noopener noreferrer">
+                    <Button
+                      className="gap-2"
+                      onClick={() => trackEvent("bootcamp_cta_click", { source: "homepage" })}
+                      data-testid="button-homepage-bootcamp-cta"
+                    >
+                      {isSpanish ? "Ver Bootcamps en Vivo" : "See Live Exam Bootcamps"}
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </a>
+                </div>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">
-                  {isSpanish ? "Preparando a tu Equipo" : "Preparing Your Team"}
-                </CardTitle>
-                <CardDescription>
-                  {isSpanish
-                    ? "Opciones de preparación de licencias para equipos y organizaciones."
-                    : "Licensing prep options for teams and organizations."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <Button variant="outline" className="w-full gap-2" asChild data-testid="button-homepage-employer-cta">
-                  <Link href="/employer-inquiry">
-                    {isSpanish ? "Solicitar Información" : "Request Team Information"}
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
+          </div>
+        </section>
+
+        {/* Team Licensing */}
+        <section className="py-12 md:py-16 bg-primary text-primary-foreground">
+          <div className="container mx-auto px-4 max-w-4xl">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4 text-center md:text-left">
+                <div className="hidden sm:flex shrink-0 items-center justify-center w-14 h-14 rounded-2xl bg-primary-foreground/10">
+                  <Users className="h-7 w-7" />
+                </div>
+                <div>
+                  <h2 className="text-xl md:text-2xl font-bold mb-1">
+                    {isSpanish ? "Preparando a tu Equipo" : "Preparing a Team for Licensing"}
+                  </h2>
+                  <p className="text-primary-foreground/80">
+                    {isSpanish
+                      ? "Opciones de preparación de licencias para equipos y organizaciones."
+                      : "Licensing prep options for teams and organizations."}
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="lg"
+                variant="secondary"
+                asChild
+                className="gap-2 shrink-0"
+                data-testid="button-homepage-employer-cta"
+              >
+                <Link href="/employer-inquiry">
+                  {isSpanish ? "Solicitar Información" : "Request Team Information"}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
           </div>
         </section>
 

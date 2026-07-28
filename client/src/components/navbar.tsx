@@ -110,12 +110,12 @@ export function Navbar() {
                   <span className="sm:hidden">Start</span>
                 </Link>
               </Button>
-              <Button 
+              <Button
                 size="sm"
-                variant="outline" 
-                asChild 
+                variant="outline"
+                asChild
                 className="hidden sm:flex"
-                data-testid="button-login"
+                data-testid="link-nav-login"
               >
                 <Link href="/login">{t("nav.login")}</Link>
               </Button>

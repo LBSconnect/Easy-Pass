@@ -16,6 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useToast } from "@/hooks/use-toast";
+import { useSEO, buildUrl } from "@/hooks/use-seo";
 import { Building2, ArrowLeft, CheckCircle, Loader2 } from "lucide-react";
 
 const EXAM_CATEGORIES = [
@@ -42,6 +43,21 @@ export default function EmployerInquiryPage() {
   const isSpanish = i18n.language === "es";
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
+
+  useSEO({
+    title: isSpanish
+      ? "Preparación de Licencias para Equipos | MyEasyPass"
+      : "Team Licensing Prep | MyEasyPass",
+    description: isSpanish
+      ? "Cuéntanos sobre tu equipo y te contactaremos para hablar sobre opciones de preparación de licencias para tu organización."
+      : "Tell us about your team and we'll reach out to discuss licensing prep options for your organization.",
+    canonicalUrl: buildUrl(isSpanish ? "/employer-inquiry?lang=es" : "/employer-inquiry"),
+    hreflang: [
+      { lang: "en", url: buildUrl("/employer-inquiry") },
+      { lang: "es", url: buildUrl("/employer-inquiry?lang=es") },
+      { lang: "x-default", url: buildUrl("/employer-inquiry") },
+    ],
+  });
 
   const form = useForm<EmployerInquiryFormData>({
     resolver: zodResolver(employerInquirySchema),

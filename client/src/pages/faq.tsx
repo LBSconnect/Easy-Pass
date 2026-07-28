@@ -48,6 +48,7 @@ import {
   Languages
 } from "lucide-react";
 import { SiReddit, SiQuora } from "react-icons/si";
+import { useSEO, buildUrl } from "@/hooks/use-seo";
 
 const guestArticleSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -154,9 +155,22 @@ const articleTopics = [
 ];
 
 export default function FAQPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const [submittedSuccessfully, setSubmittedSuccessfully] = useState(false);
+  const isSpanish = i18n.language.startsWith("es");
+  const canonicalUrl = buildUrl(isSpanish ? "/faq?lang=es" : "/faq");
+
+  useSEO({
+    title: `${t("faq.title")} | MyEasyPass`,
+    description: t("faq.subtitle"),
+    canonicalUrl,
+    hreflang: [
+      { lang: "en", url: buildUrl("/faq") },
+      { lang: "es", url: buildUrl("/faq?lang=es") },
+      { lang: "x-default", url: buildUrl("/faq") },
+    ],
+  });
 
   const form = useForm<GuestArticleForm>({
     resolver: zodResolver(guestArticleSchema),

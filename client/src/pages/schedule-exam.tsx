@@ -16,6 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { trackEvent } from "@/lib/analytics";
+import { useSEO, buildUrl } from "@/hooks/use-seo";
 import { MapPin, Phone, Clock, Calendar, ExternalLink, CheckCircle, BookOpen } from "lucide-react";
 
 const callbackFormSchema = z.object({
@@ -33,11 +34,23 @@ const TESTING_CENTER_ADDRESS = "616 FM 1960 RD W STE 101, Houston, TX 77090-3048
 const ENCODED_DESTINATION = encodeURIComponent(TESTING_CENTER_ADDRESS);
 
 export default function ScheduleExamPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const [origin, setOrigin] = useState("");
   const [showDirections, setShowDirections] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const isSpanish = i18n.language.startsWith("es");
+
+  useSEO({
+    title: `${t("scheduleExam.title")} | MyEasyPass`,
+    description: t("scheduleExam.subtitle"),
+    canonicalUrl: buildUrl(isSpanish ? "/schedule-exam?lang=es" : "/schedule-exam"),
+    hreflang: [
+      { lang: "en", url: buildUrl("/schedule-exam") },
+      { lang: "es", url: buildUrl("/schedule-exam?lang=es") },
+      { lang: "x-default", url: buildUrl("/schedule-exam") },
+    ],
+  });
 
   const form = useForm<CallbackFormData>({
     resolver: zodResolver(callbackFormSchema),

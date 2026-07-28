@@ -11,6 +11,7 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { apiRequest } from "@/lib/queryClient";
 import { trackEvent } from "@/lib/analytics";
+import { useSEO, buildUrl } from "@/hooks/use-seo";
 import { Home, Shield, Heart, FileText, ArrowRight, Loader2, RotateCcw } from "lucide-react";
 import type { ExamCategory } from "@shared/schema";
 
@@ -41,6 +42,21 @@ interface DiagnosticQuestion {
 export default function DiagnosticPage() {
   const { t, i18n } = useTranslation();
   const isSpanish = i18n.language === "es";
+
+  useSEO({
+    title: isSpanish
+      ? "Evaluación de Preparación | MyEasyPass"
+      : "Readiness Assessment | MyEasyPass",
+    description: isSpanish
+      ? "10 preguntas rápidas para ver cómo te desempeñas. Sin necesidad de suscripción."
+      : "10 quick questions to see how you'd do. No subscription required.",
+    canonicalUrl: buildUrl(isSpanish ? "/readiness-check?lang=es" : "/readiness-check"),
+    hreflang: [
+      { lang: "en", url: buildUrl("/readiness-check") },
+      { lang: "es", url: buildUrl("/readiness-check?lang=es") },
+      { lang: "x-default", url: buildUrl("/readiness-check") },
+    ],
+  });
 
   const [category, setCategory] = useState<ExamCategory | null>(null);
   const [attemptId, setAttemptId] = useState<string | null>(null);

@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { trackEvent } from "@/lib/analytics";
+import { useSEO, buildUrl } from "@/hooks/use-seo";
 import { Check, Sparkles, AlertCircle, Package } from "lucide-react";
 
 const VALID_CATEGORY_IDS = ["real_estate", "property_casualty", "life_insurance", "general_lines"];
@@ -40,6 +41,17 @@ export default function PricingPage() {
   const { toast } = useToast();
   const isSpanish = i18n.language === 'es';
   const search = useSearch();
+
+  useSEO({
+    title: `${t("pricing.title")} | MyEasyPass`,
+    description: t("pricing.subtitle"),
+    canonicalUrl: buildUrl(isSpanish ? "/pricing?lang=es" : "/pricing"),
+    hreflang: [
+      { lang: "en", url: buildUrl("/pricing") },
+      { lang: "es", url: buildUrl("/pricing?lang=es") },
+      { lang: "x-default", url: buildUrl("/pricing") },
+    ],
+  });
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
     const params = new URLSearchParams(search);

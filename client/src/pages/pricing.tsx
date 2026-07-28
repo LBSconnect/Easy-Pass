@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +11,10 @@ import { Footer } from "@/components/footer";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { trackEvent } from "@/lib/analytics";
 import { Check, Sparkles, AlertCircle, Package } from "lucide-react";
+
+const VALID_CATEGORY_IDS = ["real_estate", "property_casualty", "life_insurance", "general_lines"];
 
 interface StripePrice {
   id: string;
@@ -35,8 +39,13 @@ export default function PricingPage() {
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   const isSpanish = i18n.language === 'es';
+  const search = useSearch();
 
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
+    const params = new URLSearchParams(search);
+    const preselect = params.get('category');
+    return preselect && VALID_CATEGORY_IDS.includes(preselect) ? [preselect] : [];
+  });
   const billingPeriod = 'monthly' as const;
 
   const { data: prices = [], isLoading: pricesLoading, error: pricesError } = useQuery<StripePrice[]>({
@@ -45,6 +54,7 @@ export default function PricingPage() {
 
   const checkoutMutation = useMutation({
     mutationFn: async (priceId: string) => {
+      trackEvent("checkout_start", { priceId, categories: selectedCategories });
       const res = await apiRequest("POST", "/api/stripe/checkout", { priceId });
       return res.json();
     },

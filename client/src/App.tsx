@@ -23,6 +23,12 @@ import PrivacyPage from "@/pages/privacy";
 import AuthPage from "@/pages/auth";
 import ResetPasswordPage from "@/pages/reset-password";
 import ForgotPasswordPage from "@/pages/forgot-password";
+import TexasRealEstateExamPrepPage from "@/pages/landing-texas-real-estate";
+import TexasPropertyCasualtyExamPrepPage from "@/pages/landing-texas-property-casualty";
+import TexasLifeInsuranceExamPrepPage from "@/pages/landing-texas-life-insurance";
+import TexasGeneralLinesExamPrepPage from "@/pages/landing-texas-general-lines";
+import TexasRealEstateExamPrepEsPage from "@/pages/landing-texas-real-estate-es";
+import TexasInsuranceExamPrepEsPage from "@/pages/landing-texas-insurance-es";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -79,6 +85,12 @@ function Router() {
       <Route path="/exams" component={() => <ProtectedRoute component={ExamsPage} />} />
       <Route path="/exams/:category" component={() => <ProtectedRoute component={ExamsPage} />} />
       <Route path="/pricing" component={PricingPage} />
+      <Route path="/texas-real-estate-exam-prep" component={TexasRealEstateExamPrepPage} />
+      <Route path="/texas-property-casualty-exam-prep" component={TexasPropertyCasualtyExamPrepPage} />
+      <Route path="/texas-life-insurance-exam-prep" component={TexasLifeInsuranceExamPrepPage} />
+      <Route path="/texas-general-lines-exam-prep" component={TexasGeneralLinesExamPrepPage} />
+      <Route path="/es/preparacion-examen-bienes-raices-texas" component={TexasRealEstateExamPrepEsPage} />
+      <Route path="/es/preparacion-examen-seguros-texas" component={TexasInsuranceExamPrepEsPage} />
       <Route path="/schedule-exam" component={ScheduleExamPage} />
       <Route path="/study-guide" component={() => <ProtectedRoute component={StudyGuidePage} />} />
       <Route path="/profile" component={() => <ProtectedRoute component={ProfilePage} />} />

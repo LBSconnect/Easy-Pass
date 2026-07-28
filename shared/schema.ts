@@ -197,6 +197,37 @@ export const guestArticles = pgTable("guest_articles", {
   index("idx_guest_articles_email").on(table.email),
 ]);
 
+export const employerInquiryStatusEnum = pgEnum("employer_inquiry_status", ["new", "contacted", "closed"]);
+
+export const employerInquiries = pgTable("employer_inquiries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyName: varchar("company_name", { length: 200 }).notNull(),
+  contactName: varchar("contact_name", { length: 200 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 20 }),
+  teamSize: varchar("team_size", { length: 50 }),
+  categoriesInterested: jsonb("categories_interested").$type<string[]>(),
+  message: text("message"),
+  status: employerInquiryStatusEnum("status").default("new").notNull(),
+  adminNotes: text("admin_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_employer_inquiries_status").on(table.status),
+  index("idx_employer_inquiries_created").on(table.createdAt),
+]);
+
+export const analyticsEvents = pgTable("analytics_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  event: varchar("event", { length: 100 }).notNull(),
+  userId: varchar("user_id"),
+  path: varchar("path", { length: 500 }),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_analytics_events_event").on(table.event),
+  index("idx_analytics_events_created").on(table.createdAt),
+]);
+
 export const userProfilesRelations = relations(userProfiles, ({ many }) => ({
   examSessions: many(examSessions),
   examResults: many(examResults),
@@ -280,6 +311,22 @@ export const insertGuestArticleSchema = createInsertSchema(guestArticles).omit({
   createdAt: true,
 });
 
+export const insertEmployerInquirySchema = createInsertSchema(employerInquiries, {
+  categoriesInterested: z.array(z.string()).optional(),
+}).omit({
+  id: true,
+  status: true,
+  adminNotes: true,
+  createdAt: true,
+});
+
+export const insertAnalyticsEventSchema = createInsertSchema(analyticsEvents, {
+  metadata: z.record(z.string(), z.unknown()).optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
@@ -301,6 +348,10 @@ export type InsertExamCertificate = z.infer<typeof insertExamCertificateSchema>;
 export type ExamCertificate = typeof examCertificates.$inferSelect;
 export type InsertGuestArticle = z.infer<typeof insertGuestArticleSchema>;
 export type GuestArticle = typeof guestArticles.$inferSelect;
+export type InsertEmployerInquiry = z.infer<typeof insertEmployerInquirySchema>;
+export type EmployerInquiry = typeof employerInquiries.$inferSelect;
+export type InsertAnalyticsEvent = z.infer<typeof insertAnalyticsEventSchema>;
+export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
 
 export type ExamCategory = "real_estate" | "property_casualty" | "life_insurance" | "general_lines";
 export type GuestArticleStatus = "pending" | "approved" | "rejected";
@@ -311,3 +362,4 @@ export type SubscriptionPlan = "weekly" | "monthly";
 export type SubscriptionType = "single" | "bundle";
 export type SubscriptionStatus = "active" | "canceled" | "past_due" | "trialing";
 export type UserRole = "user" | "admin";
+export type EmployerInquiryStatus = "new" | "contacted" | "closed";

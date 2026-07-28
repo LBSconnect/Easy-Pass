@@ -216,6 +216,21 @@ export const employerInquiries = pgTable("employer_inquiries", {
   index("idx_employer_inquiries_created").on(table.createdAt),
 ]);
 
+export const diagnosticAttempts = pgTable("diagnostic_attempts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id"),
+  category: examCategoryEnum("category").notNull(),
+  questionIds: jsonb("question_ids").notNull().$type<string[]>(),
+  answerOrder: jsonb("answer_order").notNull().$type<Record<string, number>>(),
+  score: integer("score"),
+  correctAnswers: integer("correct_answers"),
+  totalQuestions: integer("total_questions").notNull(),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_diagnostic_attempts_created").on(table.createdAt),
+]);
+
 export const analyticsEvents = pgTable("analytics_events", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   event: varchar("event", { length: 100 }).notNull(),
@@ -320,6 +335,17 @@ export const insertEmployerInquirySchema = createInsertSchema(employerInquiries,
   createdAt: true,
 });
 
+export const insertDiagnosticAttemptSchema = createInsertSchema(diagnosticAttempts, {
+  questionIds: z.array(z.string()),
+  answerOrder: z.record(z.string(), z.number()),
+}).omit({
+  id: true,
+  score: true,
+  correctAnswers: true,
+  completedAt: true,
+  createdAt: true,
+});
+
 export const insertAnalyticsEventSchema = createInsertSchema(analyticsEvents, {
   metadata: z.record(z.string(), z.unknown()).optional(),
 }).omit({
@@ -350,6 +376,8 @@ export type InsertGuestArticle = z.infer<typeof insertGuestArticleSchema>;
 export type GuestArticle = typeof guestArticles.$inferSelect;
 export type InsertEmployerInquiry = z.infer<typeof insertEmployerInquirySchema>;
 export type EmployerInquiry = typeof employerInquiries.$inferSelect;
+export type InsertDiagnosticAttempt = z.infer<typeof insertDiagnosticAttemptSchema>;
+export type DiagnosticAttempt = typeof diagnosticAttempts.$inferSelect;
 export type InsertAnalyticsEvent = z.infer<typeof insertAnalyticsEventSchema>;
 export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
 

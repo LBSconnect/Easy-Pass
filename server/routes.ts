@@ -9,6 +9,7 @@ import { rateLimit, getClientIp } from "./rateLimit";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { insertQuestionSchema, insertCallbackRequestSchema, insertQuestionFeedbackSchema, insertGuestArticleSchema, insertEmployerInquirySchema, callbackRequests, questionFeedback, type ExamCategory, examCategoryEnum, feedbackStatusEnum, guestArticleStatusEnum, employerInquiryStatusEnum } from "@shared/schema";
+const DIAGNOSTIC_QUESTION_COUNT = 10;
 import { studyTopicsConfig, getTopicById, getTopicsByCategory } from "@shared/studyTopics";
 import { z } from "zod";
 import { db } from "./db";
@@ -71,6 +72,115 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching sample question:", error);
       res.status(500).json({ message: "Failed to fetch sample question" });
+    }
+  });
+
+  // Public diagnostic/readiness assessment: a short, ungated quiz used as a
+  // lead-gen tool on the homepage. No subscription or login required, so
+  // it's rate-limited by IP instead. Uses the same per-attempt option
+  // shuffle as real exam sessions so the shared question bank is never
+  // modified.
+  app.post("/api/diagnostic/start", async (req, res) => {
+    try {
+      const clientIp = getClientIp(req);
+      const rateLimitResult = rateLimit(`diagnostic-start:${clientIp}`, 10, 15 * 60 * 1000);
+      if (!rateLimitResult.allowed) {
+        return res.status(429).json({
+          message: "Too many attempts. Please try again later.",
+          retryAfter: Math.ceil(rateLimitResult.resetIn / 1000),
+        });
+      }
+
+      const schema = z.object({ category: z.enum(examCategoryEnum.enumValues) });
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid category" });
+      }
+
+      const questions = await storage.getQuestions(parsed.data.category, DIAGNOSTIC_QUESTION_COUNT);
+      if (questions.length === 0) {
+        return res.status(404).json({ message: "No questions available for this category" });
+      }
+
+      const answerOrder: Record<string, number> = {};
+      const questionsForClient = questions.map((question) => {
+        const shuffled = shuffleQuestionOptions(
+          question.optionsEn,
+          question.optionsEs,
+          question.correctAnswer,
+        );
+        answerOrder[question.id] = shuffled.correctAnswer;
+
+        const { correctAnswer, explanationEn, explanationEs, ...rest } = question;
+        return {
+          ...rest,
+          optionsEn: shuffled.optionsEn,
+          optionsEs: shuffled.optionsEs,
+        };
+      });
+
+      const attempt = await storage.createDiagnosticAttempt({
+        userId: req.session.userId ?? undefined,
+        category: parsed.data.category,
+        questionIds: questions.map((q) => q.id),
+        answerOrder,
+        totalQuestions: questions.length,
+      });
+
+      res.json({ attemptId: attempt.id, questions: questionsForClient });
+    } catch (error) {
+      console.error("Error starting diagnostic assessment:", error);
+      res.status(500).json({ message: "Failed to start assessment" });
+    }
+  });
+
+  app.post("/api/diagnostic/:attemptId/submit", async (req, res) => {
+    try {
+      const clientIp = getClientIp(req);
+      const rateLimitResult = rateLimit(`diagnostic-submit:${clientIp}`, 20, 15 * 60 * 1000);
+      if (!rateLimitResult.allowed) {
+        return res.status(429).json({
+          message: "Too many attempts. Please try again later.",
+          retryAfter: Math.ceil(rateLimitResult.resetIn / 1000),
+        });
+      }
+
+      const { attemptId } = req.params;
+      const schema = z.object({ answers: z.record(z.string(), z.number()) });
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid answers format" });
+      }
+
+      const attempt = await storage.getDiagnosticAttempt(attemptId);
+      if (!attempt) {
+        return res.status(404).json({ message: "Assessment attempt not found" });
+      }
+      if (attempt.completedAt) {
+        return res.status(400).json({ message: "This assessment has already been submitted" });
+      }
+
+      const answerOrder = attempt.answerOrder as Record<string, number>;
+      let correctAnswers = 0;
+      for (const questionId of attempt.questionIds as string[]) {
+        if (parsed.data.answers[questionId] === answerOrder[questionId]) {
+          correctAnswers++;
+        }
+      }
+      const score = Math.round((correctAnswers / attempt.totalQuestions) * 100);
+
+      const updated = await storage.completeDiagnosticAttempt(attemptId, { score, correctAnswers });
+
+      res.json({
+        score,
+        correctAnswers,
+        totalQuestions: attempt.totalQuestions,
+        category: attempt.category,
+        completedAt: updated?.completedAt,
+      });
+    } catch (error) {
+      console.error("Error submitting diagnostic assessment:", error);
+      res.status(500).json({ message: "Failed to submit assessment" });
     }
   });
 

@@ -16,12 +16,12 @@ describe('getWebhookUrl', () => {
 
   it('returns the production URL when NODE_ENV is production (e.g. Render)', () => {
     process.env.NODE_ENV = 'production';
-    expect(getWebhookUrl()).toBe('https://myeasypass.net/api/stripe/webhook');
+    expect(getWebhookUrl()).toBe('https://www.myeasypass.net/api/stripe/webhook');
   });
 
   it('returns the production URL when REPLIT_DEPLOYMENT is set', () => {
     process.env.REPLIT_DEPLOYMENT = '1';
-    expect(getWebhookUrl()).toBe('https://myeasypass.net/api/stripe/webhook');
+    expect(getWebhookUrl()).toBe('https://www.myeasypass.net/api/stripe/webhook');
   });
 
   it('returns the Replit dev domain URL outside production', () => {

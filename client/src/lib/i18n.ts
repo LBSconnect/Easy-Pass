@@ -211,10 +211,10 @@ const resources = {
             description: "Not ready yet? Practice with real exam questions and mock exams until you feel confident.",
             cta: "Start Practicing",
           },
-          schedulePath: {
-            title: "Schedule Your Official Exam",
-            description: "Ready to test? Find our Houston testing center, get directions, or request a callback.",
-            cta: "Schedule Now",
+          bootcampPath: {
+            title: "Attend a Bootcamp",
+            description: "Prefer live instruction? Join an exam-cram bootcamp with an instructor to prepare hands-on.",
+            cta: "See Live Exam Bootcamps",
           },
         },
         location: {
@@ -597,10 +597,10 @@ const resources = {
             description: "¿Aún no estás listo? Practica con preguntas reales y exámenes simulados hasta sentirte seguro.",
             cta: "Comenzar a Practicar",
           },
-          schedulePath: {
-            title: "Agenda tu Examen Oficial",
-            description: "¿Listo para presentar? Encuentra nuestro centro de pruebas en Houston, obtén direcciones o solicita una llamada.",
-            cta: "Agendar Ahora",
+          bootcampPath: {
+            title: "Asiste a un Bootcamp",
+            description: "¿Prefieres instrucción en vivo? Únete a un bootcamp de repaso de examen con un instructor para prepararte de forma práctica.",
+            cta: "Ver Bootcamps en Vivo",
           },
         },
         location: {

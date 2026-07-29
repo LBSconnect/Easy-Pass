@@ -17,7 +17,9 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { trackEvent } from "@/lib/analytics";
 import { useSEO, buildUrl } from "@/hooks/use-seo";
-import { MapPin, Phone, Clock, Calendar, ExternalLink, CheckCircle, BookOpen } from "lucide-react";
+import { MapPin, Phone, Clock, Calendar, ExternalLink, CheckCircle, BookOpen, GraduationCap } from "lucide-react";
+
+const BOOTCAMP_HREF = "https://www.lbs4.com/services?filter=bootcamp";
 
 const callbackFormSchema = z.object({
   firstName: z.string().min(1, "First name is required").max(100),
@@ -95,11 +97,6 @@ export default function ScheduleExamPage() {
     }
   };
 
-  const handleScheduleOfficialClick = () => {
-    trackEvent("official_exam_schedule_click", { step: "path_selected" });
-    document.getElementById("schedule-official")?.scrollIntoView({ behavior: "smooth" });
-  };
-
   const encodedOrigin = encodeURIComponent(origin);
   const externalMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodedOrigin}&destination=${ENCODED_DESTINATION}`;
   const locationOnlyUrl = `https://www.google.com/maps?q=${ENCODED_DESTINATION}&output=embed`;
@@ -152,20 +149,23 @@ export default function ScheduleExamPage() {
               <Card className="flex flex-col">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-primary" />
-                    {t("scheduleExam.pathChooser.schedulePath.title")}
+                    <GraduationCap className="h-5 w-5 text-primary" />
+                    {t("scheduleExam.pathChooser.bootcampPath.title")}
                   </CardTitle>
                   <CardDescription>
-                    {t("scheduleExam.pathChooser.schedulePath.description")}
+                    {t("scheduleExam.pathChooser.bootcampPath.description")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="mt-auto">
-                  <Button
-                    className="w-full min-h-[44px]"
-                    onClick={handleScheduleOfficialClick}
-                    data-testid="button-path-schedule"
-                  >
-                    {t("scheduleExam.pathChooser.schedulePath.cta")}
+                  <Button className="w-full min-h-[44px]" asChild data-testid="button-path-bootcamp">
+                    <a
+                      href={BOOTCAMP_HREF}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => trackEvent("bootcamp_cta_click", { source: "schedule_exam_page" })}
+                    >
+                      {t("scheduleExam.pathChooser.bootcampPath.cta")}
+                    </a>
                   </Button>
                 </CardContent>
               </Card>

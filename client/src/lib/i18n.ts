@@ -9,7 +9,7 @@ const resources = {
         home: "Home",
         exams: "Exams",
         pricing: "Pricing",
-        scheduleExam: "Schedule Exam",
+        scheduleExam: "Get Started",
         testCenter: "Test Center",
         visitTestCenter: "Visit Test Center",
         studyGuide: "Study Guide",
@@ -200,8 +200,9 @@ const resources = {
         seconds: "seconds",
       },
       scheduleExam: {
-        title: "Schedule Your Exam",
-        subtitle: "Visit our testing center in Houston or request a callback to schedule your appointment",
+        title: "Get Started",
+        seoTitle: "Exam Prep, Live Bootcamps & Testing Center",
+        subtitle: "Whether you need more practice, live instruction, or help finding our Houston testing center, we've got you covered.",
         visitTestCenter: "Visit Test Center Website",
         pathChooser: {
           heading: "How Can We Help You Today?",
@@ -395,7 +396,7 @@ const resources = {
         home: "Inicio",
         exams: "Exámenes",
         pricing: "Precios",
-        scheduleExam: "Agendar Examen",
+        scheduleExam: "Comenzar",
         testCenter: "Centro de Pruebas",
         visitTestCenter: "Visitar Centro de Pruebas",
         studyGuide: "Guía de Estudio",
@@ -586,8 +587,9 @@ const resources = {
         seconds: "segundos",
       },
       scheduleExam: {
-        title: "Agenda Tu Examen",
-        subtitle: "Visita nuestro centro de pruebas en Houston o solicita una llamada para agendar tu cita",
+        title: "Comenzar",
+        seoTitle: "Preparación de Examen, Bootcamps en Vivo y Centro de Pruebas",
+        subtitle: "Ya sea que necesites más práctica, instrucción en vivo o ayuda para encontrar nuestro centro de pruebas en Houston, te tenemos cubierto.",
         visitTestCenter: "Visitar Sitio Web del Centro de Pruebas",
         pathChooser: {
           heading: "¿Cómo Podemos Ayudarte Hoy?",

@@ -11,8 +11,7 @@ import { rateLimit } from "./rateLimit";
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   const pgStore = connectPg(session);
-  // Detect production: REPLIT_DEPLOYMENT is set to "1" in deployed apps
-  const isProduction = process.env.REPLIT_DEPLOYMENT === "1" || process.env.NODE_ENV === "production";
+  const isProduction = process.env.NODE_ENV === "production";
   console.log(`[Session] Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}, secure cookies: ${isProduction}`);
   
   const sessionStore = new pgStore({

@@ -1,28 +1,10 @@
-import { getStripeSync, getCachedStripeClient, getWebhookUrl } from './stripeClient';
+import { getCachedStripeClient } from './stripeClient';
 import { storage } from './storage';
 import Stripe from 'stripe';
 import { mapStripeStatus, getPlanFromSubscription } from './stripeHelpers';
 
-let webhookSecret: string | null = null;
-
-async function getWebhookSecret(): Promise<string | null> {
-  if (webhookSecret) return webhookSecret;
-  
-  const webhookUrl = getWebhookUrl();
-  if (!webhookUrl) {
-    console.log("No webhook URL configured for this environment");
-    return null;
-  }
-
-  try {
-    const sync = await getStripeSync();
-    const webhook = await sync.getManagedWebhookByUrl(webhookUrl);
-    webhookSecret = webhook?.secret || null;
-    return webhookSecret;
-  } catch (error) {
-    console.log("Could not get managed webhook secret");
-    return null;
-  }
+function getWebhookSecret(): string | null {
+  return process.env.STRIPE_WEBHOOK_SECRET || null;
 }
 
 export class WebhookHandlers {
@@ -39,8 +21,8 @@ export class WebhookHandlers {
     const stripe = await getCachedStripeClient();
     let event: Stripe.Event;
 
-    const secret = await getWebhookSecret();
-    
+    const secret = getWebhookSecret();
+
     if (secret) {
       try {
         event = stripe.webhooks.constructEvent(payload, signature, secret);
@@ -50,7 +32,7 @@ export class WebhookHandlers {
       }
     } else {
       console.log("No webhook secret available, parsing event without verification (development only)");
-      const isProduction = process.env.REPLIT_DEPLOYMENT === "1" || process.env.NODE_ENV === "production";
+      const isProduction = process.env.NODE_ENV === "production";
       if (isProduction) {
         throw new Error("Webhook secret required in production");
       }
@@ -58,14 +40,6 @@ export class WebhookHandlers {
     }
 
     console.log(`Processing Stripe webhook event: ${event.type}`);
-
-    try {
-      const sync = await getStripeSync();
-      await sync.processWebhook(payload, signature);
-      console.log("StripeSync processed event successfully");
-    } catch (error) {
-      console.log("StripeSync processing skipped or failed, continuing with manual handling");
-    }
 
     switch (event.type) {
       case 'checkout.session.completed':

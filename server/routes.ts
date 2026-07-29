@@ -696,7 +696,7 @@ export async function registerRoutes(
       const stripe = await getCachedStripeClient();
       const products = await stripe.products.list({ active: true, limit: 100 });
       const prices = await stripe.prices.list({ active: true, limit: 100, expand: ['data.product'] });
-      const isProduction = process.env.REPLIT_DEPLOYMENT === "1" || process.env.NODE_ENV === "production";
+      const isProduction = process.env.NODE_ENV === "production";
       
       res.json({
         environment: isProduction ? 'PRODUCTION' : 'development',
@@ -1050,7 +1050,7 @@ export async function registerRoutes(
       const products = await stripe.products.list({ active: true, limit: 100 });
       const prices = await stripe.prices.list({ active: true, limit: 100, expand: ['data.product'] });
       
-      const isProduction = process.env.REPLIT_DEPLOYMENT === "1" || process.env.NODE_ENV === "production";
+      const isProduction = process.env.NODE_ENV === "production";
       
       const productInfo = products.data.map(p => ({
         id: p.id,
@@ -1131,7 +1131,7 @@ export async function registerRoutes(
       }
       
       const stripe = await getCachedStripeClient();
-      const isProduction = process.env.REPLIT_DEPLOYMENT === "1" || process.env.NODE_ENV === "production";
+      const isProduction = process.env.NODE_ENV === "production";
       
       const results: string[] = [];
       

@@ -12,9 +12,7 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL must be set.");
 }
 
-const isProduction =
-  process.env.REPLIT_DEPLOYMENT === "1" ||
-  process.env.NODE_ENV === "production";
+const isProduction = process.env.NODE_ENV === "production";
 
 console.log(`[DB] Environment: ${isProduction ? "PRODUCTION" : "DEVELOPMENT"}`);
 console.log(`[DB] DATABASE_URL Loaded: ${!!process.env.DATABASE_URL}`);

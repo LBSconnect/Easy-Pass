@@ -44,7 +44,7 @@ export default function ScheduleExamPage() {
   const isSpanish = i18n.language.startsWith("es");
 
   useSEO({
-    title: `${t("scheduleExam.title")} | MyEasyPass`,
+    title: `${t("scheduleExam.seoTitle")} | MyEasyPass`,
     description: t("scheduleExam.subtitle"),
     canonicalUrl: buildUrl(isSpanish ? "/schedule-exam?lang=es" : "/schedule-exam"),
     hreflang: [

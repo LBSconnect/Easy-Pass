@@ -252,8 +252,8 @@ async function initStripe() {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
+    console.error("Unhandled error:", err);
     res.status(status).json({ message });
-    throw err;
   });
 
   const isProduction = process.env.REPLIT_DEPLOYMENT === "1" || process.env.NODE_ENV === "production";

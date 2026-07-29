@@ -100,7 +100,10 @@ export async function getStripeSecretKey() {
 export function getWebhookUrl(): string | null {
   const isProduction =
     process.env.REPLIT_DEPLOYMENT === "1" || process.env.NODE_ENV === "production";
-  const customDomain = "myeasypass.net";
+  // Must be the www subdomain: the naked domain 307-redirects to www at the
+  // DNS/CDN layer, and Stripe does not follow redirects when delivering
+  // webhooks, so a naked-domain URL here means every webhook silently fails.
+  const customDomain = "www.myeasypass.net";
 
   if (isProduction) {
     return `https://${customDomain}/api/stripe/webhook`;

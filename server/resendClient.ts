@@ -76,7 +76,7 @@ export async function sendPasswordResetEmail(
   <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
   <p style="color: #999; font-size: 12px; text-align: center;">
     MyEasyPass - Texas Licensing Exam Prep<br/>
-    <a href="https://myeasypass.net" style="color: #2563eb;">myeasypass.net</a>
+    <a href="https://www.myeasypass.net" style="color: #2563eb;">myeasypass.net</a>
   </p>
 </div>
     `;

@@ -12,22 +12,20 @@ vi.mock('../storage', () => ({
 // Mock the stripeClient module
 vi.mock('../stripeClient', () => ({
   getCachedStripeClient: vi.fn(),
-  getStripeSync: vi.fn(),
-  getWebhookUrl: vi.fn(() => 'https://test.example.com/api/stripe/webhook'),
 }));
 
 // Now import after mocks are set up
 import { WebhookHandlers } from '../webhookHandlers';
 import { storage } from '../storage';
-import { getCachedStripeClient, getStripeSync } from '../stripeClient';
+import { getCachedStripeClient } from '../stripeClient';
 
 const mockStorage = vi.mocked(storage);
 const mockGetStripeClient = vi.mocked(getCachedStripeClient);
-const mockGetStripeSync = vi.mocked(getStripeSync);
 
 describe('WebhookHandlers.processWebhook', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    delete process.env.STRIPE_WEBHOOK_SECRET;
   });
 
   it('throws if payload is not a Buffer', async () => {
@@ -38,12 +36,7 @@ describe('WebhookHandlers.processWebhook', () => {
 
   it('throws in production if no webhook secret available', async () => {
     const originalEnv = process.env.NODE_ENV;
-    process.env.REPLIT_DEPLOYMENT = '1';
-
-    mockGetStripeSync.mockResolvedValue({
-      getManagedWebhookByUrl: vi.fn().mockResolvedValue({ secret: null }),
-      processWebhook: vi.fn(),
-    } as any);
+    process.env.NODE_ENV = 'production';
 
     mockGetStripeClient.mockResolvedValue({
       webhooks: {
@@ -57,20 +50,12 @@ describe('WebhookHandlers.processWebhook', () => {
       WebhookHandlers.processWebhook(payload, 'sig')
     ).rejects.toThrow('Webhook secret required in production');
 
-    delete process.env.REPLIT_DEPLOYMENT;
     process.env.NODE_ENV = originalEnv;
   });
 
   it('processes checkout.session.completed event', async () => {
-    const originalDeployment = process.env.REPLIT_DEPLOYMENT;
-    delete process.env.REPLIT_DEPLOYMENT;
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'development';
-
-    mockGetStripeSync.mockResolvedValue({
-      getManagedWebhookByUrl: vi.fn().mockResolvedValue({ secret: null }),
-      processWebhook: vi.fn(),
-    } as any);
 
     const mockSubscription = {
       id: 'sub_123',
@@ -117,19 +102,12 @@ describe('WebhookHandlers.processWebhook', () => {
       subscriptionPlan: 'monthly',
     }));
 
-    process.env.REPLIT_DEPLOYMENT = originalDeployment;
     process.env.NODE_ENV = originalEnv;
   });
 
   it('processes customer.subscription.updated event with userId in metadata', async () => {
-    delete process.env.REPLIT_DEPLOYMENT;
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'development';
-
-    mockGetStripeSync.mockResolvedValue({
-      getManagedWebhookByUrl: vi.fn().mockResolvedValue({ secret: null }),
-      processWebhook: vi.fn(),
-    } as any);
 
     mockGetStripeClient.mockResolvedValue({
       webhooks: { constructEvent: vi.fn() },
@@ -173,14 +151,8 @@ describe('WebhookHandlers.processWebhook', () => {
   });
 
   it('processes customer.subscription.updated by customer ID when no userId metadata', async () => {
-    delete process.env.REPLIT_DEPLOYMENT;
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'development';
-
-    mockGetStripeSync.mockResolvedValue({
-      getManagedWebhookByUrl: vi.fn().mockResolvedValue({ secret: null }),
-      processWebhook: vi.fn(),
-    } as any);
 
     mockGetStripeClient.mockResolvedValue({
       webhooks: { constructEvent: vi.fn() },
@@ -227,14 +199,8 @@ describe('WebhookHandlers.processWebhook', () => {
   });
 
   it('processes customer.subscription.deleted event', async () => {
-    delete process.env.REPLIT_DEPLOYMENT;
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'development';
-
-    mockGetStripeSync.mockResolvedValue({
-      getManagedWebhookByUrl: vi.fn().mockResolvedValue({ secret: null }),
-      processWebhook: vi.fn(),
-    } as any);
 
     mockGetStripeClient.mockResolvedValue({
       webhooks: { constructEvent: vi.fn() },
@@ -277,14 +243,8 @@ describe('WebhookHandlers.processWebhook', () => {
   });
 
   it('processes invoice.payment_failed event and sets user to past_due', async () => {
-    delete process.env.REPLIT_DEPLOYMENT;
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'development';
-
-    mockGetStripeSync.mockResolvedValue({
-      getManagedWebhookByUrl: vi.fn().mockResolvedValue({ secret: null }),
-      processWebhook: vi.fn(),
-    } as any);
 
     mockGetStripeClient.mockResolvedValue({
       webhooks: { constructEvent: vi.fn() },
@@ -317,14 +277,8 @@ describe('WebhookHandlers.processWebhook', () => {
   });
 
   it('processes invoice.paid event with subscription', async () => {
-    delete process.env.REPLIT_DEPLOYMENT;
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'development';
-
-    mockGetStripeSync.mockResolvedValue({
-      getManagedWebhookByUrl: vi.fn().mockResolvedValue({ secret: null }),
-      processWebhook: vi.fn(),
-    } as any);
 
     const mockSubscription = {
       id: 'sub_inv',
@@ -377,14 +331,8 @@ describe('WebhookHandlers.processWebhook', () => {
   });
 
   it('handles checkout.session.completed without userId gracefully', async () => {
-    delete process.env.REPLIT_DEPLOYMENT;
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'development';
-
-    mockGetStripeSync.mockResolvedValue({
-      getManagedWebhookByUrl: vi.fn().mockResolvedValue({ secret: null }),
-      processWebhook: vi.fn(),
-    } as any);
 
     mockGetStripeClient.mockResolvedValue({
       webhooks: { constructEvent: vi.fn() },
@@ -410,14 +358,8 @@ describe('WebhookHandlers.processWebhook', () => {
   });
 
   it('handles subscription.deleted when no user found for customer ID', async () => {
-    delete process.env.REPLIT_DEPLOYMENT;
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'development';
-
-    mockGetStripeSync.mockResolvedValue({
-      getManagedWebhookByUrl: vi.fn().mockResolvedValue({ secret: null }),
-      processWebhook: vi.fn(),
-    } as any);
 
     mockGetStripeClient.mockResolvedValue({
       webhooks: { constructEvent: vi.fn() },
@@ -448,14 +390,8 @@ describe('WebhookHandlers.processWebhook', () => {
   });
 
   it('handles unrecognized event type gracefully', async () => {
-    delete process.env.REPLIT_DEPLOYMENT;
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'development';
-
-    mockGetStripeSync.mockResolvedValue({
-      getManagedWebhookByUrl: vi.fn().mockResolvedValue({ secret: null }),
-      processWebhook: vi.fn(),
-    } as any);
 
     mockGetStripeClient.mockResolvedValue({
       webhooks: { constructEvent: vi.fn() },

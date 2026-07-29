@@ -6,8 +6,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { setupAuth } from "./simpleAuth";
-import { runMigrations } from "stripe-replit-sync";
-import { getStripeSync, getWebhookUrl } from "./stripeClient";
+import { getWebhookUrl } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
 import { initializeStripePrices } from "./initializeStripePrices";
 
@@ -116,53 +115,21 @@ const authLimiter = rateLimit({
 });
 
 async function initStripe() {
-  const databaseUrl = process.env.DATABASE_URL;
+  const isProduction = process.env.NODE_ENV === "production";
+  const webhookUrl = getWebhookUrl();
 
-  if (!databaseUrl) {
-    console.log("DATABASE_URL not set, skipping Stripe initialization");
-    return;
+  if (isProduction && !process.env.STRIPE_WEBHOOK_SECRET) {
+    console.warn(
+      `STRIPE_WEBHOOK_SECRET is not set. Webhook deliveries to ${webhookUrl} will be rejected. ` +
+      "Set this to the signing secret shown for that endpoint in the Stripe Dashboard (Developers > Webhooks)."
+    );
+  } else if (webhookUrl) {
+    console.log(`Stripe webhook endpoint expected at: ${webhookUrl}`);
   }
 
   try {
-    console.log("Initializing Stripe schema...");
-    await runMigrations({
-      databaseUrl,
-      schema: "stripe",
-    } as any);
-    console.log("Stripe schema ready");
-
-    const stripeSync = await getStripeSync();
-
-    console.log("Setting up managed webhook...");
-    const webhookUrl = getWebhookUrl();
-
-    if (webhookUrl) {
-      try {
-        const result = await stripeSync.findOrCreateManagedWebhook(webhookUrl);
-        const configuredUrl = result?.webhook?.url || result?.url || webhookUrl;
-        console.log(`Webhook configured: ${configuredUrl}`);
-      } catch (webhookErr: any) {
-        if (webhookErr.code === 'resource_missing' ||
-            webhookErr.message?.includes('No such webhook endpoint') ||
-            webhookErr.type === 'StripeInvalidRequestError') {
-          console.warn("[Stripe Init] Old webhook endpoint not found, will use new one");
-          console.log(`[Stripe Init] Webhook URL ready: ${webhookUrl}`);
-        } else {
-          console.log("Webhook setup warning:", webhookErr.message);
-        }
-      }
-    }
-
     console.log("Initializing Stripe prices...");
     await initializeStripePrices();
-
-    console.log("Syncing Stripe data to database...");
-    try {
-      await stripeSync.syncBackfill();
-      console.log("Stripe data synced");
-    } catch (err: any) {
-      console.log("Stripe sync warning:", err.message);
-    }
   } catch (error: any) {
     console.log("Stripe initialization skipped:", error.message);
     console.log("Stripe features may be limited");
@@ -256,7 +223,7 @@ async function initStripe() {
     res.status(status).json({ message });
   });
 
-  const isProduction = process.env.REPLIT_DEPLOYMENT === "1" || process.env.NODE_ENV === "production";
+  const isProduction = process.env.NODE_ENV === "production";
   
   if (isProduction) {
     log(`Running in PRODUCTION mode (NODE_ENV=${process.env.NODE_ENV})`);

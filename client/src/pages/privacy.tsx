@@ -40,7 +40,7 @@ export default function PrivacyPage() {
               Linton Business Solutions LLC<br />
               616 FM 1960 Road West, Suite 101<br />
               Houston, Texas 77090-3048<br />
-              Phone: (281) 836-5357<br />
+              Phone: 281-836-5357<br />
               Email: <a href="mailto:info@LBSconnect.net" className="text-primary hover:underline">info@LBSconnect.net</a>
             </p>
             <p className="text-muted-foreground">
@@ -351,7 +351,7 @@ export default function PrivacyPage() {
               <li><strong>Linton Business Solutions LLC</strong></li>
               <li>616 FM 1960 Road West, Suite 101</li>
               <li>Houston, Texas 77090-3048</li>
-              <li>Phone: (281) 836-5357</li>
+              <li>Phone: 281-836-5357</li>
               <li>Email: <a href="mailto:info@LBSconnect.net" className="text-primary hover:underline">info@LBSconnect.net</a></li>
             </ul>
             <p className="text-muted-foreground">

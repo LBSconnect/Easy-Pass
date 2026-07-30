@@ -32,7 +32,7 @@ const callbackFormSchema = z.object({
 
 type CallbackFormData = z.infer<typeof callbackFormSchema>;
 
-const TESTING_CENTER_ADDRESS = "616 FM 1960 RD W STE 101, Houston, TX 77090-3048";
+const TESTING_CENTER_ADDRESS = "616 FM 1960 Road West, Suite 101, Houston, Texas 77090-3048";
 const ENCODED_DESTINATION = encodeURIComponent(TESTING_CENTER_ADDRESS);
 
 export default function ScheduleExamPage() {
@@ -189,9 +189,9 @@ export default function ScheduleExamPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="bg-muted/50 p-4 rounded-lg">
-                      <p className="font-semibold text-lg" data-testid="text-address">LBS Exam Testing Center</p>
-                      <p className="text-muted-foreground">616 FM 1960 RD W STE 101</p>
-                      <p className="text-muted-foreground">Houston, TX 77090-3048</p>
+                      <p className="font-semibold text-lg" data-testid="text-address">LBS Test & Exam Center</p>
+                      <p className="text-muted-foreground">616 FM 1960 Road West, Suite 101</p>
+                      <p className="text-muted-foreground">Houston, Texas 77090-3048</p>
                     </div>
                     
                     <div className="space-y-3">
@@ -218,7 +218,7 @@ export default function ScheduleExamPage() {
 
                     <div className="aspect-[4/3] sm:aspect-video w-full rounded-lg overflow-hidden border">
                       <iframe
-                        title="LBS Testing Center Location"
+                        title="LBS Test & Exam Center Location"
                         width="100%"
                         height="100%"
                         style={{ border: 0 }}

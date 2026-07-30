@@ -36,6 +36,9 @@ import NoticeAtCollectionPage from "@/pages/notice-at-collection";
 import PrivacyRequestPage from "@/pages/privacy-request";
 import AccessibilityPage from "@/pages/accessibility";
 import CopyrightDmcaPage from "@/pages/copyright-dmca";
+import RefundPolicyPage from "@/pages/refund-policy";
+import ExamDisclaimerPage from "@/pages/exam-disclaimer";
+import ElectronicCommunicationsPage from "@/pages/electronic-communications";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -113,6 +116,9 @@ function Router() {
       <Route path="/privacy-request" component={PrivacyRequestPage} />
       <Route path="/accessibility" component={AccessibilityPage} />
       <Route path="/copyright-dmca" component={CopyrightDmcaPage} />
+      <Route path="/refund-policy" component={RefundPolicyPage} />
+      <Route path="/exam-disclaimer" component={ExamDisclaimerPage} />
+      <Route path="/electronic-communications" component={ElectronicCommunicationsPage} />
       <Route component={NotFound} />
     </Switch>
   );

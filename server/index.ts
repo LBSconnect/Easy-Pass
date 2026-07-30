@@ -181,7 +181,9 @@ async function initStripe() {
   app.use('/api/', apiLimiter);
   app.use('/api/login', authLimiter);
   app.use('/api/register', authLimiter);
-  app.use('/api/reset-password', authLimiter);
+  // /api/reset-password and /api/reset-password/verify have their own route-level
+  // rate limiters with correct thresholds (10 and 20 req/15min respectively),
+  // so we don't apply the tighter authLimiter (5 req/15min) here.
 
   await setupAuth(app);
 

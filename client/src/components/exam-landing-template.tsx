@@ -159,8 +159,8 @@ function ExamLandingPageInner({ content }: { content: ExamLandingPageContent }) 
   });
 
   const pricingHref = content.categories.length === 1 ? `/pricing?category=${content.categories[0]}` : "/pricing";
-  // Confirmed by owner: Houston test center partner site.
-  const bootcampHref = "https://www.lbs4.com/";
+  // Confirmed by owner: LBS4 bootcamp services listing.
+  const bootcampHref = "https://www.lbs4.com/services?filter=bootcamp";
 
   const topicsByCategory = content.categories.map((category) => ({
     category,

@@ -37,8 +37,8 @@ interface StripePrice {
   billing_period: string;
 }
 
-// Confirmed by owner: same Houston test center partner link used elsewhere on the site.
-const BOOTCAMP_HREF = "https://www.lbs4.com/";
+// Confirmed by owner: LBS4 bootcamp services listing.
+const BOOTCAMP_HREF = "https://www.lbs4.com/services?filter=bootcamp";
 
 const categoryIcons = {
   real_estate: Home,

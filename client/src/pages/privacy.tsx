@@ -1,264 +1,362 @@
+import { Link } from "wouter";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { useTranslation } from "react-i18next";
 
 export default function PrivacyPage() {
-  const { i18n } = useTranslation();
-  const language = i18n.language;
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       <main className="flex-1 container mx-auto px-4 py-12 max-w-4xl">
-        <h1 className="text-3xl font-bold mb-8" data-testid="heading-privacy">
-          {language === "es" ? "Política de Privacidad" : "Privacy Policy"}
+        <h1 className="text-3xl font-bold mb-2" data-testid="heading-privacy">
+          Linton Business Solutions LLC Privacy Policy
         </h1>
-        
+
         <div className="prose prose-slate dark:prose-invert max-w-none space-y-8">
           <p className="text-muted-foreground">
-            {language === "es" 
-              ? "Última actualización: 15 de enero de 2026"
-              : "Last Updated: January 15, 2026"}
+            Effective Date: July 30, 2026<br />
+            Last Updated: July 30, 2026
           </p>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold">
-              {language === "es" ? "1. Introducción" : "1. Introduction"}
-            </h2>
+            <h2 className="text-xl font-semibold">1. Overview</h2>
             <p className="text-muted-foreground">
-              {language === "es"
-                ? "MyEasyPass (\"nosotros\", \"nos\" o \"nuestro\"), propiedad de y operado por LBS, LLC, opera la plataforma de preparación para exámenes de licencias de Texas en myeasypass.net. Esta Política de Privacidad explica cómo recopilamos, usamos, divulgamos y protegemos su información cuando utiliza nuestro Servicio. Nos comprometemos a proteger su privacidad y garantizar la seguridad de su información personal."
-                : "MyEasyPass (\"we,\" \"us,\" or \"our\"), owned and operated by LBS, LLC, operates the Texas licensing exam preparation platform at myeasypass.net. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Service. We are committed to protecting your privacy and ensuring the security of your personal information."}
+              Linton Business Solutions LLC ("LBS," "we," "us," or "our") respects privacy and is committed to handling personal information responsibly. This Privacy Policy explains how we collect, use, disclose, retain, and protect information through:
+            </p>
+            <ul className="list-disc pl-6 text-muted-foreground space-y-2">
+              <li>lbsconnect.net</li>
+              <li>myeasypass.net</li>
+              <li>workabeez.net</li>
+              <li>lbs4.com</li>
+              <li>related applications, forms, communications, appointments, and in-person services that link to this Policy</li>
+            </ul>
+            <p className="text-muted-foreground">
+              This Policy does not replace privacy notices issued by testing sponsors, employers, government agencies, payment processors, or other organizations that independently determine how they use information.
             </p>
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold">
-              {language === "es" ? "2. Información que Recopilamos" : "2. Information We Collect"}
-            </h2>
-            
-            <h3 className="text-lg font-medium">
-              {language === "es" ? "2.1 Información Personal" : "2.1 Personal Information"}
-            </h3>
+            <h2 className="text-xl font-semibold">2. Who We Are</h2>
             <p className="text-muted-foreground">
-              {language === "es"
-                ? "Cuando crea una cuenta, recopilamos:"
-                : "When you create an account, we collect:"}
+              Linton Business Solutions LLC<br />
+              616 FM 1960 Road West, Suite 101<br />
+              Houston, Texas 77090-3048<br />
+              Phone: (281) 836-5357<br />
+              Email: <a href="mailto:info@LBSconnect.net" className="text-primary hover:underline">info@LBSconnect.net</a>
+            </p>
+            <p className="text-muted-foreground">
+              LBS operates several distinct services. Our role may differ depending on the service:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-              <li>{language === "es" ? "Nombre y apellido" : "First and last name"}</li>
-              <li>{language === "es" ? "Dirección de correo electrónico" : "Email address"}</li>
-              <li>{language === "es" ? "Contraseña (almacenada de forma segura mediante hash, nunca en texto plano)" : "Password (securely hashed, never stored in plain text)"}</li>
-              <li>{language === "es" ? "Preferencia de idioma" : "Language preference"}</li>
-              <li>{language === "es" ? "Número de teléfono (opcional, para programación de exámenes)" : "Phone number (optional, for exam scheduling)"}</li>
-            </ul>
-
-            <h3 className="text-lg font-medium">
-              {language === "es" ? "2.2 Información de Pago" : "2.2 Payment Information"}
-            </h3>
-            <p className="text-muted-foreground">
-              {language === "es"
-                ? "Los pagos se procesan de forma segura a través de Stripe. Nosotros NO almacenamos números de tarjetas de crédito, CVV u otra información financiera sensible. Stripe nos proporciona:"
-                : "Payments are securely processed through Stripe. We do NOT store credit card numbers, CVV, or other sensitive financial information. Stripe provides us with:"}
-            </p>
-            <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-              <li>{language === "es" ? "ID de cliente de Stripe" : "Stripe customer ID"}</li>
-              <li>{language === "es" ? "Estado e ID de suscripción" : "Subscription status and ID"}</li>
-              <li>{language === "es" ? "Historial de pagos (monto, fecha, estado)" : "Payment history (amount, date, status)"}</li>
-            </ul>
-
-            <h3 className="text-lg font-medium">
-              {language === "es" ? "2.3 Datos de Uso" : "2.3 Usage Data"}
-            </h3>
-            <p className="text-muted-foreground">
-              {language === "es" ? "Rastreamos automáticamente:" : "We automatically track:"}
-            </p>
-            <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-              <li>{language === "es" ? "Sesiones y resultados de exámenes de práctica" : "Practice exam sessions and results"}</li>
-              <li>{language === "es" ? "Progreso en la guía de estudio" : "Study guide progress"}</li>
-              <li>{language === "es" ? "Programación de exámenes y asistencia" : "Exam scheduling and attendance"}</li>
-              <li>{language === "es" ? "Métricas de rendimiento por categoría y tema" : "Performance metrics by category and topic"}</li>
-              <li>{language === "es" ? "Información del dispositivo y navegador" : "Device and browser information"}</li>
+              <li>For corporate inquiries, purchases, appointments, and direct customer relationships, LBS generally determines why and how information is used.</li>
+              <li>For employee information processed through Work-A-Beez on behalf of a subscribing employer, the employer generally controls the information and LBS processes it under the employer's instructions.</li>
+              <li>For testing services, a testing sponsor may independently control candidate registration, eligibility, identification, exam delivery, scores, proctoring information, and retention.</li>
+              <li>A commissioned notary controls the notarial record the notary is legally required to maintain.</li>
             </ul>
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold">
-              {language === "es" ? "3. Cómo Usamos Su Información" : "3. How We Use Your Information"}
-            </h2>
+            <h2 className="text-xl font-semibold">3. Information We Collect</h2>
+
+            <h3 className="text-lg font-medium">3.1 Information You Provide Directly</h3>
             <p className="text-muted-foreground">
-              {language === "es" ? "Usamos su información para:" : "We use your information to:"}
+              Depending on the service, we may collect:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-              <li>{language === "es" ? "Proporcionar y mantener nuestro Servicio" : "Provide and maintain our Service"}</li>
-              <li>{language === "es" ? "Procesar suscripciones y pagos" : "Process subscriptions and payments"}</li>
-              <li>{language === "es" ? "Rastrear su progreso de aprendizaje y rendimiento" : "Track your learning progress and performance"}</li>
-              <li>{language === "es" ? "Generar certificados de logros" : "Generate certificates of achievement"}</li>
-              <li>{language === "es" ? "Enviar recordatorios de exámenes programados" : "Send scheduled exam reminders"}</li>
-              <li>{language === "es" ? "Mejorar nuestro contenido y experiencia de usuario" : "Improve our content and user experience"}</li>
-              <li>{language === "es" ? "Comunicarnos con usted sobre actualizaciones del servicio" : "Communicate with you about service updates"}</li>
-              <li>{language === "es" ? "Responder a consultas de soporte" : "Respond to support inquiries"}</li>
+              <li>name, email address, telephone number, mailing address, and organization</li>
+              <li>account credentials and account preferences</li>
+              <li>billing contact and transaction information</li>
+              <li>appointment, reservation, attendance, and service-selection information</li>
+              <li>messages, customer-support requests, survey responses, and feedback</li>
+              <li>files, documents, photographs, or other content you submit</li>
+              <li>consulting intake details and confidential project information</li>
+              <li>practice answers, mock-exam results, study progress, and course activity</li>
+              <li>employer, administrator, employee, contractor, schedule, time, attendance, PTO, payroll-related, pay-stub, message, performance, and recognition information</li>
+              <li>government-issued identification information required for testing or notarial services</li>
+              <li>passport or visa photographs</li>
+              <li>information entered into notarial records as required by law</li>
+              <li>information contained in documents presented for printing, copying, scanning, faxing, resume assistance, or similar services</li>
             </ul>
-          </section>
 
-          <section className="space-y-4">
-            <h2 className="text-xl font-semibold">
-              {language === "es" ? "4. Compartición de Datos" : "4. Data Sharing"}
-            </h2>
+            <h3 className="text-lg font-medium">3.2 Information Collected Automatically</h3>
             <p className="text-muted-foreground">
-              {language === "es"
-                ? "NO vendemos su información personal. Podemos compartir datos con:"
-                : "We do NOT sell your personal information. We may share data with:"}
+              Our websites and applications may collect:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-              <li>
-                <strong>Stripe:</strong> {language === "es" 
-                  ? "Para procesar pagos de forma segura"
-                  : "For secure payment processing"}
-              </li>
-              <li>
-                <strong>Resend:</strong> {language === "es"
-                  ? "Para enviar correos electrónicos transaccionales (por ejemplo, restablecimiento de contraseña)"
-                  : "For sending transactional emails (e.g. password resets)"}
-              </li>
-              <li>
-                <strong>{language === "es" ? "Requisitos Legales" : "Legal Requirements"}:</strong> {language === "es"
-                  ? "Si la ley lo requiere o para proteger nuestros derechos"
-                  : "If required by law or to protect our rights"}
-              </li>
+              <li>IP address</li>
+              <li>browser and device type</li>
+              <li>operating system</li>
+              <li>referring page</li>
+              <li>pages or screens viewed</li>
+              <li>timestamps and session information</li>
+              <li>login history</li>
+              <li>device authorization information</li>
+              <li>error, diagnostic, performance, and security logs</li>
+              <li>cookie and similar technology identifiers</li>
             </ul>
+
+            <h3 className="text-lg font-medium">3.3 Payment Information</h3>
+            <p className="text-muted-foreground">
+              Payments may be processed by third-party payment processors, including Stripe where implemented. LBS generally does not receive or store full payment-card numbers, CVV codes, or full bank credentials. We may receive transaction identifiers, billing contact information, card type, last four digits, payment status, subscription status, refunds, chargebacks, and related records.
+            </p>
+
+            <h3 className="text-lg font-medium">3.4 Sensitive Information</h3>
+            <p className="text-muted-foreground">
+              Depending on the service, information may include government identification, precise work records, employment-related data, private documents, or other information that may be sensitive.
+            </p>
+            <p className="text-muted-foreground">
+              The current Work-A-Beez design is described as PIN-based and restricted to authorized devices. This Policy does not authorize collection of fingerprints, face geometry, voiceprints, retina or iris scans, or precise geolocation. LBS will not introduce biometric or precise-location collection without completing legal review, updating notices, and obtaining any required consent.
+            </p>
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold">
-              {language === "es" ? "5. Seguridad de Datos" : "5. Data Security"}
-            </h2>
+            <h2 className="text-xl font-semibold">4. How We Use Information</h2>
             <p className="text-muted-foreground">
-              {language === "es"
-                ? "Implementamos medidas de seguridad estándar de la industria incluyendo:"
-                : "We implement industry-standard security measures including:"}
+              We may use information to:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-              <li>{language === "es" ? "Cifrado HTTPS para toda la transmisión de datos" : "HTTPS encryption for all data transmission"}</li>
-              <li>{language === "es" ? "Almacenamiento seguro de bases de datos con acceso restringido" : "Secure database storage with restricted access"}</li>
-              <li>{language === "es" ? "Gestión de sesiones con tokens seguros" : "Session management with secure tokens"}</li>
-              <li>{language === "es" ? "Procesamiento de pagos compatible con PCI a través de Stripe" : "PCI-compliant payment processing through Stripe"}</li>
+              <li>provide, operate, maintain, and secure our websites, applications, and services</li>
+              <li>create and administer accounts</li>
+              <li>authenticate users and authorized devices</li>
+              <li>process purchases, subscriptions, appointments, reservations, and refunds</li>
+              <li>deliver digital products, courses, study tools, and consulting services</li>
+              <li>administer practice tests and display study progress</li>
+              <li>support workforce scheduling, timekeeping, attendance, PTO, payroll-related reporting, messages, and analytics</li>
+              <li>coordinate testing-center appointments and comply with testing-sponsor requirements</li>
+              <li>perform notarial acts and maintain legally required records</li>
+              <li>prepare passport photographs and perform business-center document services</li>
+              <li>respond to questions and provide support</li>
+              <li>send transactional notices, security alerts, service messages, and account communications</li>
+              <li>send marketing communications where permitted and subject to opt-out rights</li>
+              <li>prevent fraud, abuse, unauthorized access, and security incidents</li>
+              <li>troubleshoot, analyze performance, and improve products</li>
+              <li>create aggregated or deidentified information</li>
+              <li>enforce agreements</li>
+              <li>comply with legal, accounting, tax, regulatory, testing, and contractual obligations</li>
+              <li>establish, exercise, or defend legal claims</li>
             </ul>
+            <p className="text-muted-foreground">
+              We do not use employer-controlled Work-A-Beez employee data to advertise products to employees.
+            </p>
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold">
-              {language === "es" ? "6. Retención de Datos" : "6. Data Retention"}
-            </h2>
+            <h2 className="text-xl font-semibold">5. Website- and Service-Specific Practices</h2>
+
+            <h3 className="text-lg font-medium">5.1 LBSconnect.net</h3>
             <p className="text-muted-foreground">
-              {language === "es"
-                ? "Conservamos sus datos mientras su cuenta esté activa. Tras la eliminación de la cuenta:"
-                : "We retain your data for as long as your account is active. Upon account deletion:"}
+              LBSconnect may collect information from consulting prospects, government and commercial clients, subcontractors, digital-product purchasers, course participants, newsletter subscribers, and website visitors.
+            </p>
+            <p className="text-muted-foreground">
+              Project information may be governed by a separate nondisclosure agreement, master services agreement, statement of work, purchase order, subcontract, or government contract. When those documents impose stricter confidentiality or data-handling requirements, those requirements control.
+            </p>
+
+            <h3 className="text-lg font-medium">5.2 MyEasyPass.net</h3>
+            <p className="text-muted-foreground">
+              MyEasyPass may collect account data, purchases, practice answers, scores, timing, topic performance, study history, language preferences, and bootcamp-related information.
+            </p>
+            <p className="text-muted-foreground">
+              Practice scores are educational indicators only and are not official licensing-exam results. LBS does not control official eligibility, testing, scoring, licensing, or certification decisions.
+            </p>
+
+            <h3 className="text-lg font-medium">5.3 Work-A-Beez.net</h3>
+            <p className="text-muted-foreground">
+              Work-A-Beez customers may upload and manage employee and contractor information. For this information:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-              <li>{language === "es" ? "Los datos personales se eliminan en un plazo de 30 días" : "Personal data is deleted within 30 days"}</li>
-              <li>{language === "es" ? "Los registros de pago se conservan según lo requiera la ley (típicamente 7 años)" : "Payment records are retained as required by law (typically 7 years)"}</li>
-              <li>{language === "es" ? "Los datos de uso anonimizados pueden conservarse con fines analíticos" : "Anonymized usage data may be retained for analytics purposes"}</li>
+              <li>the customer determines what information is entered and why it is processed;</li>
+              <li>the customer is responsible for providing employee notices and obtaining required permissions;</li>
+              <li>LBS processes the information to provide the service, secure it, support users, comply with law, and follow documented customer instructions;</li>
+              <li>users seeking access, correction, or deletion of employer-controlled information should normally contact their employer first.</li>
             </ul>
+            <p className="text-muted-foreground">
+              LBS separately controls business-contact, billing, security, support, and account-relationship information used for its own legitimate business operations.
+            </p>
+
+            <h3 className="text-lg font-medium">5.4 LBS4.com and Physical Services</h3>
+            <p className="text-muted-foreground">
+              LBS4 may collect appointment, payment, communication, identification, service, and transaction information.
+            </p>
+            <p className="text-muted-foreground">
+              Testing sponsors may separately collect and control candidate accounts, exam eligibility, identification, test delivery, scores, incident reports, and monitoring information. Their privacy notices and candidate rules also apply.
+            </p>
+            <p className="text-muted-foreground">
+              For traditional notarial acts, the commissioned notary must maintain a record book containing information required by Texas law. Notary records may be public records. LBS does not provide legal advice and does not decide whether a document is legally sufficient.
+            </p>
+            <p className="text-muted-foreground">
+              For passport photos and business-center documents, LBS seeks to retain files only as long as reasonably necessary to complete the requested service, troubleshoot immediate service issues, process payment, and satisfy legal obligations. See the Business-Center Document Handling Notice.
+            </p>
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold">
-              {language === "es" ? "7. Sus Derechos" : "7. Your Rights"}
-            </h2>
+            <h2 className="text-xl font-semibold">6. Cookies and Similar Technologies</h2>
             <p className="text-muted-foreground">
-              {language === "es" ? "Usted tiene derecho a:" : "You have the right to:"}
+              We may use:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-              <li>{language === "es" ? "Acceder a sus datos personales" : "Access your personal data"}</li>
-              <li>{language === "es" ? "Corregir información inexacta" : "Correct inaccurate information"}</li>
-              <li>{language === "es" ? "Solicitar la eliminación de sus datos" : "Request deletion of your data"}</li>
-              <li>{language === "es" ? "Exportar sus datos en un formato portable" : "Export your data in a portable format"}</li>
-              <li>{language === "es" ? "Cancelar su suscripción en cualquier momento" : "Cancel your subscription at any time"}</li>
+              <li>essential cookies for security, authentication, checkout, and core functionality;</li>
+              <li>preference cookies to remember settings;</li>
+              <li>analytics technologies to understand site and application performance;</li>
+              <li>security technologies to detect fraud and abuse.</li>
             </ul>
             <p className="text-muted-foreground">
-              {language === "es"
-                ? "Para ejercer estos derechos, contáctenos en info@LBSconnect.net."
-                : "To exercise these rights, contact us at info@LBSconnect.net."}
+              Additional details appear in the <Link href="/cookie-policy" className="text-primary hover:underline">Cookie Policy</Link>.
             </p>
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold">
-              {language === "es" ? "8. Cookies y Tecnologías de Seguimiento" : "8. Cookies and Tracking Technologies"}
-            </h2>
+            <h2 className="text-xl font-semibold">7. How We Disclose Information</h2>
             <p className="text-muted-foreground">
-              {language === "es"
-                ? "Usamos cookies esenciales para:"
-                : "We use essential cookies for:"}
+              We may disclose information to:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-              <li>{language === "es" ? "Mantener su sesión iniciada" : "Keeping you logged in"}</li>
-              <li>{language === "es" ? "Recordar sus preferencias de idioma" : "Remembering your language preferences"}</li>
-              <li>{language === "es" ? "Configuración de tema (claro/oscuro)" : "Theme settings (light/dark)"}</li>
+              <li>cloud hosting, database, storage, and infrastructure providers</li>
+              <li>authentication and security providers</li>
+              <li>payment processors</li>
+              <li>email and communication providers</li>
+              <li>analytics, diagnostics, and performance providers</li>
+              <li>customer support and scheduling providers</li>
+              <li>professional advisers, insurers, auditors, and contractors</li>
+              <li>testing sponsors and certification organizations</li>
+              <li>government agencies, courts, regulators, and law enforcement where legally required</li>
+              <li>a buyer, successor, lender, investor, or adviser in a proposed or completed corporate transaction</li>
+              <li>other parties at your direction or with your permission</li>
             </ul>
             <p className="text-muted-foreground">
-              {language === "es"
-                ? "No usamos cookies de seguimiento de terceros con fines publicitarios."
-                : "We do not use third-party tracking cookies for advertising purposes."}
+              Service providers are permitted to receive information only for legitimate service purposes and should be subject to appropriate confidentiality and security obligations.
+            </p>
+            <p className="text-muted-foreground">
+              We do not sell personal information for money.
             </p>
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold">
-              {language === "es" ? "9. Privacidad de Menores" : "9. Children's Privacy"}
-            </h2>
+            <h2 className="text-xl font-semibold">8. Aggregated and Deidentified Information</h2>
             <p className="text-muted-foreground">
-              {language === "es"
-                ? "Nuestro Servicio está destinado a usuarios de 18 años o más que se preparan para exámenes de licencias profesionales de Texas. No recopilamos intencionalmente información de menores de 18 años. Si cree que hemos recopilado datos de un menor, contáctenos inmediatamente."
-                : "Our Service is intended for users 18 years or older who are preparing for Texas professional licensing exams. We do not knowingly collect information from anyone under 18. If you believe we have collected data from a minor, please contact us immediately."}
+              We may create and use aggregated or deidentified information for analytics, product improvement, capacity planning, security, benchmarking, and business operations. We will take reasonable measures designed to prevent deidentified data from being associated with an identifiable person and will not knowingly attempt to reidentify it except as permitted by law to test deidentification safeguards.
             </p>
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold">
-              {language === "es" ? "10. Residentes de Texas - Derechos de Privacidad" : "10. Texas Residents - Privacy Rights"}
-            </h2>
+            <h2 className="text-xl font-semibold">9. Retention</h2>
             <p className="text-muted-foreground">
-              {language === "es"
-                ? "Bajo la Ley de Privacidad de Datos de Texas (TDPSA), los residentes de Texas tienen derechos adicionales:"
-                : "Under the Texas Data Privacy and Security Act (TDPSA), Texas residents have additional rights:"}
+              We retain information for periods reasonably necessary for the purposes described in this Policy, considering:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-              <li>{language === "es" ? "Derecho a saber qué datos personales recopilamos" : "Right to know what personal data we collect"}</li>
-              <li>{language === "es" ? "Derecho a eliminar datos personales" : "Right to delete personal data"}</li>
-              <li>{language === "es" ? "Derecho a corregir inexactitudes" : "Right to correct inaccuracies"}</li>
-              <li>{language === "es" ? "Derecho a optar por no participar en publicidad dirigida (no participamos en esto)" : "Right to opt out of targeted advertising (we don't engage in this)"}</li>
-              <li>{language === "es" ? "Derecho a no discriminación por ejercer derechos de privacidad" : "Right to non-discrimination for exercising privacy rights"}</li>
+              <li>the duration of the account or customer relationship</li>
+              <li>the sensitivity and volume of the information</li>
+              <li>legal, tax, accounting, employment, testing, notary, and contractual requirements</li>
+              <li>security, backup, fraud-prevention, and dispute-resolution needs</li>
+              <li>customer instructions where LBS acts as a processor</li>
             </ul>
-          </section>
-
-          <section className="space-y-4">
-            <h2 className="text-xl font-semibold">
-              {language === "es" ? "11. Cambios a Esta Política" : "11. Changes to This Policy"}
-            </h2>
+            <p className="text-muted-foreground">Examples:</p>
+            <ul className="list-disc pl-6 text-muted-foreground space-y-2">
+              <li>transaction and tax records may be retained for legally and operationally appropriate periods;</li>
+              <li>Work-A-Beez customer data may be retained during the subscription and for a limited export or recovery period after termination;</li>
+              <li>employer payroll and time records should be retained according to the employer's legal obligations and configured retention requirements;</li>
+              <li>traditional notary records are retained by the commissioned notary as required by Texas law;</li>
+              <li>online-notary recordings, if offered, require separate statutory retention;</li>
+              <li>passport-photo and document-service working files should ordinarily be deleted promptly after service completion;</li>
+              <li>backups may persist for a limited cycle before being overwritten.</li>
+            </ul>
             <p className="text-muted-foreground">
-              {language === "es"
-                ? "Podemos actualizar esta Política de Privacidad periódicamente. Le notificaremos los cambios materiales publicando la nueva política en nuestro sitio y actualizando la fecha de \"Última actualización\". Se recomienda revisar esta política periódicamente."
-                : "We may update this Privacy Policy periodically. We will notify you of material changes by posting the new policy on our site and updating the \"Last Updated\" date. You are advised to review this policy periodically."}
+              Detailed proposed periods appear in the Records Retention Schedule.
             </p>
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold">
-              {language === "es" ? "12. Contáctenos" : "12. Contact Us"}
-            </h2>
+            <h2 className="text-xl font-semibold">10. Security</h2>
             <p className="text-muted-foreground">
-              {language === "es"
-                ? "Si tiene preguntas sobre esta Política de Privacidad o nuestras prácticas de datos, contáctenos:"
-                : "If you have questions about this Privacy Policy or our data practices, contact us:"}
+              We use administrative, technical, and physical safeguards designed to protect information. Measures may include access controls, authentication, encryption in transit, encryption at rest where appropriate, tenant separation, logging, backups, vendor management, employee confidentiality obligations, and incident-response procedures.
             </p>
+            <p className="text-muted-foreground">
+              No system can guarantee absolute security. You are responsible for using strong credentials, protecting account access, maintaining secure devices, and promptly reporting suspected misuse.
+            </p>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold">11. Your Privacy Choices and Rights</h2>
+            <p className="text-muted-foreground">
+              Depending on your relationship with LBS and applicable law, you may request to:
+            </p>
+            <ul className="list-disc pl-6 text-muted-foreground space-y-2">
+              <li>know whether we process your personal information</li>
+              <li>access or obtain a copy of certain information</li>
+              <li>correct inaccurate information</li>
+              <li>delete certain information</li>
+              <li>opt out of marketing email or SMS</li>
+              <li>opt out of qualifying targeted advertising, sale, or profiling if those activities occur</li>
+              <li>appeal certain privacy-request decisions where required</li>
+            </ul>
+            <p className="text-muted-foreground">
+              Submit requests to <a href="mailto:info@LBSconnect.net" className="text-primary hover:underline">info@LBSconnect.net</a> with the subject line "Privacy Request" or use our <Link href="/privacy-request" className="text-primary hover:underline">Privacy Request Procedure</Link>.
+            </p>
+            <p className="text-muted-foreground">
+              We may verify identity before acting. Authorized agents may be required to provide proof of authority. We may deny or limit requests where permitted by law, including where we cannot verify identity, must retain the information, need it to provide a requested service, or process it solely on behalf of an employer or other customer.
+            </p>
+            <p className="text-muted-foreground">
+              For Work-A-Beez employee records controlled by an employer, contact the employer first. We will support the employer's response where contractually and legally required.
+            </p>
+            <p className="text-muted-foreground">
+              We will not discriminate against a person for exercising applicable privacy rights.
+            </p>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold">12. Marketing Communications</h2>
+            <p className="text-muted-foreground">
+              You may unsubscribe from marketing email using the link in the message or by contacting us. You may opt out of marketing SMS by replying STOP, where available. Transactional, security, account, appointment, testing, and service messages may still be sent when necessary.
+            </p>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold">13. Children and Minors</h2>
+            <p className="text-muted-foreground">
+              Our general online services are not directed to children under 13, and we do not knowingly allow children under 13 to independently create accounts or submit personal information.
+            </p>
+            <p className="text-muted-foreground">
+              Testing services may be used by minors where permitted by a testing sponsor and authorized by a parent, guardian, school, or sponsoring organization. In those cases, information may be handled under the testing sponsor's rules and applicable law.
+            </p>
+            <p className="text-muted-foreground">
+              MyEasyPass and paid account services are intended for adults unless an authorized parent, guardian, school, or organization establishes or supervises access.
+            </p>
+            <p className="text-muted-foreground">
+              If you believe a child under 13 submitted information without appropriate authorization, contact us.
+            </p>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold">14. International Users</h2>
+            <p className="text-muted-foreground">
+              LBS operates from the United States. Information may be processed in the United States and other countries where service providers operate. Those countries may have different privacy laws. If international operations expand, LBS will implement additional contractual and transfer safeguards where required.
+            </p>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold">15. Third-Party Links and Services</h2>
+            <p className="text-muted-foreground">
+              Our properties may link to third-party websites and services. We do not control their privacy practices. Review their notices before submitting information.
+            </p>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold">16. Changes to This Policy</h2>
+            <p className="text-muted-foreground">
+              We may update this Policy to reflect legal, technical, or business changes. We will post the revised version and update the effective date. For material changes, we may provide additional notice through email, account notifications, checkout, or another appropriate method.
+            </p>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold">17. Contact Us</h2>
             <ul className="list-none text-muted-foreground space-y-1">
-              <li><strong>{language === "es" ? "MyEasyPass, operado por LBS, LLC" : "MyEasyPass, operated by LBS, LLC"}</strong></li>
-              <li>{language === "es" ? "Correo electrónico" : "Email"}: info@LBSconnect.net</li>
-              <li>{language === "es" ? "Teléfono" : "Phone"}: 281-836-5357</li>
-              <li>{language === "es" ? "Ubicación" : "Location"}: 616 FM 1960 RD W STE 101, Houston, TX 77090-3048</li>
+              <li><strong>Linton Business Solutions LLC</strong></li>
+              <li>616 FM 1960 Road West, Suite 101</li>
+              <li>Houston, Texas 77090-3048</li>
+              <li>Phone: (281) 836-5357</li>
+              <li>Email: <a href="mailto:info@LBSconnect.net" className="text-primary hover:underline">info@LBSconnect.net</a></li>
             </ul>
+            <p className="text-muted-foreground">
+              For privacy requests, use the subject line "Privacy Request."
+            </p>
           </section>
         </div>
       </main>

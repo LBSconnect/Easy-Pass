@@ -31,6 +31,11 @@ import TexasRealEstateExamPrepEsPage from "@/pages/landing-texas-real-estate-es"
 import TexasInsuranceExamPrepEsPage from "@/pages/landing-texas-insurance-es";
 import EmployerInquiryPage from "@/pages/employer-inquiry";
 import DiagnosticPage from "@/pages/diagnostic";
+import CookiePolicyPage from "@/pages/cookie-policy";
+import NoticeAtCollectionPage from "@/pages/notice-at-collection";
+import PrivacyRequestPage from "@/pages/privacy-request";
+import AccessibilityPage from "@/pages/accessibility";
+import CopyrightDmcaPage from "@/pages/copyright-dmca";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -103,6 +108,11 @@ function Router() {
       <Route path="/faq" component={FAQPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
+      <Route path="/cookie-policy" component={CookiePolicyPage} />
+      <Route path="/notice-at-collection" component={NoticeAtCollectionPage} />
+      <Route path="/privacy-request" component={PrivacyRequestPage} />
+      <Route path="/accessibility" component={AccessibilityPage} />
+      <Route path="/copyright-dmca" component={CopyrightDmcaPage} />
       <Route component={NotFound} />
     </Switch>
   );

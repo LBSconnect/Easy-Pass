@@ -110,7 +110,7 @@ export function Footer() {
 
         <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t pt-6 md:flex-row">
           <p className="text-sm text-muted-foreground">{t("footer.copyright")}</p>
-          <div className="flex gap-6 text-sm text-muted-foreground">
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-6 text-sm text-muted-foreground">
             <Link href="/terms">
               <span className="cursor-pointer hover:text-primary transition-colors" data-testid="link-terms">
                 {t("footer.terms")}
@@ -119,6 +119,21 @@ export function Footer() {
             <Link href="/privacy">
               <span className="cursor-pointer hover:text-primary transition-colors" data-testid="link-privacy">
                 {t("footer.privacy")}
+              </span>
+            </Link>
+            <Link href="/cookie-policy">
+              <span className="cursor-pointer hover:text-primary transition-colors" data-testid="link-cookie-policy">
+                Cookie Policy
+              </span>
+            </Link>
+            <Link href="/accessibility">
+              <span className="cursor-pointer hover:text-primary transition-colors" data-testid="link-accessibility">
+                Accessibility
+              </span>
+            </Link>
+            <Link href="/copyright-dmca">
+              <span className="cursor-pointer hover:text-primary transition-colors" data-testid="link-copyright-dmca">
+                Copyright/DMCA
               </span>
             </Link>
           </div>

@@ -61,6 +61,7 @@ export function useSEO(options: SEOOptions) {
     managedEls.push(setMetaByProperty("og:type", "website"));
     if (options.ogImage) {
       managedEls.push(setMetaByProperty("og:image", options.ogImage));
+      managedEls.push(setMetaByName("twitter:image", options.ogImage));
     }
     managedEls.push(setMetaByName("twitter:title", options.title));
     managedEls.push(setMetaByName("twitter:description", options.description));

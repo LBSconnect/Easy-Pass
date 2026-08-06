@@ -1,7 +1,14 @@
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { useSEO, buildUrl } from "@/hooks/use-seo";
 
 export default function CookiePolicyPage() {
+  useSEO({
+    title: "Cookie Policy | MyEasyPass",
+    description: "Cookie Policy describing how MyEasyPass and Linton Business Solutions LLC use cookies and similar technologies on this site.",
+    canonicalUrl: buildUrl("/cookie-policy"),
+  });
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />

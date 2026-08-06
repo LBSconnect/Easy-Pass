@@ -1,7 +1,14 @@
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { useSEO, buildUrl } from "@/hooks/use-seo";
 
 export default function ExamDisclaimerPage() {
+  useSEO({
+    title: "Exam-Preparation Disclaimer | MyEasyPass",
+    description: "Disclaimer clarifying that MyEasyPass provides independent exam-preparation materials and is not affiliated with any licensing board or testing agency.",
+    canonicalUrl: buildUrl("/exam-disclaimer"),
+  });
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />

@@ -2,8 +2,15 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { Mail } from "lucide-react";
+import { useSEO, buildUrl } from "@/hooks/use-seo";
 
 export default function PrivacyRequestPage() {
+  useSEO({
+    title: "Privacy Request Procedure | MyEasyPass",
+    description: "How to submit a privacy request to access, correct, or delete your personal information held by MyEasyPass and Linton Business Solutions LLC.",
+    canonicalUrl: buildUrl("/privacy-request"),
+  });
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />

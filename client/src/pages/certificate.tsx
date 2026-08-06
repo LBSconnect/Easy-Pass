@@ -22,6 +22,7 @@ import {
 import { SiLinkedin, SiX, SiFacebook } from "react-icons/si";
 import { format } from "date-fns";
 import { Link } from "wouter";
+import { useSEO, buildUrl } from "@/hooks/use-seo";
 
 interface CertificateData {
   id: string;
@@ -66,9 +67,28 @@ export default function CertificatePage() {
     enabled: !!slug,
   });
 
-  const shareUrl = typeof window !== "undefined" 
-    ? `${window.location.origin}/certificates/${slug}` 
+  const shareUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/certificates/${slug}`
     : "";
+
+  const categoryLabel = certificate
+    ? t(`categories.${certificate.category}`, certificate.category)
+    : "";
+
+  useSEO({
+    title: certificate
+      ? (language === "es"
+          ? `Certificado de ${categoryLabel} — ${certificate.recipientName} | MyEasyPass`
+          : `${categoryLabel} Exam Certificate — ${certificate.recipientName} | MyEasyPass`)
+      : "Exam Certificate | MyEasyPass",
+    description: certificate
+      ? (language === "es"
+          ? `${certificate.recipientName} aprobó el examen de práctica de ${categoryLabel} con una puntuación del ${certificate.score}% en MyEasyPass.`
+          : `${certificate.recipientName} passed the ${categoryLabel} practice exam with a score of ${certificate.score}% on MyEasyPass.`)
+      : "View this Texas licensing exam practice certificate from MyEasyPass.",
+    canonicalUrl: slug ? buildUrl(`/certificates/${slug}`) : buildUrl("/"),
+    ogImage: buildUrl("/og-image.png"),
+  });
 
   const handleCopyLink = async () => {
     try {

@@ -9,24 +9,29 @@ import { sanitizeHtml } from "./sanitize";
 import { rateLimit } from "./rateLimit";
 
 export function getSession() {
+  if (!process.env.SESSION_SECRET) {
+    console.error("[Session] ERROR: SESSION_SECRET is missing");
+    throw new Error("SESSION_SECRET must be set.");
+  }
+
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   const pgStore = connectPg(session);
   const isProduction = process.env.NODE_ENV === "production";
   console.log(`[Session] Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}, secure cookies: ${isProduction}`);
-  
+
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
     createTableIfMissing: false,
     ttl: sessionTtl,
     tableName: "sessions",
     // Add SSL for production Neon connection
-    ...(isProduction && { 
+    ...(isProduction && {
       ssl: { rejectUnauthorized: false }
     }),
   });
-  
+
   return session({
-    secret: process.env.SESSION_SECRET!,
+    secret: process.env.SESSION_SECRET,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,

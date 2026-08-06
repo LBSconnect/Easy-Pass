@@ -1,0 +1,53 @@
+name: CI
+
+# Runs on every PR into main and on every push to main.
+# This is the baseline "does the app still type-check, pass tests, and build"
+# gate. Requires zero repo secrets — npm ci / npm run check / npm test /
+# npm run build all run fully offline with no DATABASE_URL or Stripe keys.
+#
+# To actually block merges on this, enable branch protection on `main` in
+# GitHub repo settings and require the "Type check, test, and build" status
+# check — this workflow alone does not enforce anything by itself, it just
+# reports pass/fail.
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+# Cancel superseded runs on the same branch/PR to save CI minutes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Type check, test, and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Node 20 matches @types/node (^20.x) in package.json and the Node
+      # runtime documented in CLAUDE.md ("Node.js 20.x").
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run check
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build

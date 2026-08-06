@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { useSEO, buildUrl } from "@/hooks/use-seo";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -118,6 +119,7 @@ function LoginForm({ onSwitchToSignup }: { onSwitchToSignup: () => void }) {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      aria-label={showPassword ? t("auth.hidePassword", "Hide password") : t("auth.showPassword", "Show password")}
                       data-testid="button-toggle-password"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -299,6 +301,7 @@ function SignupForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      aria-label={showPassword ? t("auth.hidePassword", "Hide password") : t("auth.showPassword", "Show password")}
                       data-testid="button-toggle-signup-password"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -364,6 +367,14 @@ export default function AuthPage() {
   useEffect(() => {
     setIsLogin(location !== "/signup");
   }, [location]);
+
+  useSEO({
+    title: isLogin ? "Log In | MyEasyPass" : "Sign Up | MyEasyPass",
+    description: isLogin
+      ? "Log in to MyEasyPass to continue your Texas real estate or insurance exam prep with timed practice tests and score tracking."
+      : "Create a free MyEasyPass account to start practicing for your Texas real estate or insurance licensing exam.",
+    canonicalUrl: buildUrl(isLogin ? "/login" : "/signup"),
+  });
 
   return (
     <div className="min-h-screen flex flex-col bg-background">

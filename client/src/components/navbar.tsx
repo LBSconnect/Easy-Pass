@@ -54,7 +54,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <nav className="container mx-auto flex h-14 items-center justify-between gap-4 px-4">
         <Link href="/" className="flex items-center gap-2">
-          <img src={logoImage} alt="MyEasyPass" className="h-10 object-contain" />
+          <img src={logoImage} alt="MyEasyPass" className="h-10 object-contain" width={996} height={301} />
         </Link>
 
         <div className="hidden md:flex items-center gap-7">
@@ -184,14 +184,14 @@ export function Navbar() {
 
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon" data-testid="button-mobile-menu">
+              <Button variant="ghost" size="icon" aria-label="Open menu" data-testid="button-mobile-menu">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
             <SheetContent side="right">
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2">
-                  <img src={logoImage} alt="MyEasyPass" className="h-10 object-contain" />
+                  <img src={logoImage} alt="MyEasyPass" className="h-10 object-contain" width={996} height={301} />
                 </SheetTitle>
               </SheetHeader>
               <div className="flex flex-col gap-4 mt-6">

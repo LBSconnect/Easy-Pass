@@ -12,7 +12,7 @@ import { Footer } from "@/components/footer";
 import { apiRequest } from "@/lib/queryClient";
 import { trackEvent } from "@/lib/analytics";
 import { useSEO, buildUrl } from "@/hooks/use-seo";
-import { Home, Shield, Heart, FileText, ArrowRight, Loader2, RotateCcw } from "lucide-react";
+import { Home, Shield, Heart, FileText, ArrowRight, Loader2, RotateCcw, Lock } from "lucide-react";
 import type { ExamCategory } from "@shared/schema";
 
 const categoryIcons = {
@@ -64,6 +64,11 @@ export default function DiagnosticPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [result, setResult] = useState<{ score: number; correctAnswers: number; totalQuestions: number } | null>(null);
+  // The score itself is computed as soon as the quiz is submitted, but we
+  // hold off rendering it until the user has seen (and can dismiss) a
+  // subscribe prompt - this is a soft gate, not a hard paywall, since the
+  // page's own copy promises "no subscription required" for the assessment.
+  const [revealScore, setRevealScore] = useState(false);
 
   const startMutation = useMutation({
     mutationFn: async (cat: ExamCategory) => {
@@ -76,6 +81,7 @@ export default function DiagnosticPage() {
       setCurrentIndex(0);
       setAnswers({});
       setResult(null);
+      setRevealScore(false);
     },
   });
 
@@ -86,6 +92,8 @@ export default function DiagnosticPage() {
     },
     onSuccess: (data) => {
       setResult(data);
+      setRevealScore(false);
+      trackEvent("diagnostic_cta_click", { category: category ?? undefined, step: "subscribe_prompt_shown" });
     },
   });
 
@@ -114,6 +122,16 @@ export default function DiagnosticPage() {
     setCurrentIndex(0);
     setAnswers({});
     setResult(null);
+    setRevealScore(false);
+  };
+
+  const handleSubscribeClick = () => {
+    trackEvent("diagnostic_cta_click", { category: category ?? undefined, step: "subscribe_prompt_subscribe" });
+  };
+
+  const handleSkipSubscribePrompt = () => {
+    trackEvent("diagnostic_cta_click", { category: category ?? undefined, step: "subscribe_prompt_skip" });
+    setRevealScore(true);
   };
 
   const currentQuestion = questions[currentIndex];
@@ -223,7 +241,54 @@ export default function DiagnosticPage() {
             </Card>
           )}
 
-          {result && (
+          {result && !revealScore && (
+            <Card>
+              <CardHeader className="text-center">
+                <div className="mx-auto mb-2 p-3 rounded-full bg-primary/10 w-fit">
+                  <Lock className="h-8 w-8 text-primary" />
+                </div>
+                <CardTitle className="text-2xl">
+                  {isSpanish ? "¡Evaluación completa!" : "Assessment complete!"}
+                </CardTitle>
+                <CardDescription>
+                  {isSpanish
+                    ? "Suscríbete para desbloquear tu puntuación y obtener acceso ilimitado a exámenes de práctica completos."
+                    : "Subscribe to unlock your score and get unlimited access to full practice exams."}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6 text-center">
+                <p className="text-muted-foreground">
+                  {isSpanish
+                    ? "Ya respondiste todas las preguntas. Suscríbete ahora para ver cómo te fue y seguir practicando con nuestro banco completo de preguntas."
+                    : "You've answered every question. Subscribe now to see how you did and keep practicing with our full question bank."}
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Button
+                    size="lg"
+                    asChild
+                    className="gap-2"
+                    onClick={handleSubscribeClick}
+                    data-testid="button-diagnostic-subscribe-prompt"
+                  >
+                    <Link href="/pricing">
+                      {isSpanish ? "Suscribirse Ahora" : "Subscribe Now"}
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={handleSkipSubscribePrompt}
+                    data-testid="button-diagnostic-skip-subscribe"
+                  >
+                    {isSpanish ? "Ver mi puntuación" : "See my score"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {result && revealScore && (
             <Card>
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl">

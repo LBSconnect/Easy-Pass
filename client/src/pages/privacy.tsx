@@ -1,8 +1,15 @@
 import { Link } from "wouter";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { useSEO, buildUrl } from "@/hooks/use-seo";
 
 export default function PrivacyPage() {
+  useSEO({
+    title: "Privacy Policy | MyEasyPass",
+    description: "Privacy Policy explaining how Linton Business Solutions LLC collects, uses, discloses, and protects personal information across MyEasyPass and related services.",
+    canonicalUrl: buildUrl("/privacy"),
+  });
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />

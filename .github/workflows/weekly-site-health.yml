@@ -1,0 +1,343 @@
+name: Weekly Site Health
+
+# ---------------------------------------------------------------------------
+# DST-handling note (read this before touching the schedule below)
+# ---------------------------------------------------------------------------
+# GitHub Actions `schedule:` cron triggers always run in UTC and never shift
+# for daylight saving time. This workflow is meant to fire once a week, at
+# Friday 00:00 America/Chicago, which maps to two different UTC times
+# depending on the time of year:
+#   - CDT (UTC-5, daylight saving, roughly mid-Mar to early-Nov) -> 05:00 UTC Friday
+#   - CST (UTC-6, standard time,   roughly early-Nov to mid-Mar) -> 06:00 UTC Friday
+#
+# We register BOTH cron triggers below, so every Friday, one of them lands
+# within a few minutes of the real local midnight and the other lands about
+# an hour off (either Thursday 23:00 local during CST, or Friday 01:00 local
+# during CDT). The crons alone do NOT know which offset is currently in
+# effect and will fire on schedule every week regardless of season — it is
+# the "Guard" step below, not the cron expressions, that enforces "only run
+# once, close to Friday 00:00 local time". The guard reads the real
+# wall-clock time in America/Chicago at execution time (which correctly
+# accounts for DST since it uses the IANA tz database) and turns the rest
+# of the job into a no-op unless we're within a small window after midnight.
+# The "wrong" weekly firing hits the guard, logs why it's skipping, and
+# exits 0 (green, not a failure) without doing any work.
+#
+# Known limitation: GitHub's own cron scheduler has a documented delay of up
+# to several minutes (occasionally more under platform-wide load), and can
+# rarely skip a run entirely. That's a GitHub platform limitation, not a bug
+# in this workflow — the guard window below is sized to absorb typical
+# delay, and a missed run just waits for the following Friday.
+# ---------------------------------------------------------------------------
+
+on:
+  schedule:
+    - cron: "0 5 * * 5" # ~Friday 00:00 CDT (UTC-5, daylight saving in effect)
+    - cron: "0 6 * * 5" # ~Friday 00:00 CST (UTC-6, standard time)
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: "Bypass the Friday-00:00-local guard and run now (manual testing)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write # needed to create/attach the "site-health" label
+
+# Only one weekly-health run at a time; don't cancel a run already in
+# progress just because the "other" DST cron also fired.
+concurrency:
+  group: weekly-site-health
+  cancel-in-progress: false
+
+jobs:
+  site-health:
+    name: Weekly site health check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      # -----------------------------------------------------------------
+      # Guard: only proceed if it's genuinely close to Friday 00:00
+      # America/Chicago (or this is a manual forced run). See the header
+      # comment above for why this step exists.
+      # -----------------------------------------------------------------
+      - name: Guard - Friday 00:00 America/Chicago window
+        id: guard
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.force_run }}" = "true" ]; then
+            echo "Manually forced via workflow_dispatch input - bypassing the time window guard."
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          NOW_LOCAL=$(TZ=America/Chicago date)
+          DOW=$(TZ=America/Chicago date +%u)   # 1=Mon ... 5=Fri ... 7=Sun
+          HH=$((10#$(TZ=America/Chicago date +%H)))
+          MM=$((10#$(TZ=America/Chicago date +%M)))
+          TOTAL_MIN=$((HH * 60 + MM))
+
+          echo "Current America/Chicago time: $NOW_LOCAL (day-of-week=$DOW, minutes-past-midnight=$TOTAL_MIN)"
+
+          # 30-minute window right after local midnight Friday, wide enough
+          # to absorb GitHub's scheduler delay without also catching the
+          # "wrong" DST cron (which lands ~60 minutes away either direction).
+          if [ "$DOW" = "5" ] && [ "$TOTAL_MIN" -ge 0 ] && [ "$TOTAL_MIN" -le 29 ]; then
+            echo "Within the Friday 00:00 America/Chicago window - proceeding."
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Not within the Friday 00:00 America/Chicago window - this is the redundant DST cron firing (or scheduler jitter). No-op, exiting cleanly."
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Record start time
+        if: steps.guard.outputs.should_run == 'true'
+        id: start
+        run: echo "time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout main
+        if: steps.guard.outputs.should_run == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        if: steps.guard.outputs.should_run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        if: steps.guard.outputs.should_run == 'true'
+        run: npm ci
+
+      # Each check runs independently (continue-on-error) so the report can
+      # show which specific check(s) failed instead of stopping at the
+      # first failure. The job is still marked failed overall at the end
+      # if any of them failed - see "Fail job if checks failed" below.
+      - name: Type check
+        if: steps.guard.outputs.should_run == 'true'
+        id: typecheck
+        continue-on-error: true
+        run: npm run check
+
+      - name: Unit tests
+        if: steps.guard.outputs.should_run == 'true'
+        id: unittest
+        continue-on-error: true
+        run: npm test
+
+      - name: Build
+        if: steps.guard.outputs.should_run == 'true'
+        id: buildstep
+        continue-on-error: true
+        run: npm run build
+
+      - name: Broken-link check
+        if: steps.guard.outputs.should_run == 'true'
+        id: linkcheck
+        continue-on-error: true
+        run: node scripts/check-broken-links.mjs --json-out=link-report.json
+
+      - name: Dependency audit (npm audit --production)
+        if: steps.guard.outputs.should_run == 'true'
+        run: npm audit --production --json > audit-report.json || true
+
+      - name: Attempt conservative auto-fix of broken links
+        if: steps.guard.outputs.should_run == 'true'
+        id: autofix
+        continue-on-error: true
+        run: node scripts/fix-broken-links.mjs --report=link-report.json > fixes.json || echo '{"applied":[],"skipped":[]}' > fixes.json
+
+      - name: Record end time
+        if: steps.guard.outputs.should_run == 'true'
+        id: end
+        run: echo "time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Set report date
+        if: steps.guard.outputs.should_run == 'true'
+        id: reportdate
+        run: echo "date=$(TZ=America/Chicago date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate report
+        if: steps.guard.outputs.should_run == 'true'
+        id: report
+        run: |
+          mkdir -p "reports/site-health/${{ steps.reportdate.outputs.date }}"
+          REPORT_DATE="${{ steps.reportdate.outputs.date }}" \
+          COMMIT_SHA="${{ github.sha }}" \
+          START_TIME="${{ steps.start.outputs.time }}" \
+          END_TIME="${{ steps.end.outputs.time }}" \
+          TYPECHECK_OUTCOME="${{ steps.typecheck.outcome }}" \
+          TEST_OUTCOME="${{ steps.unittest.outcome }}" \
+          BUILD_OUTCOME="${{ steps.buildstep.outcome }}" \
+          LINK_REPORT_PATH="link-report.json" \
+          AUDIT_JSON_PATH="audit-report.json" \
+          FIXES_JSON_PATH="fixes.json" \
+          node scripts/site-health-report.mjs > "reports/site-health/${{ steps.reportdate.outputs.date }}/report.md"
+
+          echo "path=reports/site-health/${{ steps.reportdate.outputs.date }}/report.md" >> "$GITHUB_OUTPUT"
+
+          FIXES_APPLIED=$(node -e "const f=require('./fixes.json'); console.log(f.applied.length)")
+          echo "fixes_applied=$FIXES_APPLIED" >> "$GITHUB_OUTPUT"
+
+      # -----------------------------------------------------------------
+      # Commit the report (+ any auto-fix) to a dated branch and open a PR.
+      # A report-only PR still gets opened so a human sees the week's
+      # findings even when there was nothing safe to auto-fix.
+      # -----------------------------------------------------------------
+      - name: Create dated branch, commit, and push
+        if: steps.guard.outputs.should_run == 'true'
+        id: branch
+        run: |
+          BRANCH="site-health/${{ steps.reportdate.outputs.date }}"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          # Stage the dated report plus any auto-fix edits made by
+          # fix-broken-links.mjs above (that script only ever edits files
+          # under client/src or server/, and never anything on its
+          # denylist). Scratch/intermediate JSON files created during this
+          # job (link-report.json, audit-report.json, fixes.json,
+          # pr-body.md) are intentionally left untracked.
+          git add "reports/site-health/${{ steps.reportdate.outputs.date }}/report.md"
+          git add -A -- client/src server
+          git commit -m "Weekly site health report - ${{ steps.reportdate.outputs.date }}
+
+          Automated report from the weekly-site-health workflow.
+          Fixes auto-applied: ${{ steps.report.outputs.fixes_applied }}
+
+          Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+          git push origin "$BRANCH"
+
+      - name: Ensure site-health label exists
+        if: steps.guard.outputs.should_run == 'true'
+        run: gh label create site-health --color "0E8A16" --description "Automated weekly site-health report/fix" 2>/dev/null || true
+
+      - name: Open PR
+        if: steps.guard.outputs.should_run == 'true'
+        id: pr
+        run: |
+          STATUS_LINE="All checks passed"
+          if [ "${{ steps.typecheck.outcome }}" != "success" ] || [ "${{ steps.unittest.outcome }}" != "success" ] || [ "${{ steps.buildstep.outcome }}" != "success" ]; then
+            STATUS_LINE="One or more checks FAILED - see report below"
+          fi
+
+          if [ "${{ steps.report.outputs.fixes_applied }}" != "0" ]; then
+            TITLE="[site-health] ${{ steps.reportdate.outputs.date }}: ${{ steps.report.outputs.fixes_applied }} auto-fix(es) + weekly report"
+          else
+            TITLE="[site-health] ${{ steps.reportdate.outputs.date }}: weekly report (no code changes)"
+          fi
+
+          {
+            echo "**Automated weekly site-health run.** $STATUS_LINE."
+            echo ""
+            echo "This PR was opened automatically by \`.github/workflows/weekly-site-health.yml\`."
+            echo "Auto-merge is controlled by the \`AUTO_MERGE_WEEKLY_FIXES\` repo variable — see docs/CI.md."
+            echo ""
+            echo "---"
+            echo ""
+            cat "${{ steps.report.outputs.path }}"
+          } > pr-body.md
+
+          gh pr create \
+            --base main \
+            --head "${{ steps.branch.outputs.branch }}" \
+            --title "$TITLE" \
+            --body-file pr-body.md \
+            --label site-health
+
+          PR_URL=$(gh pr view "${{ steps.branch.outputs.branch }}" --json url --jq .url)
+          PR_NUMBER=$(gh pr view "${{ steps.branch.outputs.branch }}" --json number --jq .number)
+          echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
+          echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+
+      # -----------------------------------------------------------------
+      # Auto-merge: OFF by default. Only enabled if the repo owner sets
+      # the `AUTO_MERGE_WEEKLY_FIXES` repo *variable* (not secret) to the
+      # literal string "true". Even then, we refuse if any check failed or
+      # if the diff touches anything auth/payments/schema/legal/pricing -
+      # this check runs regardless of the switch, as a hard safety floor.
+      # -----------------------------------------------------------------
+      - name: Evaluate auto-merge eligibility
+        if: steps.guard.outputs.should_run == 'true'
+        id: automerge_check
+        run: |
+          CHECKS_OK="false"
+          if [ "${{ steps.typecheck.outcome }}" = "success" ] && [ "${{ steps.unittest.outcome }}" = "success" ] && [ "${{ steps.buildstep.outcome }}" = "success" ]; then
+            CHECKS_OK="true"
+          fi
+
+          SENSITIVE="false"
+          CHANGED_FILES=$(git diff --name-only main "${{ steps.branch.outputs.branch }}")
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+          if echo "$CHANGED_FILES" | grep -Eq '(^|/)schema\.ts$|^server/routes\.ts$|^server/simpleAuth\.ts$|^server/subscriptionCheck\.ts$|^server/webhookHandlers\.ts$|pages/(terms|privacy|pricing|refund-policy|cookie-policy|notice-at-collection|privacy-request|accessibility|copyright-dmca|exam-disclaimer|electronic-communications)\.tsx$'; then
+            SENSITIVE="true"
+          fi
+
+          ELIGIBLE="false"
+          if [ "$CHECKS_OK" = "true" ] && [ "$SENSITIVE" = "false" ] && [ "${{ vars.AUTO_MERGE_WEEKLY_FIXES }}" = "true" ]; then
+            ELIGIBLE="true"
+          fi
+
+          echo "checks_ok=$CHECKS_OK, sensitive_paths_touched=$SENSITIVE, AUTO_MERGE_WEEKLY_FIXES=${{ vars.AUTO_MERGE_WEEKLY_FIXES }}, eligible=$ELIGIBLE"
+          echo "eligible=$ELIGIBLE" >> "$GITHUB_OUTPUT"
+
+      - name: Enable auto-merge
+        if: steps.guard.outputs.should_run == 'true' && steps.automerge_check.outputs.eligible == 'true'
+        run: |
+          gh pr merge "${{ steps.pr.outputs.number }}" --squash --auto || \
+            echo "Could not enable auto-merge (may require repo setting 'Allow auto-merge' to be turned on). PR remains open for manual review."
+
+      - name: Leave PR for manual review (auto-merge not applicable)
+        if: steps.guard.outputs.should_run == 'true' && steps.automerge_check.outputs.eligible != 'true'
+        run: echo "Auto-merge not applied - PR ${{ steps.pr.outputs.url }} is left open for manual review."
+
+      # -----------------------------------------------------------------
+      # Notification: no-op if NOTIFY_WEBHOOK_URL isn't configured.
+      # Fires when a check failed, or when a PR was opened and is NOT
+      # being auto-merged (i.e. it needs a human to look at it).
+      # -----------------------------------------------------------------
+      - name: Notify webhook (if configured)
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          NOTIFY_WEBHOOK_URL: ${{ secrets.NOTIFY_WEBHOOK_URL }}
+          REPORT_DATE: ${{ steps.reportdate.outputs.date }}
+          PR_URL: ${{ steps.pr.outputs.url }}
+        run: |
+          ANY_CHECK_FAILED="false"
+          if [ "${{ steps.typecheck.outcome }}" != "success" ] || [ "${{ steps.unittest.outcome }}" != "success" ] || [ "${{ steps.buildstep.outcome }}" != "success" ]; then
+            ANY_CHECK_FAILED="true"
+          fi
+          NEEDS_REVIEW="false"
+          if [ "${{ steps.automerge_check.outputs.eligible }}" != "true" ]; then
+            NEEDS_REVIEW="true"
+          fi
+
+          if [ "$ANY_CHECK_FAILED" != "true" ] && [ "$NEEDS_REVIEW" != "true" ]; then
+            echo "Nothing notification-worthy (checks passed and PR was auto-merge-eligible) - skipping."
+            exit 0
+          fi
+
+          ANY_CHECK_FAILED="$ANY_CHECK_FAILED" NEEDS_MANUAL_REVIEW="$NEEDS_REVIEW" node scripts/notify-webhook.mjs
+
+      - name: No-op summary
+        if: steps.guard.outputs.should_run != 'true'
+        run: echo "Guard skipped this run - nothing else to do. See the Guard step log above for why."
+
+      # -----------------------------------------------------------------
+      # Fail the job if any check failed, so it's visually red in the
+      # Actions tab even though downstream reporting/PR steps still ran.
+      # -----------------------------------------------------------------
+      - name: Fail job if checks failed
+        if: steps.guard.outputs.should_run == 'true' && (steps.typecheck.outcome != 'success' || steps.unittest.outcome != 'success' || steps.buildstep.outcome != 'success')
+        run: |
+          echo "One or more checks failed this run (type check: ${{ steps.typecheck.outcome }}, tests: ${{ steps.unittest.outcome }}, build: ${{ steps.buildstep.outcome }}). See the report PR for details: ${{ steps.pr.outputs.url }}"
+          exit 1

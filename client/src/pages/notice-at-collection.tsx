@@ -1,8 +1,15 @@
 import { Link } from "wouter";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { useSEO, buildUrl } from "@/hooks/use-seo";
 
 export default function NoticeAtCollectionPage() {
+  useSEO({
+    title: "Notice at Collection | MyEasyPass",
+    description: "Notice describing the categories of personal information MyEasyPass collects and how it is used, in accordance with applicable privacy law.",
+    canonicalUrl: buildUrl("/notice-at-collection"),
+  });
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />

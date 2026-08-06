@@ -184,6 +184,12 @@ app.post("/api/endpoint", isAuthenticated, async (req: any, res) => {
 - Test user workflows: auth, exams, payments
 - Run with: `npm run test:e2e`
 
+### CI / Automated Site Health
+- Every PR into `main` and every push to `main` runs `.github/workflows/ci.yml` (type check, unit tests, build). No secrets required.
+- A weekly automated check (`.github/workflows/weekly-site-health.yml`) runs checks, a broken-link scan, and `npm audit`, then opens a report PR — auto-merge for its fixes is off by default (`vars.AUTO_MERGE_WEEKLY_FIXES`).
+- Full details, DST-safe scheduling approach, and how to configure `NOTIFY_WEBHOOK_URL` / `AUTO_MERGE_WEEKLY_FIXES`: see [`docs/CI.md`](docs/CI.md).
+- Render auto-deploys from `main` — merging a PR **is** the deployment step.
+
 ## Environment Variables
 
 | Variable | Required | Purpose |

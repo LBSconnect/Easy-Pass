@@ -794,14 +794,22 @@ export async function registerRoutes(
     }
   });
 
-  // Public diagnostic endpoint to see raw Stripe data (read-only, no sensitive info)
-  app.get("/api/stripe/debug", async (req, res) => {
+  // Admin-only diagnostic endpoint to see raw Stripe data. Previously unauthenticated;
+  // restricted to admins because it discloses environment (prod/dev), internal Stripe
+  // product/price IDs, and metadata, and echoed raw Stripe error messages on failure.
+  app.get("/api/stripe/debug", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getProfile(userId);
+      if (profile?.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
       const stripe = await getCachedStripeClient();
       const products = await stripe.products.list({ active: true, limit: 100 });
       const prices = await stripe.prices.list({ active: true, limit: 100, expand: ['data.product'] });
       const isProduction = process.env.NODE_ENV === "production";
-      
+
       res.json({
         environment: isProduction ? 'PRODUCTION' : 'development',
         products: products.data.map(p => ({
@@ -820,6 +828,8 @@ export async function registerRoutes(
         }))
       });
     } catch (error: any) {
+      console.error("Error in stripe debug endpoint:", error);
+      res.status(500).json({ message: "Failed to fetch Stripe diagnostic data" });
       console.error("Error in Stripe debug endpoint:", error);
       res.status(500).json({ error: "Failed to fetch Stripe diagnostic data" });
     }

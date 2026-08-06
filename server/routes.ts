@@ -34,6 +34,58 @@ const checkoutSchema = z.object({
 
 const VALID_PRICE_IDS = new Set<string>();
 
+// Helper to read a Stripe metadata field, handling trailing-space key bugs
+function getMetaField(meta: Record<string, string> | null | undefined, key: string): string | undefined {
+  if (!meta) return undefined;
+  if (meta[key] !== undefined) return meta[key];
+  const found = Object.keys(meta).find(k => k.trim() === key);
+  return found ? meta[found] : undefined;
+}
+
+// Helper: does this product name match a known exam category or bundle?
+function isKnownExamProduct(name: string | null | undefined): boolean {
+  if (!name) return false;
+  const n = name.toLowerCase();
+  return n.includes('real estate') || n.includes('general lines') ||
+         (n.includes('property') && n.includes('casualty')) ||
+         n.includes('life insurance') || n.includes('bundle');
+}
+
+// Determine whether a Stripe price object represents a legitimate, currently-sellable
+// exam subscription price (active + tagged with our subscription metadata, or a recurring
+// price matching a known exam product name as a fallback for untagged legacy prices).
+function isSellableExamPrice(price: { active: boolean; recurring?: unknown; metadata?: Record<string, string> | null; product: any }): boolean {
+  if (!price.active) return false;
+  const product = typeof price.product === "object" && price.product && !("deleted" in price.product) ? price.product : null;
+  if (getMetaField(price.metadata, "subscription_type") || getMetaField(product?.metadata, "subscription_type")) {
+    return true;
+  }
+  return !!price.recurring && isKnownExamProduct(product?.name);
+}
+
+// Validate a client-supplied Stripe price ID against live Stripe data before using it to
+// create a checkout session. Falls back to a live lookup (rather than only trusting the
+// VALID_PRICE_IDS cache, which is only populated as a side effect of GET /api/stripe/prices
+// and would otherwise fail open — accepting any price ID — before that endpoint is first hit,
+// e.g. right after a server restart) so the price actually being charged is always verified
+// server-side against Stripe, never assumed from client input.
+async function isValidCheckoutPriceId(stripe: Awaited<ReturnType<typeof getCachedStripeClient>>, priceId: string): Promise<boolean> {
+  if (VALID_PRICE_IDS.has(priceId)) {
+    return true;
+  }
+  try {
+    const price = await stripe.prices.retrieve(priceId, { expand: ["product"] });
+    if (isSellableExamPrice(price)) {
+      VALID_PRICE_IDS.add(price.id);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error("Error validating price ID:", error);
+    return false;
+  }
+}
+
 async function ensureSubscriptionActive(userId: string, category?: ExamCategory): Promise<{ active: boolean; message?: string }> {
   const profile = await storage.getProfile(userId);
   return checkSubscriptionActive(profile, category);
@@ -780,33 +832,8 @@ export async function registerRoutes(
         limit: 100,
         expand: ["data.product"],
       });
-      // Helper to read a Stripe metadata field, handling trailing-space key bugs
-      const getMetaField = (meta: Record<string, string> | null | undefined, key: string): string | undefined => {
-        if (!meta) return undefined;
-        if (meta[key] !== undefined) return meta[key];
-        const found = Object.keys(meta).find(k => k.trim() === key);
-        return found ? meta[found] : undefined;
-      };
-
-      // Helper: does this product name match a known exam category or bundle?
-      const isKnownExamProduct = (name: string | null | undefined): boolean => {
-        if (!name) return false;
-        const n = name.toLowerCase();
-        return n.includes('real estate') || n.includes('general lines') ||
-               (n.includes('property') && n.includes('casualty')) ||
-               n.includes('life insurance') || n.includes('bundle');
-      };
-
       const formattedPrices = prices.data
-        .filter(p => {
-          const product = typeof p.product === "object" && !('deleted' in p.product) ? p.product : null;
-          // Include if subscription_type metadata is present (handles trailing-space keys)
-          if (getMetaField(p.metadata, 'subscription_type') || getMetaField(product?.metadata, 'subscription_type')) {
-            return true;
-          }
-          // Fallback: include recurring prices for known exam product names even if metadata is absent
-          return !!p.recurring && isKnownExamProduct(product?.name);
-        })
+        .filter(p => isSellableExamPrice(p))
         .map(p => {
           VALID_PRICE_IDS.add(p.id);
           const product = typeof p.product === "object" && !('deleted' in p.product) ? p.product : null;
@@ -862,14 +889,20 @@ export async function registerRoutes(
       }
       
       const { priceId } = parsed.data;
-      
-      if (VALID_PRICE_IDS.size > 0 && !VALID_PRICE_IDS.has(priceId)) {
+
+      const stripe = await getCachedStripeClient();
+
+      // Validate the price ID against live Stripe data (not just the in-memory cache,
+      // which is only warmed by GET /api/stripe/prices and would otherwise fail open
+      // before that endpoint is first hit) so we never create a checkout session for a
+      // price we don't recognize as a legitimate exam subscription price.
+      if (!(await isValidCheckoutPriceId(stripe, priceId))) {
         return res.status(400).json({ message: "Invalid price ID" });
       }
-      
+
       const user = await storage.getUser(userId);
       let profile = await storage.getProfile(userId);
-      
+
       if (!profile) {
         profile = await storage.createProfile({
           userId,
@@ -877,9 +910,7 @@ export async function registerRoutes(
           role: "user",
         });
       }
-      
-      const stripe = await getCachedStripeClient();
-      
+
       let customerId = profile.stripeCustomerId;
       if (!customerId) {
         const customer = await stripe.customers.create({

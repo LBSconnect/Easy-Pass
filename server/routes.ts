@@ -1959,15 +1959,18 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid email address" });
       }
       
-      const { email } = parsed.data;
-      
+      // Emails are stored lowercased (see /api/register); normalize here too
+      // so a reset request with a different-case variant of the stored
+      // address still finds the account instead of silently no-op'ing.
+      const email = parsed.data.email.toLowerCase().trim();
+
       // Additional rate limit by email: 3 requests per hour
-      const emailRateLimit = rateLimit(`forgot-password:email:${email.toLowerCase()}`, 3, 60 * 60 * 1000);
+      const emailRateLimit = rateLimit(`forgot-password:email:${email}`, 3, 60 * 60 * 1000);
       if (!emailRateLimit.allowed) {
         // Still return success to prevent email enumeration
         return res.json({ success: true, message: "If an account exists with this email, a reset link has been sent." });
       }
-      
+
       const user = await storage.getUserByEmail(email);
       
       // Always return success to prevent email enumeration attacks

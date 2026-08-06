@@ -67,7 +67,17 @@ export async function setupAuth(app: Express) {
         return res.status(400).json({ message: "Password must be at least 8 characters" });
       }
 
-      const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      // Normalize once and reuse for both the duplicate check and the insert.
+      // Previously the duplicate check queried the raw, non-normalized email
+      // while the insert lowercased it - a signup with a different-case
+      // variant of an already-registered address (e.g. "Test@Example.com" vs
+      // stored "test@example.com") would slip past the "already registered"
+      // check, hit the DB's unique constraint on insert, and surface as a
+      // generic 500 instead of the normal 400 - a response-based email
+      // enumeration side channel as well as a confusing failure mode.
+      const normalizedEmail = email.toLowerCase().trim();
+
+      const existingUser = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
       if (existingUser.length > 0) {
         return res.status(400).json({ message: "Email already registered" });
       }
@@ -78,7 +88,7 @@ export async function setupAuth(app: Express) {
       const sanitizedLastName = sanitizeHtml(lastName);
 
       const [newUser] = await db.insert(users).values({
-        email: email.toLowerCase().trim(),
+        email: normalizedEmail,
         password: hashedPassword,
         firstName: sanitizedFirstName,
         lastName: sanitizedLastName,
@@ -108,17 +118,21 @@ export async function setupAuth(app: Express) {
       }
 
       const ip = req.ip || req.socket.remoteAddress || "unknown";
-      const rateLimitKey = `login:${ip}:${email?.toLowerCase()}`;
+      const normalizedEmail = email.toLowerCase().trim();
+      const rateLimitKey = `login:${ip}:${normalizedEmail}`;
       const { allowed, resetIn } = rateLimit(rateLimitKey, 5, 15 * 60 * 1000);
-      
+
       if (!allowed) {
         const minutes = Math.ceil(resetIn / 60000);
-        return res.status(429).json({ 
-          message: `Too many login attempts. Please try again in ${minutes} minutes.` 
+        return res.status(429).json({
+          message: `Too many login attempts. Please try again in ${minutes} minutes.`
         });
       }
 
-      const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      // Emails are stored lowercased (see /api/register); match on the same
+      // normalized form here so a login with a different-case variant of the
+      // stored address (e.g. from an email client's autofill) doesn't fail.
+      const [user] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
       if (!user || !user.password) {
         return res.status(401).json({ message: "Invalid email or password" });
       }

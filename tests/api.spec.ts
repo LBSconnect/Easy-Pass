@@ -69,7 +69,7 @@ test.describe('API Security Tests', () => {
         name: '<script>xss</script>Test',
         email: 'test@test.com',
         topic: 'Test Topic <img src=x>',
-        message: '<img onerror=alert(1)>Message'
+        message: '<img onerror=alert(1)>Message that is long enough to pass the minimum length validation on the guest article form.'
       }
     });
     expect(response.ok()).toBe(true);

@@ -51,10 +51,10 @@ import { SiReddit, SiQuora } from "react-icons/si";
 import { useSEO, buildUrl } from "@/hooks/use-seo";
 
 const guestArticleSchema = z.object({
-  name: z.string().min(2, "Name is required"),
-  email: z.string().email("Valid email is required"),
-  topic: z.string().min(1, "Please select a topic"),
-  articleUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
+  name: z.string().min(2, "Name is required").max(100, "Name must be 100 characters or fewer"),
+  email: z.string().email("Valid email is required").max(255, "Email must be 255 characters or fewer"),
+  topic: z.string().min(1, "Please select a topic").max(200),
+  articleUrl: z.string().url("Please enter a valid URL").max(500, "URL must be 500 characters or fewer").optional().or(z.literal("")),
   message: z.string().min(50, "Please write at least 50 characters about your article idea"),
 });
 

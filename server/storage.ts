@@ -145,7 +145,10 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
+    // Case-insensitive lookup: registration always stores emails lowercased,
+    // but older rows or direct DB edits could have mixed case, and callers
+    // (login, forgot-password) don't all normalize their input either.
+    const [user] = await db.select().from(users).where(sql`lower(${users.email}) = lower(${email})`);
     return user;
   }
   

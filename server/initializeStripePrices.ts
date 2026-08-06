@@ -1,7 +1,7 @@
 import { getCachedStripeClient } from './stripeClient';
 import { storage } from './storage';
 
-const REQUIRED_PRICES = [
+export const REQUIRED_PRICES = [
   {
     productName: 'Real Estate Exam',
     category: 'real_estate',

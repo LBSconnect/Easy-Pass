@@ -153,7 +153,7 @@ async function updateUserSubscription(userId: string, subscription: Stripe.Subsc
   console.log(`Updated user ${userId} subscription: ${status}, plan: ${plan}, type: ${subscriptionType}, categories: ${allowedCategories?.join(',')}`);
 }
 
-async function updateSubscriptionByCustomerId(customerId: string, subscription: Stripe.Subscription): Promise<void> {
+export async function updateSubscriptionByCustomerId(customerId: string, subscription: Stripe.Subscription): Promise<void> {
   const allUsers = await storage.getAllUsers();
   const user = allUsers.find(u => u.profile?.stripeCustomerId === customerId);
 

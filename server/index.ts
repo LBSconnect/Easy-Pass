@@ -9,6 +9,7 @@ import { setupAuth } from "./simpleAuth";
 import { getWebhookUrl } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
 import { initializeStripePrices } from "./initializeStripePrices";
+import { scheduleSubscriptionReconciliation } from "./subscriptionReconciliation";
 
 const app = express();
 const httpServer = createServer(app);
@@ -188,6 +189,7 @@ async function initStripe() {
   await setupAuth(app);
 
   await initStripe();
+  scheduleSubscriptionReconciliation();
 
   app.use((req, res, next) => {
     const start = Date.now();

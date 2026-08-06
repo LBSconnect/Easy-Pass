@@ -1288,6 +1288,23 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/analytics", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getProfile(userId);
+
+      if (profile?.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const analytics = await storage.getAdminAnalytics();
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching admin analytics:", error);
+      res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
   app.get("/api/admin/users", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -1311,6 +1328,8 @@ export async function registerRoutes(
         stripeCustomerId: u.profile?.stripeCustomerId,
         stripeSubscriptionId: u.profile?.stripeSubscriptionId,
         createdAt: u.createdAt,
+        examCount: u.examCount,
+        lastExamAt: u.lastExamAt,
       }));
 
       res.json(formatted);

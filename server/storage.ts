@@ -89,14 +89,23 @@ export interface IStorage {
   createPaymentHistory(payment: InsertPaymentHistory): Promise<PaymentHistory>;
   getPaymentHistory(userId: string): Promise<PaymentHistory[]>;
   
-  getAllUsers(): Promise<Array<User & { profile?: UserProfile }>>;
+  getAllUsers(): Promise<Array<User & { profile?: UserProfile; examCount: number; lastExamAt: Date | null }>>;
   getAdminStats(): Promise<{
     totalUsers: number;
     activeSubscriptions: number;
     totalRevenue: number;
     passRate: number;
   }>;
-  
+  getAdminAnalytics(): Promise<{
+    examsByCategory: Array<{ category: string; attempts: number; avgScore: number; passRate: number }>;
+    resultsOverTime: Array<{ date: string; count: number }>;
+    userGrowth: Array<{ date: string; count: number }>;
+    revenueOverTime: Array<{ date: string; amount: number }>;
+    subscriptionsByType: Array<{ type: string; count: number }>;
+    subscriptionsByCategory: Array<{ category: string; count: number }>;
+    topEvents: Array<{ event: string; count: number }>;
+  }>;
+
   createQuestionFeedback(feedback: InsertQuestionFeedback): Promise<QuestionFeedback>;
   getQuestionFeedback(questionId?: string): Promise<QuestionFeedback[]>;
   getAllQuestionFeedback(): Promise<QuestionFeedback[]>;
@@ -334,15 +343,22 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(paymentHistory.createdAt));
   }
 
-  async getAllUsers(): Promise<Array<User & { profile?: UserProfile }>> {
+  async getAllUsers(): Promise<Array<User & { profile?: UserProfile; examCount: number; lastExamAt: Date | null }>> {
     const allUsers = await db.select().from(users);
     const allProfiles = await db.select().from(userProfiles);
+    const allResults = await db.select().from(examResults);
 
     return allUsers.map(user => {
       const profile = allProfiles.find(p => p.userId === user.id);
+      const userResults = allResults.filter(r => r.userId === user.id);
+      const lastExamAt = userResults.length > 0
+        ? new Date(Math.max(...userResults.map(r => new Date(r.completedAt).getTime())))
+        : null;
       return {
         ...user,
         profile: profile || undefined,
+        examCount: userResults.length,
+        lastExamAt,
       };
     });
   }
@@ -375,6 +391,111 @@ export class DatabaseStorage implements IStorage {
       activeSubscriptions: activeProfiles.length,
       totalRevenue: totalRevenue / 100, // Convert cents to dollars
       passRate,
+    };
+  }
+
+  async getAdminAnalytics(): Promise<{
+    examsByCategory: Array<{ category: string; attempts: number; avgScore: number; passRate: number }>;
+    resultsOverTime: Array<{ date: string; count: number }>;
+    userGrowth: Array<{ date: string; count: number }>;
+    revenueOverTime: Array<{ date: string; amount: number }>;
+    subscriptionsByType: Array<{ type: string; count: number }>;
+    subscriptionsByCategory: Array<{ category: string; count: number }>;
+    topEvents: Array<{ event: string; count: number }>;
+  }> {
+    const TREND_DAYS = 30;
+    const since = new Date();
+    since.setDate(since.getDate() - (TREND_DAYS - 1));
+    since.setHours(0, 0, 0, 0);
+
+    const [allResults, allUsers, allPayments, allProfiles, recentEvents] = await Promise.all([
+      db.select().from(examResults),
+      db.select().from(users),
+      db.select().from(paymentHistory),
+      db.select().from(userProfiles),
+      db.select().from(analyticsEvents).where(sql`${analyticsEvents.createdAt} >= ${since}`),
+    ]);
+
+    const categories: ExamCategory[] = ["real_estate", "property_casualty", "life_insurance", "general_lines"];
+
+    const examsByCategory = categories.map((category) => {
+      const results = allResults.filter((r) => r.category === category);
+      const attempts = results.length;
+      const avgScore = attempts > 0 ? Math.round(results.reduce((sum, r) => sum + r.score, 0) / attempts) : 0;
+      const passRate = attempts > 0 ? Math.round((results.filter((r) => r.passed).length / attempts) * 100) : 0;
+      return { category, attempts, avgScore, passRate };
+    });
+
+    // Build a zero-filled date bucket for the last TREND_DAYS days so trend
+    // charts show gaps (days with no activity) instead of skipping them.
+    const dateBuckets: string[] = [];
+    for (let i = 0; i < TREND_DAYS; i++) {
+      const d = new Date(since);
+      d.setDate(d.getDate() + i);
+      dateBuckets.push(d.toISOString().slice(0, 10));
+    }
+    const toDateKey = (value: Date | string) => new Date(value).toISOString().slice(0, 10);
+
+    const resultsCounts: Record<string, number> = Object.fromEntries(dateBuckets.map((d) => [d, 0]));
+    for (const result of allResults) {
+      const key = toDateKey(result.completedAt);
+      if (key in resultsCounts) resultsCounts[key]++;
+    }
+    const resultsOverTime = dateBuckets.map((date) => ({ date, count: resultsCounts[date] }));
+
+    const userGrowthCounts: Record<string, number> = Object.fromEntries(dateBuckets.map((d) => [d, 0]));
+    for (const user of allUsers) {
+      if (!user.createdAt) continue;
+      const key = toDateKey(user.createdAt);
+      if (key in userGrowthCounts) userGrowthCounts[key]++;
+    }
+    const userGrowth = dateBuckets.map((date) => ({ date, count: userGrowthCounts[date] }));
+
+    const revenueCents: Record<string, number> = Object.fromEntries(dateBuckets.map((d) => [d, 0]));
+    for (const payment of allPayments) {
+      if (payment.status !== "succeeded") continue;
+      const key = toDateKey(payment.createdAt);
+      if (key in revenueCents) revenueCents[key] += payment.amount;
+    }
+    const revenueOverTime = dateBuckets.map((date) => ({ date, amount: revenueCents[date] / 100 }));
+
+    const activeProfiles = allProfiles.filter(
+      (p) => p.subscriptionStatus === "active" || p.subscriptionStatus === "trialing"
+    );
+
+    const typeCounts: Record<string, number> = { single: 0, bundle: 0 };
+    for (const profile of activeProfiles) {
+      if (profile.subscriptionType) {
+        typeCounts[profile.subscriptionType] = (typeCounts[profile.subscriptionType] || 0) + 1;
+      }
+    }
+    const subscriptionsByType = Object.entries(typeCounts).map(([type, count]) => ({ type, count }));
+
+    const categoryCounts: Record<string, number> = Object.fromEntries(categories.map((c) => [c, 0]));
+    for (const profile of activeProfiles) {
+      for (const category of profile.allowedCategories || []) {
+        if (category in categoryCounts) categoryCounts[category]++;
+      }
+    }
+    const subscriptionsByCategory = categories.map((category) => ({ category, count: categoryCounts[category] }));
+
+    const eventCounts: Record<string, number> = {};
+    for (const event of recentEvents) {
+      eventCounts[event.event] = (eventCounts[event.event] || 0) + 1;
+    }
+    const topEvents = Object.entries(eventCounts)
+      .map(([event, count]) => ({ event, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    return {
+      examsByCategory,
+      resultsOverTime,
+      userGrowth,
+      revenueOverTime,
+      subscriptionsByType,
+      subscriptionsByCategory,
+      topEvents,
     };
   }
 

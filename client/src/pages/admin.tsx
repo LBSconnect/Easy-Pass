@@ -1,6 +1,23 @@
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -100,6 +117,30 @@ interface AdminStats {
   passRate: number;
 }
 
+interface AdminAnalytics {
+  examsByCategory: Array<{ category: string; attempts: number; avgScore: number; passRate: number }>;
+  resultsOverTime: Array<{ date: string; count: number }>;
+  userGrowth: Array<{ date: string; count: number }>;
+  revenueOverTime: Array<{ date: string; amount: number }>;
+  subscriptionsByType: Array<{ type: string; count: number }>;
+  subscriptionsByCategory: Array<{ category: string; count: number }>;
+  topEvents: Array<{ event: string; count: number }>;
+}
+
+const EVENT_LABELS: Record<string, string> = {
+  diagnostic_cta_click: "Readiness Assessment Started",
+  pricing_cta_click: "Pricing CTA Click",
+  checkout_start: "Checkout Started",
+  bootcamp_cta_click: "Bootcamp CTA Click",
+  employer_inquiry_submit: "Employer Inquiry Submitted",
+  official_exam_schedule_click: "Official Exam Schedule Click",
+  guest_practice_start: "Guest Practice Started",
+  guest_practice_wall_shown: "Guest Sign-Up Wall Shown",
+  guest_practice_signup_click: "Guest Sign-Up Click",
+};
+
+const CHART_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
+
 interface AdminUser {
   id: string;
   email: string;
@@ -113,6 +154,8 @@ interface AdminUser {
   stripeCustomerId: string;
   stripeSubscriptionId: string;
   createdAt: string;
+  examCount: number;
+  lastExamAt: string | null;
 }
 
 const ALL_CATEGORIES: ExamCategory[] = ["real_estate", "property_casualty", "life_insurance", "general_lines"];
@@ -126,6 +169,7 @@ export default function AdminPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [activityFilter, setActivityFilter] = useState<string>("all");
   const [joinedFrom, setJoinedFrom] = useState("");
   const [joinedTo, setJoinedTo] = useState("");
   const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false);
@@ -134,6 +178,10 @@ export default function AdminPage() {
 
   const { data: stats, isLoading: statsLoading } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
+  });
+
+  const { data: analytics, isLoading: analyticsLoading } = useQuery<AdminAnalytics>({
+    queryKey: ["/api/admin/analytics"],
   });
 
   const { data: users, isLoading: usersLoading } = useQuery<AdminUser[]>({
@@ -546,6 +594,7 @@ export default function AdminPage() {
     statusFilter !== "all" ||
     typeFilter !== "all" ||
     categoryFilter !== "all" ||
+    activityFilter !== "all" ||
     joinedFrom !== "" ||
     joinedTo !== "";
 
@@ -555,6 +604,7 @@ export default function AdminPage() {
     setStatusFilter("all");
     setTypeFilter("all");
     setCategoryFilter("all");
+    setActivityFilter("all");
     setJoinedFrom("");
     setJoinedTo("");
   };
@@ -580,17 +630,30 @@ export default function AdminPage() {
       categoryFilter === "all" ||
       (user.allowedCategories || []).includes(categoryFilter);
 
+    const matchesActivity =
+      activityFilter === "all" ||
+      (activityFilter === "none" ? (user.examCount ?? 0) === 0 : (user.examCount ?? 0) > 0);
+
     const joinedDate = new Date(user.createdAt);
     const matchesFrom = joinedFrom === "" || joinedDate >= new Date(joinedFrom);
     const matchesTo = joinedTo === "" || joinedDate <= new Date(`${joinedTo}T23:59:59.999`);
 
-    return matchesSearch && matchesRole && matchesStatus && matchesType && matchesCategory && matchesFrom && matchesTo;
+    return (
+      matchesSearch &&
+      matchesRole &&
+      matchesStatus &&
+      matchesType &&
+      matchesCategory &&
+      matchesActivity &&
+      matchesFrom &&
+      matchesTo
+    );
   });
 
   const exportUsersCsv = () => {
     if (!filteredUsers || filteredUsers.length === 0) return;
 
-    const headers = ["First Name", "Last Name", "Email", "Role", "Subscription Status", "Plan", "Type", "Categories", "Joined"];
+    const headers = ["First Name", "Last Name", "Email", "Role", "Subscription Status", "Plan", "Type", "Categories", "Joined", "Exams Taken", "Last Exam"];
     const escapeCsvField = (value: string) => `"${value.replace(/"/g, '""')}"`;
     const rows = filteredUsers.map((user) => [
       user.firstName || "",
@@ -602,6 +665,8 @@ export default function AdminPage() {
       user.subscriptionType || "",
       (user.allowedCategories || []).join("; "),
       new Date(user.createdAt).toLocaleDateString(),
+      String(user.examCount ?? 0),
+      user.lastExamAt ? new Date(user.lastExamAt).toLocaleDateString() : "Never",
     ].map((field) => escapeCsvField(String(field))));
 
     const csv = [headers.map(escapeCsvField), ...rows].map((row) => row.join(",")).join("\n");
@@ -1100,6 +1165,19 @@ export default function AdminPage() {
                       </Select>
                     </div>
                     <div className="flex flex-col gap-1">
+                      <Label className="text-xs text-muted-foreground">Activity</Label>
+                      <Select value={activityFilter} onValueChange={setActivityFilter}>
+                        <SelectTrigger className="w-[150px]" data-testid="select-filter-activity">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All activity</SelectItem>
+                          <SelectItem value="none">No exams taken</SelectItem>
+                          <SelectItem value="some">Has taken exams</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex flex-col gap-1">
                       <Label className="text-xs text-muted-foreground">Joined from</Label>
                       <Input
                         type="date"
@@ -1152,6 +1230,7 @@ export default function AdminPage() {
                           <TableHead>Subscription</TableHead>
                           <TableHead>Plan/Type</TableHead>
                           <TableHead>Categories</TableHead>
+                          <TableHead>Activity</TableHead>
                           <TableHead>Joined</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
@@ -1203,6 +1282,18 @@ export default function AdminPage() {
                               ) : (
                                 <span className="text-muted-foreground">-</span>
                               )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col gap-0.5">
+                                <span className={user.examCount > 0 ? "" : "text-muted-foreground"}>
+                                  {user.examCount > 0 ? `${user.examCount} exam${user.examCount === 1 ? "" : "s"}` : "No exams"}
+                                </span>
+                                {user.lastExamAt && (
+                                  <span className="text-xs text-muted-foreground">
+                                    Last: {new Date(user.lastExamAt).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell>
                               {new Date(user.createdAt).toLocaleDateString()}
@@ -1413,13 +1504,232 @@ export default function AdminPage() {
                     View detailed performance metrics and insights
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12 text-muted-foreground">
-                    <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Analytics dashboard coming soon</p>
-                  </div>
-                </CardContent>
               </Card>
+
+              {analyticsLoading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-64 w-full" />
+                  ))}
+                </div>
+              ) : analytics ? (
+                <>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Exam Performance by Category</CardTitle>
+                      <CardDescription>
+                        Attempts, average score, and pass rate for each exam category
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-72" data-testid="chart-exams-by-category">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={analytics.examsByCategory.map((c) => ({
+                              ...c,
+                              categoryLabel: c.category.replace("_", " "),
+                            }))}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="categoryLabel" tick={{ fontSize: 12 }} />
+                            <YAxis yAxisId="left" allowDecimals={false} tick={{ fontSize: 12 }} />
+                            <YAxis yAxisId="right" orientation="right" domain={[0, 100]} unit="%" tick={{ fontSize: 12 }} />
+                            <Tooltip />
+                            <Legend />
+                            <Bar yAxisId="left" dataKey="attempts" name="Attempts" fill={CHART_COLORS[0]} radius={[4, 4, 0, 0]} />
+                            <Bar yAxisId="right" dataKey="avgScore" name="Avg Score %" fill={CHART_COLORS[1]} radius={[4, 4, 0, 0]} />
+                            <Bar yAxisId="right" dataKey="passRate" name="Pass Rate %" fill={CHART_COLORS[2]} radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Exam Activity</CardTitle>
+                        <CardDescription>Exams completed per day, last 30 days</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="h-56" data-testid="chart-exam-activity">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={analytics.resultsOverTime}>
+                              <defs>
+                                <linearGradient id="colorResults" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor={CHART_COLORS[0]} stopOpacity={0.4} />
+                                  <stop offset="95%" stopColor={CHART_COLORS[0]} stopOpacity={0} />
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(d) => d.slice(5)} minTickGap={20} />
+                              <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                              <Tooltip labelFormatter={(d) => new Date(d).toLocaleDateString()} />
+                              <Area type="monotone" dataKey="count" name="Exams" stroke={CHART_COLORS[0]} fill="url(#colorResults)" />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">New Signups</CardTitle>
+                        <CardDescription>New accounts created per day, last 30 days</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="h-56" data-testid="chart-user-growth">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={analytics.userGrowth}>
+                              <defs>
+                                <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor={CHART_COLORS[1]} stopOpacity={0.4} />
+                                  <stop offset="95%" stopColor={CHART_COLORS[1]} stopOpacity={0} />
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(d) => d.slice(5)} minTickGap={20} />
+                              <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                              <Tooltip labelFormatter={(d) => new Date(d).toLocaleDateString()} />
+                              <Area type="monotone" dataKey="count" name="Signups" stroke={CHART_COLORS[1]} fill="url(#colorUsers)" />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Revenue</CardTitle>
+                      <CardDescription>Successful payments per day, last 30 days</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-56" data-testid="chart-revenue">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={analytics.revenueOverTime}>
+                            <defs>
+                              <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor={CHART_COLORS[2]} stopOpacity={0.4} />
+                                <stop offset="95%" stopColor={CHART_COLORS[2]} stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(d) => d.slice(5)} minTickGap={20} />
+                            <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${v}`} />
+                            <Tooltip
+                              formatter={(v: number) => [`$${v.toFixed(2)}`, "Revenue"]}
+                              labelFormatter={(d) => new Date(d).toLocaleDateString()}
+                            />
+                            <Area type="monotone" dataKey="amount" name="Revenue" stroke={CHART_COLORS[2]} fill="url(#colorRevenue)" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Active Subscriptions by Type</CardTitle>
+                        <CardDescription>Single-category vs. bundle, among active/trialing users</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {analytics.subscriptionsByType.some((t) => t.count > 0) ? (
+                          <div className="h-56" data-testid="chart-subscriptions-by-type">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={analytics.subscriptionsByType}
+                                  dataKey="count"
+                                  nameKey="type"
+                                  cx="50%"
+                                  cy="50%"
+                                  outerRadius={80}
+                                  label={(entry) => `${entry.type}: ${entry.count}`}
+                                >
+                                  {analytics.subscriptionsByType.map((entry, index) => (
+                                    <Cell key={entry.type} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                                  ))}
+                                </Pie>
+                                <Tooltip />
+                                <Legend />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                        ) : (
+                          <p className="text-center py-12 text-muted-foreground">No active subscriptions yet</p>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Active Subscriptions by Category</CardTitle>
+                        <CardDescription>Active/trialing users with access to each category</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="h-56" data-testid="chart-subscriptions-by-category">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                              data={analytics.subscriptionsByCategory.map((c) => ({
+                                ...c,
+                                categoryLabel: c.category.replace("_", " "),
+                              }))}
+                              layout="vertical"
+                            >
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
+                              <YAxis type="category" dataKey="categoryLabel" width={110} tick={{ fontSize: 12 }} />
+                              <Tooltip />
+                              <Bar dataKey="count" name="Active users" radius={[0, 4, 4, 0]}>
+                                {analytics.subscriptionsByCategory.map((entry, index) => (
+                                  <Cell key={entry.category} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                                ))}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Top Events (Last 30 Days)</CardTitle>
+                      <CardDescription>Marketing and funnel events tracked sitewide</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {analytics.topEvents.length > 0 ? (
+                        <div className="space-y-1" data-testid="list-top-events">
+                          {analytics.topEvents.map((item) => (
+                            <div
+                              key={item.event}
+                              className="flex items-center justify-between py-2 border-b last:border-0"
+                            >
+                              <span className="text-sm">{EVENT_LABELS[item.event] || item.event}</span>
+                              <Badge variant="secondary">{item.count}</Badge>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-center py-8 text-muted-foreground">
+                          No events recorded in the last 30 days
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
+              ) : (
+                <Card>
+                  <CardContent>
+                    <div className="text-center py-12 text-muted-foreground">
+                      <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Unable to load analytics data</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="feedback" className="space-y-4">

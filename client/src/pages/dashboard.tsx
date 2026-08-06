@@ -393,9 +393,9 @@ export default function DashboardPage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2 mb-1">
-                              <h3 className="font-semibold truncate">
+                              <h2 className="font-semibold truncate">
                                 {t(`categories.${category.id}`)}
-                              </h3>
+                              </h2>
                               {bestScore > 0 && (
                                 <Badge variant="secondary" className="shrink-0">
                                   {i18n.language === "es" ? "Mejor" : "Best"}: {bestScore}%
@@ -458,9 +458,9 @@ export default function DashboardPage() {
                       <BookOpen className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold">
+                      <h2 className="font-semibold">
                         {i18n.language === "es" ? "Guía de Estudio" : "Study Guide"}
-                      </h3>
+                      </h2>
                       <p className="text-sm text-muted-foreground">
                         {i18n.language === "es" 
                           ? "Aprende a tu ritmo con cuestionarios por tema" 

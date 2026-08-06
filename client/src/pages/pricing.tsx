@@ -262,11 +262,11 @@ export default function PricingPage() {
                   ) : (
                     <div className="space-y-6">
                       <div>
-                        <h4 className="font-medium mb-2">
-                          {selectionState.type === 'bundle' 
+                        <h2 className="font-medium mb-2">
+                          {selectionState.type === 'bundle'
                             ? (isSpanish ? 'Paquete de Seguro + Bienes Raíces' : 'Insurance + Real Estate Bundle')
                             : (isSpanish ? 'Suscripción Individual' : 'Single Category Subscription')}
-                        </h4>
+                        </h2>
                         <ul className="space-y-2">
                           {(selectionState.type === 'bundle' ? EXAM_CATEGORIES : EXAM_CATEGORIES.filter(c => selectedCategories.includes(c.id))).map(category => (
                             <li key={category.id} className="flex items-center gap-2 text-sm">
@@ -315,9 +315,9 @@ export default function PricingPage() {
                     <div className="flex items-center gap-4">
                       <Package className="h-10 w-10 text-primary" />
                       <div>
-                        <h3 className="font-semibold">
+                        <h2 className="font-semibold">
                           {isSpanish ? 'Paquete Completo: Seguro + Bienes Raíces' : 'Complete Bundle: Insurance + Real Estate'}
-                        </h3>
+                        </h2>
                         <p className="text-sm text-muted-foreground">
                           {isSpanish 
                             ? 'Acceso a las 4 categorías de exámenes por un precio especial'

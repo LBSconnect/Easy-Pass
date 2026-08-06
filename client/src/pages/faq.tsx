@@ -345,7 +345,7 @@ export default function FAQPage() {
                 {submittedSuccessfully ? (
                   <div className="text-center py-8">
                     <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">{t("faq.guestPost.successTitle")}</h3>
+                    <h2 className="text-lg font-semibold mb-2">{t("faq.guestPost.successTitle")}</h2>
                     <p className="text-muted-foreground">{t("faq.guestPost.successMessage")}</p>
                     <Button 
                       className="mt-4" 

@@ -122,6 +122,12 @@ export default function AdminPage() {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [joinedFrom, setJoinedFrom] = useState("");
+  const [joinedTo, setJoinedTo] = useState("");
   const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ExamCategory | "all">("all");
@@ -534,12 +540,52 @@ export default function AdminPage() {
     setIsQuestionDialogOpen(true);
   };
 
-  const filteredUsers = users?.filter(
-    (user) =>
+  const hasActiveUserFilters =
+    searchQuery !== "" ||
+    roleFilter !== "all" ||
+    statusFilter !== "all" ||
+    typeFilter !== "all" ||
+    categoryFilter !== "all" ||
+    joinedFrom !== "" ||
+    joinedTo !== "";
+
+  const clearUserFilters = () => {
+    setSearchQuery("");
+    setRoleFilter("all");
+    setStatusFilter("all");
+    setTypeFilter("all");
+    setCategoryFilter("all");
+    setJoinedFrom("");
+    setJoinedTo("");
+  };
+
+  const filteredUsers = users?.filter((user) => {
+    const matchesSearch =
+      searchQuery === "" ||
       user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.lastName?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      user.lastName?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesRole = roleFilter === "all" || (user.role || "user") === roleFilter;
+
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "none" ? !user.subscriptionStatus : user.subscriptionStatus === statusFilter);
+
+    const matchesType =
+      typeFilter === "all" ||
+      (typeFilter === "none" ? !user.subscriptionType : user.subscriptionType === typeFilter);
+
+    const matchesCategory =
+      categoryFilter === "all" ||
+      (user.allowedCategories || []).includes(categoryFilter);
+
+    const joinedDate = new Date(user.createdAt);
+    const matchesFrom = joinedFrom === "" || joinedDate >= new Date(joinedFrom);
+    const matchesTo = joinedTo === "" || joinedDate <= new Date(`${joinedTo}T23:59:59.999`);
+
+    return matchesSearch && matchesRole && matchesStatus && matchesType && matchesCategory && matchesFrom && matchesTo;
+  });
 
   const exportUsersCsv = () => {
     if (!filteredUsers || filteredUsers.length === 0) return;
@@ -993,6 +1039,103 @@ export default function AdminPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
+                  <div className="flex flex-wrap items-end gap-3 mb-4">
+                    <div className="flex flex-col gap-1">
+                      <Label className="text-xs text-muted-foreground">Role</Label>
+                      <Select value={roleFilter} onValueChange={setRoleFilter}>
+                        <SelectTrigger className="w-[130px]" data-testid="select-filter-role">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All roles</SelectItem>
+                          <SelectItem value="user">User</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <Label className="text-xs text-muted-foreground">Subscription</Label>
+                      <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="w-[150px]" data-testid="select-filter-status">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All statuses</SelectItem>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="trialing">Trialing</SelectItem>
+                          <SelectItem value="past_due">Past due</SelectItem>
+                          <SelectItem value="canceled">Canceled</SelectItem>
+                          <SelectItem value="none">None</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <Label className="text-xs text-muted-foreground">Type</Label>
+                      <Select value={typeFilter} onValueChange={setTypeFilter}>
+                        <SelectTrigger className="w-[130px]" data-testid="select-filter-type">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All types</SelectItem>
+                          <SelectItem value="single">Single</SelectItem>
+                          <SelectItem value="bundle">Bundle</SelectItem>
+                          <SelectItem value="none">None</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <Label className="text-xs text-muted-foreground">Category</Label>
+                      <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                        <SelectTrigger className="w-[170px]" data-testid="select-filter-category">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All categories</SelectItem>
+                          {ALL_CATEGORIES.map((category) => (
+                            <SelectItem key={category} value={category} className="capitalize">
+                              {category.replace("_", " ")}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <Label className="text-xs text-muted-foreground">Joined from</Label>
+                      <Input
+                        type="date"
+                        value={joinedFrom}
+                        onChange={(e) => setJoinedFrom(e.target.value)}
+                        className="w-[150px]"
+                        data-testid="input-filter-joined-from"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <Label className="text-xs text-muted-foreground">Joined to</Label>
+                      <Input
+                        type="date"
+                        value={joinedTo}
+                        onChange={(e) => setJoinedTo(e.target.value)}
+                        className="w-[150px]"
+                        data-testid="input-filter-joined-to"
+                      />
+                    </div>
+                    {hasActiveUserFilters && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={clearUserFilters}
+                        data-testid="button-clear-user-filters"
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Clear filters
+                      </Button>
+                    )}
+                  </div>
+                  {!usersLoading && (
+                    <p className="text-sm text-muted-foreground mb-3" data-testid="text-user-filter-count">
+                      Showing {filteredUsers?.length ?? 0} of {users?.length ?? 0} users
+                    </p>
+                  )}
                   {usersLoading ? (
                     <div className="space-y-4">
                       {[1, 2, 3].map((i) => (

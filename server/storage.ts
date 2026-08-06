@@ -88,6 +88,7 @@ export interface IStorage {
 
   createPaymentHistory(payment: InsertPaymentHistory): Promise<PaymentHistory>;
   getPaymentHistory(userId: string): Promise<PaymentHistory[]>;
+  getPaymentByStripeId(stripePaymentId: string): Promise<PaymentHistory | undefined>;
   
   getAllUsers(): Promise<Array<User & { profile?: UserProfile; examCount: number; lastExamAt: Date | null }>>;
   getAdminStats(): Promise<{
@@ -341,6 +342,18 @@ export class DatabaseStorage implements IStorage {
       .from(paymentHistory)
       .where(eq(paymentHistory.userId, userId))
       .orderBy(desc(paymentHistory.createdAt));
+  }
+
+  // Used to make webhook-driven payment recording idempotent: Stripe can
+  // redeliver the same event (or we can receive both invoice.paid and a
+  // later reconciliation pass) referencing the same payment/invoice, and
+  // this lookup lets callers skip re-inserting a row they already have.
+  async getPaymentByStripeId(stripePaymentId: string): Promise<PaymentHistory | undefined> {
+    const [payment] = await db
+      .select()
+      .from(paymentHistory)
+      .where(eq(paymentHistory.stripePaymentId, stripePaymentId));
+    return payment;
   }
 
   async getAllUsers(): Promise<Array<User & { profile?: UserProfile; examCount: number; lastExamAt: Date | null }>> {

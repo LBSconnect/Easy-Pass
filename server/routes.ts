@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { isAuthenticated } from "./simpleAuth";
 import { getCachedStripeClient } from "./stripeClient";
-import { initializeStripePrices } from "./initializeStripePrices";
+import { initializeStripePrices, REQUIRED_PRICES } from "./initializeStripePrices";
 import { sendPasswordResetEmail } from "./resendClient";
 import { rateLimit, getClientIp } from "./rateLimit";
 import crypto from "crypto";
@@ -1070,14 +1070,16 @@ export async function registerRoutes(
         };
       });
       
-      // Determine what's missing
-      const requiredPrices = [
-        { product: 'Real Estate Exam', category: 'real_estate', prices: [{ amount: 699, interval: 'week' }, { amount: 1999, interval: 'month' }] },
-        { product: 'Property & Casualty Exam', category: 'property_casualty', prices: [{ amount: 699, interval: 'week' }, { amount: 1999, interval: 'month' }] },
-        { product: 'Life Insurance Exam', category: 'life_insurance', prices: [{ amount: 699, interval: 'week' }, { amount: 1999, interval: 'month' }] },
-        { product: 'General Lines Exam', category: 'general_lines', prices: [{ amount: 699, interval: 'week' }, { amount: 1999, interval: 'month' }] },
-        { product: 'Bundle', category: 'bundle', prices: [{ amount: 1299, interval: 'week' }, { amount: 3499, interval: 'month' }] }
-      ];
+      // Determine what's missing. Derived from the same REQUIRED_PRICES used to
+      // actually create prices in Stripe (initializeStripePrices.ts) - this used
+      // to be a separately hardcoded, stale list that still included weekly
+      // prices ($6.99/week per category, $12.99/week bundle) that are no longer
+      // offered in Stripe or on the site, so it always reported them "missing".
+      const requiredPrices = REQUIRED_PRICES.map(config => ({
+        product: config.productName,
+        category: config.category,
+        prices: config.prices.map(p => ({ amount: p.amount, interval: p.interval })),
+      }));
       
       const missing: string[] = [];
       for (const req of requiredPrices) {
@@ -1135,13 +1137,15 @@ export async function registerRoutes(
       
       const results: string[] = [];
       
-      const REQUIRED = [
-        { name: 'Real Estate Exam', category: 'real_estate', isBundle: false, prices: [{ amount: 699, interval: 'week' as const }, { amount: 1999, interval: 'month' as const }] },
-        { name: 'Property & Casualty Exam', category: 'property_casualty', isBundle: false, prices: [{ amount: 699, interval: 'week' as const }, { amount: 1999, interval: 'month' as const }] },
-        { name: 'Life Insurance Exam', category: 'life_insurance', isBundle: false, prices: [{ amount: 699, interval: 'week' as const }, { amount: 1999, interval: 'month' as const }] },
-        { name: 'General Lines Exam', category: 'general_lines', isBundle: false, prices: [{ amount: 699, interval: 'week' as const }, { amount: 1999, interval: 'month' as const }] },
-        { name: 'Bundle', category: 'bundle', isBundle: true, prices: [{ amount: 1299, interval: 'week' as const }, { amount: 3499, interval: 'month' as const }] }
-      ];
+      // Same REQUIRED_PRICES source used by initializeStripePrices.ts - see the
+      // comment in the diagnostic endpoint above for why this is no longer a
+      // separately hardcoded (and stale) list.
+      const REQUIRED = REQUIRED_PRICES.map(config => ({
+        name: config.productName,
+        category: config.category,
+        isBundle: !!config.isBundle,
+        prices: config.prices.map(p => ({ amount: p.amount, interval: p.interval, billingPeriod: p.billingPeriod })),
+      }));
       
       // Get existing products/prices
       const existingProducts = await stripe.products.list({ active: true, limit: 100 });
@@ -1192,7 +1196,7 @@ export async function registerRoutes(
                 metadata: {
                   subscription_type: config.isBundle ? 'bundle' : 'single',
                   allowed_categories: config.isBundle ? 'real_estate,property_casualty,life_insurance,general_lines' : config.category,
-                  billing_period: priceConfig.interval === 'week' ? 'weekly' : 'monthly'
+                  billing_period: priceConfig.billingPeriod
                 }
               });
               results.push(`Created price: ${config.name} $${priceConfig.amount / 100}/${priceConfig.interval} (${price.id})`);

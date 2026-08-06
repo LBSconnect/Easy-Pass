@@ -75,19 +75,6 @@ const resources = {
       pricing: {
         title: "Simple, Transparent Pricing",
         subtitle: "Choose the plan that works for you",
-        weekly: {
-          name: "Weekly",
-          price: "$6.99",
-          period: "/week",
-          features: ["Access to all exam categories", "Unlimited practice tests", "Detailed explanations", "Progress tracking", "Bilingual support"],
-        },
-        monthly: {
-          name: "Monthly",
-          price: "$19.99",
-          period: "/month",
-          savings: "Save 28%",
-          features: ["Everything in Weekly", "Best value for serious students", "Priority support", "Performance analytics"],
-        },
         subscribe: "Subscribe Now",
         cancelAnytime: "Cancel anytime",
       },
@@ -462,19 +449,6 @@ const resources = {
       pricing: {
         title: "Precios Simples y Transparentes",
         subtitle: "Elige el plan que mejor te funcione",
-        weekly: {
-          name: "Semanal",
-          price: "$6.99",
-          period: "/semana",
-          features: ["Acceso a todas las categorías", "Exámenes de práctica ilimitados", "Explicaciones detalladas", "Seguimiento de progreso", "Soporte bilingüe"],
-        },
-        monthly: {
-          name: "Mensual",
-          price: "$19.99",
-          period: "/mes",
-          savings: "Ahorra 28%",
-          features: ["Todo lo del plan Semanal", "Mejor valor para estudiantes dedicados", "Soporte prioritario", "Análisis de rendimiento"],
-        },
         subscribe: "Suscribirse Ahora",
         cancelAnytime: "Cancela en cualquier momento",
       },

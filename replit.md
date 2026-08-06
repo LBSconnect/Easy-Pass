@@ -27,13 +27,13 @@ The application follows a subscription-based model with category-specific pricin
 ### New Category-Based Subscription Model
 - **Business Rule**: Customers can subscribe to only ONE exam category per subscription, OR choose the "Insurance + Real Estate" bundle for all 4 categories
 - **Subscription Types**:
-  - `single`: Access to one specific exam category ($6.99/week or $19.99/month)
-  - `bundle`: Access to all 4 exam categories ($12.99/week or $34.99/month)
+  - `single`: Access to one specific exam category ($19.99/month)
+  - `bundle`: Access to all 4 exam categories ($34.99/month)
 - **Database Fields**: Added `subscriptionType` and `allowedCategories` to user_profiles
 - **Pricing Page**: Category checkboxes with validation logic that enforces single-category or bundle selection
 - **Exam Access**: Category-based enforcement - users can only access exams for categories in their subscription
 - **Migration**: scripts/backfillAllowedCategories.ts for existing subscribers
-- **Stripe Products**: 5 products created (4 single-category + 1 bundle), each with weekly/monthly prices
+- **Stripe Products**: 5 products created (4 single-category + 1 bundle), monthly billing only. (Weekly prices existed briefly in an earlier design and have since been deactivated - `initializeStripePrices.ts` now deactivates any weekly price it finds on startup.)
 
 ### Previous Updates
 - Completed full application implementation including frontend and backend

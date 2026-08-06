@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -46,6 +48,7 @@ import {
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Users,
@@ -69,6 +72,11 @@ import {
   CreditCard,
   AlertTriangle,
   Wrench,
+  ShieldCheck,
+  ShieldOff,
+  UserMinus,
+  UserX,
+  Download,
 } from "lucide-react";
 import type { Question, ExamCategory, QuestionFeedback } from "@shared/schema";
 
@@ -97,6 +105,7 @@ interface AdminUser {
   email: string;
   firstName: string;
   lastName: string;
+  role: string;
   subscriptionStatus: string;
   subscriptionPlan: string;
   subscriptionType: string;
@@ -106,9 +115,12 @@ interface AdminUser {
   createdAt: string;
 }
 
+const ALL_CATEGORIES: ExamCategory[] = ["real_estate", "property_casualty", "life_insurance", "general_lines"];
+
 export default function AdminPage() {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
@@ -256,6 +268,102 @@ export default function AdminPage() {
         description: error.message,
         variant: "destructive",
       });
+    },
+  });
+
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ userId, role }: { userId: string; role: "user" | "admin" }) => {
+      const res = await fetch(`/api/admin/users/${userId}/role`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ role }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        throw new Error(body.message || "Failed to update role");
+      }
+      return body;
+    },
+    onSuccess: (data) => {
+      toast({ title: t("common.success"), description: data.message });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const [grantAccessUser, setGrantAccessUser] = useState<AdminUser | null>(null);
+  const [grantCategories, setGrantCategories] = useState<ExamCategory[]>([]);
+  const [grantExpiryDays, setGrantExpiryDays] = useState("");
+
+  const grantAccessMutation = useMutation({
+    mutationFn: async ({ userId, categories, expiresInDays }: { userId: string; categories: ExamCategory[]; expiresInDays?: number }) => {
+      const res = await fetch(`/api/admin/users/${userId}/comp-access`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ categories, expiresInDays }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        throw new Error(body.message || "Failed to grant access");
+      }
+      return body;
+    },
+    onSuccess: (data) => {
+      toast({ title: t("common.success"), description: data.message });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      setGrantAccessUser(null);
+      setGrantCategories([]);
+      setGrantExpiryDays("");
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const revokeAccessMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await fetch(`/api/admin/users/${userId}/revoke-access`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        throw new Error(body.message || "Failed to revoke access");
+      }
+      return body;
+    },
+    onSuccess: (data) => {
+      toast({ title: t("common.success"), description: data.message });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        throw new Error(body.message || "Failed to delete account");
+      }
+      return body;
+    },
+    onSuccess: (data) => {
+      toast({ title: t("common.success"), description: data.message });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
@@ -432,6 +540,35 @@ export default function AdminPage() {
       user.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.lastName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const exportUsersCsv = () => {
+    if (!filteredUsers || filteredUsers.length === 0) return;
+
+    const headers = ["First Name", "Last Name", "Email", "Role", "Subscription Status", "Plan", "Type", "Categories", "Joined"];
+    const escapeCsvField = (value: string) => `"${value.replace(/"/g, '""')}"`;
+    const rows = filteredUsers.map((user) => [
+      user.firstName || "",
+      user.lastName || "",
+      user.email || "",
+      user.role || "user",
+      user.subscriptionStatus || "",
+      user.subscriptionPlan || "",
+      user.subscriptionType || "",
+      (user.allowedCategories || []).join("; "),
+      new Date(user.createdAt).toLocaleDateString(),
+    ].map((field) => escapeCsvField(String(field))));
+
+    const csv = [headers.map(escapeCsvField), ...rows].map((row) => row.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `myeasypass-users-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   const filteredQuestions = questions?.filter(
     (q) => selectedCategory === "all" || q.category === selectedCategory
@@ -830,15 +967,28 @@ export default function AdminPage() {
                         View and manage user accounts
                       </CardDescription>
                     </div>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder={t("admin.searchUsers")}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-9 w-[250px]"
-                        data-testid="input-search-users"
-                      />
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder={t("admin.searchUsers")}
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-9 w-[250px]"
+                          data-testid="input-search-users"
+                        />
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={exportUsersCsv}
+                        disabled={!filteredUsers || filteredUsers.length === 0}
+                        title="Export visible users to CSV"
+                        data-testid="button-export-users-csv"
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Export CSV
+                      </Button>
                     </div>
                   </div>
                 </CardHeader>
@@ -855,6 +1005,7 @@ export default function AdminPage() {
                         <TableRow>
                           <TableHead>User</TableHead>
                           <TableHead>Email</TableHead>
+                          <TableHead>Role</TableHead>
                           <TableHead>Subscription</TableHead>
                           <TableHead>Plan/Type</TableHead>
                           <TableHead>Categories</TableHead>
@@ -869,6 +1020,11 @@ export default function AdminPage() {
                               {user.firstName} {user.lastName}
                             </TableCell>
                             <TableCell>{user.email}</TableCell>
+                            <TableCell>
+                              <Badge variant={user.role === "admin" ? "default" : "secondary"}>
+                                {user.role || "user"}
+                              </Badge>
+                            </TableCell>
                             <TableCell>
                               <Badge
                                 variant={
@@ -948,6 +1104,81 @@ export default function AdminPage() {
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    const nextRole = user.role === "admin" ? "user" : "admin";
+                                    if (
+                                      window.confirm(
+                                        `${nextRole === "admin" ? "Grant" : "Remove"} admin access ${
+                                          nextRole === "admin" ? "to" : "from"
+                                        } ${user.email}?`
+                                      )
+                                    ) {
+                                      updateRoleMutation.mutate({ userId: user.id, role: nextRole });
+                                    }
+                                  }}
+                                  disabled={updateRoleMutation.isPending || user.id === currentUser?.id}
+                                  title={user.role === "admin" ? "Remove admin access" : "Make admin"}
+                                  data-testid={`button-toggle-role-${user.id}`}
+                                >
+                                  {user.role === "admin" ? (
+                                    <ShieldOff className="h-4 w-4" />
+                                  ) : (
+                                    <ShieldCheck className="h-4 w-4" />
+                                  )}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setGrantAccessUser(user);
+                                    setGrantCategories(user.allowedCategories && user.allowedCategories.length > 0 ? [...user.allowedCategories] as ExamCategory[] : []);
+                                    setGrantExpiryDays("");
+                                  }}
+                                  title="Grant complimentary access"
+                                  data-testid={`button-grant-access-${user.id}`}
+                                >
+                                  <ShieldCheck className="h-4 w-4 mr-1" />
+                                  Grant
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    if (
+                                      window.confirm(
+                                        `Revoke ${user.email}'s access? This sets their subscription status to canceled and clears allowed categories.`
+                                      )
+                                    ) {
+                                      revokeAccessMutation.mutate(user.id);
+                                    }
+                                  }}
+                                  disabled={revokeAccessMutation.isPending}
+                                  title="Revoke access"
+                                  data-testid={`button-revoke-access-${user.id}`}
+                                >
+                                  <UserX className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => {
+                                    if (
+                                      window.confirm(
+                                        `Permanently delete the account for ${user.email}? This removes their profile, exam sessions, results, study progress, certificates, and feedback. Payment and subscription records are retained for accounting purposes. This cannot be undone.`
+                                      )
+                                    ) {
+                                      deleteAccountMutation.mutate(user.id);
+                                    }
+                                  }}
+                                  disabled={deleteAccountMutation.isPending || user.id === currentUser?.id}
+                                  title="Delete account"
+                                  data-testid={`button-delete-account-${user.id}`}
+                                >
+                                  <UserMinus className="h-4 w-4" />
+                                </Button>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -961,6 +1192,74 @@ export default function AdminPage() {
                   )}
                 </CardContent>
               </Card>
+
+              <Dialog open={!!grantAccessUser} onOpenChange={(open) => !open && setGrantAccessUser(null)}>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Grant Complimentary Access</DialogTitle>
+                    <DialogDescription>
+                      {grantAccessUser
+                        ? `Grant ${grantAccessUser.email} access without a Stripe subscription. This will not be affected by the daily subscription sync.`
+                        : ""}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-2">
+                    <div className="space-y-2">
+                      <Label>Categories</Label>
+                      <div className="space-y-2">
+                        {ALL_CATEGORIES.map((category) => (
+                          <div key={category} className="flex items-center gap-2">
+                            <Checkbox
+                              id={`grant-category-${category}`}
+                              checked={grantCategories.includes(category)}
+                              onCheckedChange={(checked) => {
+                                setGrantCategories((prev) =>
+                                  checked
+                                    ? [...prev, category]
+                                    : prev.filter((c) => c !== category)
+                                );
+                              }}
+                            />
+                            <Label htmlFor={`grant-category-${category}`} className="capitalize font-normal">
+                              {category.replace("_", " ")}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="grant-expiry-days">Expires in (days, optional)</Label>
+                      <Input
+                        id="grant-expiry-days"
+                        type="number"
+                        min="1"
+                        placeholder="Leave blank for no expiration"
+                        value={grantExpiryDays}
+                        onChange={(e) => setGrantExpiryDays(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setGrantAccessUser(null)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        if (!grantAccessUser || grantCategories.length === 0) return;
+                        grantAccessMutation.mutate({
+                          userId: grantAccessUser.id,
+                          categories: grantCategories,
+                          expiresInDays: grantExpiryDays ? parseInt(grantExpiryDays, 10) : undefined,
+                        });
+                      }}
+                      disabled={grantCategories.length === 0 || grantAccessMutation.isPending}
+                      data-testid="button-confirm-grant-access"
+                    >
+                      Grant Access
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </TabsContent>
 
             <TabsContent value="analytics" className="space-y-4">

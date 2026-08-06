@@ -76,7 +76,16 @@ export interface IStorage {
     studyProgress: number;
     examCertificates: number;
   }>;
-  
+  deleteUserAccount(userId: string): Promise<{
+    examSessions: number;
+    examResults: number;
+    studyProgress: number;
+    examCertificates: number;
+    questionFeedback: number;
+    userProfile: boolean;
+    user: boolean;
+  }>;
+
   createPaymentHistory(payment: InsertPaymentHistory): Promise<PaymentHistory>;
   getPaymentHistory(userId: string): Promise<PaymentHistory[]>;
   
@@ -274,6 +283,41 @@ export class DatabaseStorage implements IStorage {
       examResults: deletedResults.length,
       studyProgress: deletedProgress.length,
       examCertificates: deletedCertificates.length,
+    };
+  }
+
+  // Deletes a user's account and all associated app-activity data (exam
+  // sessions/results, study progress, certificates, feedback, profile).
+  // Deliberately does NOT touch paymentHistory or subscriptions - those are
+  // retained for accounting/legal purposes per the Records Retention
+  // Schedule, matching the "we may deny or limit a deletion request where
+  // we must retain the information" carve-out in the Privacy Policy.
+  async deleteUserAccount(userId: string): Promise<{
+    examSessions: number;
+    examResults: number;
+    studyProgress: number;
+    examCertificates: number;
+    questionFeedback: number;
+    userProfile: boolean;
+    user: boolean;
+  }> {
+    const deletedSessions = await db.delete(examSessions).where(eq(examSessions.userId, userId)).returning();
+    const deletedResults = await db.delete(examResults).where(eq(examResults.userId, userId)).returning();
+    const deletedProgress = await db.delete(studyProgress).where(eq(studyProgress.userId, userId)).returning();
+    const deletedCertificates = await db.delete(examCertificates).where(eq(examCertificates.userId, userId)).returning();
+    const deletedFeedback = await db.delete(questionFeedback).where(eq(questionFeedback.userId, userId)).returning();
+    await db.update(diagnosticAttempts).set({ userId: null }).where(eq(diagnosticAttempts.userId, userId));
+    const deletedProfile = await db.delete(userProfiles).where(eq(userProfiles.userId, userId)).returning();
+    const deletedUser = await db.delete(users).where(eq(users.id, userId)).returning();
+
+    return {
+      examSessions: deletedSessions.length,
+      examResults: deletedResults.length,
+      studyProgress: deletedProgress.length,
+      examCertificates: deletedCertificates.length,
+      questionFeedback: deletedFeedback.length,
+      userProfile: deletedProfile.length > 0,
+      user: deletedUser.length > 0,
     };
   }
 

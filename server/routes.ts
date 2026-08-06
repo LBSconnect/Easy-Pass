@@ -1247,6 +1247,7 @@ export async function registerRoutes(
         email: u.email,
         firstName: u.firstName,
         lastName: u.lastName,
+        role: u.profile?.role || "user",
         subscriptionStatus: u.profile?.subscriptionStatus,
         subscriptionPlan: u.profile?.subscriptionPlan,
         subscriptionType: u.profile?.subscriptionType,
@@ -1408,6 +1409,172 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Error syncing user subscription:", error);
       res.status(500).json({ message: "Failed to sync subscription", error: error.message });
+    }
+  });
+
+  // Promote or demote a user's admin role.
+  app.patch("/api/admin/users/:userId/role", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminUserId = req.user.claims.sub;
+      const adminProfile = await storage.getProfile(adminUserId);
+
+      if (adminProfile?.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const { userId } = req.params;
+      const roleSchema = z.object({ role: z.enum(["user", "admin"]) });
+      const validated = roleSchema.safeParse(req.body);
+      if (!validated.success) {
+        return res.status(400).json({ message: "Invalid role", errors: validated.error.errors });
+      }
+
+      if (userId === adminUserId && validated.data.role === "user") {
+        return res.status(400).json({ message: "You cannot remove your own admin access" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      let profile = await storage.getProfile(userId);
+      if (!profile) {
+        profile = await storage.createProfile({ userId, preferredLanguage: "en", role: "user" });
+      }
+
+      const updated = await storage.updateProfile(userId, { role: validated.data.role });
+
+      res.json({ message: `${user.email} is now ${validated.data.role === "admin" ? "an admin" : "a regular user"}`, role: updated?.role });
+    } catch (error: any) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ message: "Failed to update role", error: error.message });
+    }
+  });
+
+  // Manually grant a user access without a real Stripe subscription - for
+  // comp access, customer-service goodwill, promotions, etc. Deliberately
+  // never sets stripeSubscriptionId, so the daily subscription reconciliation
+  // job (subscriptionReconciliation.ts) knows to leave this grant alone.
+  app.post("/api/admin/users/:userId/comp-access", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminUserId = req.user.claims.sub;
+      const adminProfile = await storage.getProfile(adminUserId);
+
+      if (adminProfile?.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const { userId } = req.params;
+      const compAccessSchema = z.object({
+        categories: z.array(z.enum(examCategoryEnum.enumValues)).min(1),
+        expiresInDays: z.number().int().positive().optional(),
+      });
+      const validated = compAccessSchema.safeParse(req.body);
+      if (!validated.success) {
+        return res.status(400).json({ message: "Invalid request", errors: validated.error.errors });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      let profile = await storage.getProfile(userId);
+      if (!profile) {
+        profile = await storage.createProfile({ userId, preferredLanguage: "en", role: "user" });
+      }
+
+      const { categories, expiresInDays } = validated.data;
+      const subscriptionType = categories.length >= 4 ? "bundle" : "single";
+      const subscriptionEndDate = expiresInDays
+        ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
+        : undefined;
+
+      await storage.updateProfile(userId, {
+        subscriptionStatus: "active",
+        subscriptionType,
+        allowedCategories: categories,
+        subscriptionEndDate,
+      });
+
+      console.log(`[Admin] ${adminUserId} granted comp access to ${userId}: categories=${categories.join(",")}, expires=${subscriptionEndDate?.toISOString() || "never"}`);
+
+      res.json({
+        message: `Granted access to ${user.email}`,
+        categories,
+        subscriptionEndDate,
+      });
+    } catch (error: any) {
+      console.error("Error granting comp access:", error);
+      res.status(500).json({ message: "Failed to grant access", error: error.message });
+    }
+  });
+
+  // Manually revoke a user's access (comp grant or otherwise) without
+  // touching their Stripe subscription. Distinct from sync-user-subscription,
+  // which pulls real data from Stripe - this is an admin override.
+  app.post("/api/admin/users/:userId/revoke-access", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminUserId = req.user.claims.sub;
+      const adminProfile = await storage.getProfile(adminUserId);
+
+      if (adminProfile?.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const { userId } = req.params;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      await storage.updateProfile(userId, {
+        subscriptionStatus: "canceled",
+        allowedCategories: undefined,
+      });
+
+      console.log(`[Admin] ${adminUserId} revoked access for ${userId}`);
+
+      res.json({ message: `Revoked access for ${user.email}` });
+    } catch (error: any) {
+      console.error("Error revoking access:", error);
+      res.status(500).json({ message: "Failed to revoke access", error: error.message });
+    }
+  });
+
+  // Permanently delete a user's account and app-activity data. Payment and
+  // subscription records are retained (see storage.deleteUserAccount for why).
+  app.delete("/api/admin/users/:userId", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminUserId = req.user.claims.sub;
+      const adminProfile = await storage.getProfile(adminUserId);
+
+      if (adminProfile?.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const { userId } = req.params;
+      if (userId === adminUserId) {
+        return res.status(400).json({ message: "You cannot delete your own account" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const deleted = await storage.deleteUserAccount(userId);
+
+      console.log(`[Admin] ${adminUserId} deleted account ${userId} (${user.email}):`, deleted);
+
+      res.json({
+        message: `Deleted account for ${user.email}`,
+        deleted,
+      });
+    } catch (error: any) {
+      console.error("Error deleting user account:", error);
+      res.status(500).json({ message: "Failed to delete account", error: error.message });
     }
   });
 

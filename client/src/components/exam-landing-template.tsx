@@ -13,7 +13,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { CheckCircle2, ChevronRight, ExternalLink } from "lucide-react";
+import { CheckCircle2, ChevronRight, ExternalLink, XCircle } from "lucide-react";
 import { useSEO, buildUrl } from "@/hooks/use-seo";
 import { trackEvent } from "@/lib/analytics";
 import { getTopicsByCategory } from "@shared/studyTopics";
@@ -67,7 +67,7 @@ function SampleQuestion({ categories, language }: { categories: string[]; langua
               type="button"
               onClick={() => setSelected(index)}
               data-testid={`button-sample-option-${index}`}
-              className={`w-full text-left p-3 rounded-lg border transition-colors ${
+              className={`w-full text-left p-3 rounded-lg border transition-colors flex items-center justify-between gap-2 ${
                 showResult && isCorrect
                   ? "border-green-500 bg-green-500/10"
                   : showResult && isSelected
@@ -75,7 +75,13 @@ function SampleQuestion({ categories, language }: { categories: string[]; langua
                   : "border-border hover:bg-muted"
               }`}
             >
-              {option}
+              <span>{option}</span>
+              {showResult && isCorrect && (
+                <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" aria-hidden="true" />
+              )}
+              {showResult && !isCorrect && isSelected && (
+                <XCircle className="h-4 w-4 text-destructive shrink-0" aria-hidden="true" />
+              )}
             </button>
           );
         })}

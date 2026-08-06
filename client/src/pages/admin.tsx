@@ -1041,6 +1041,7 @@ export default function AdminPage() {
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => handleEditQuestion(question)}
+                                  aria-label={`Edit question: ${question.questionTextEn}`}
                                   data-testid={`button-edit-${question.id}`}
                                 >
                                   <Pencil className="h-4 w-4" />
@@ -1049,6 +1050,7 @@ export default function AdminPage() {
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => deleteQuestionMutation.mutate(question.id)}
+                                  aria-label={`Delete question: ${question.questionTextEn}`}
                                   data-testid={`button-delete-${question.id}`}
                                 >
                                   <Trash2 className="h-4 w-4 text-destructive" />
@@ -1106,9 +1108,9 @@ export default function AdminPage() {
                 <CardContent>
                   <div className="flex flex-wrap items-end gap-3 mb-4">
                     <div className="flex flex-col gap-1">
-                      <Label className="text-xs text-muted-foreground">Role</Label>
+                      <Label htmlFor="filter-role" className="text-xs text-muted-foreground">Role</Label>
                       <Select value={roleFilter} onValueChange={setRoleFilter}>
-                        <SelectTrigger className="w-[130px]" data-testid="select-filter-role">
+                        <SelectTrigger id="filter-role" className="w-[130px]" data-testid="select-filter-role">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1119,9 +1121,9 @@ export default function AdminPage() {
                       </Select>
                     </div>
                     <div className="flex flex-col gap-1">
-                      <Label className="text-xs text-muted-foreground">Subscription</Label>
+                      <Label htmlFor="filter-status" className="text-xs text-muted-foreground">Subscription</Label>
                       <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="w-[150px]" data-testid="select-filter-status">
+                        <SelectTrigger id="filter-status" className="w-[150px]" data-testid="select-filter-status">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1135,9 +1137,9 @@ export default function AdminPage() {
                       </Select>
                     </div>
                     <div className="flex flex-col gap-1">
-                      <Label className="text-xs text-muted-foreground">Type</Label>
+                      <Label htmlFor="filter-type" className="text-xs text-muted-foreground">Type</Label>
                       <Select value={typeFilter} onValueChange={setTypeFilter}>
-                        <SelectTrigger className="w-[130px]" data-testid="select-filter-type">
+                        <SelectTrigger id="filter-type" className="w-[130px]" data-testid="select-filter-type">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1149,9 +1151,9 @@ export default function AdminPage() {
                       </Select>
                     </div>
                     <div className="flex flex-col gap-1">
-                      <Label className="text-xs text-muted-foreground">Category</Label>
+                      <Label htmlFor="filter-category" className="text-xs text-muted-foreground">Category</Label>
                       <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                        <SelectTrigger className="w-[170px]" data-testid="select-filter-category">
+                        <SelectTrigger id="filter-category" className="w-[170px]" data-testid="select-filter-category">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1165,9 +1167,9 @@ export default function AdminPage() {
                       </Select>
                     </div>
                     <div className="flex flex-col gap-1">
-                      <Label className="text-xs text-muted-foreground">Activity</Label>
+                      <Label htmlFor="filter-activity" className="text-xs text-muted-foreground">Activity</Label>
                       <Select value={activityFilter} onValueChange={setActivityFilter}>
-                        <SelectTrigger className="w-[150px]" data-testid="select-filter-activity">
+                        <SelectTrigger id="filter-activity" className="w-[150px]" data-testid="select-filter-activity">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1178,8 +1180,9 @@ export default function AdminPage() {
                       </Select>
                     </div>
                     <div className="flex flex-col gap-1">
-                      <Label className="text-xs text-muted-foreground">Joined from</Label>
+                      <Label htmlFor="filter-joined-from" className="text-xs text-muted-foreground">Joined from</Label>
                       <Input
+                        id="filter-joined-from"
                         type="date"
                         value={joinedFrom}
                         onChange={(e) => setJoinedFrom(e.target.value)}
@@ -1188,8 +1191,9 @@ export default function AdminPage() {
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <Label className="text-xs text-muted-foreground">Joined to</Label>
+                      <Label htmlFor="filter-joined-to" className="text-xs text-muted-foreground">Joined to</Label>
                       <Input
+                        id="filter-joined-to"
                         type="date"
                         value={joinedTo}
                         onChange={(e) => setJoinedTo(e.target.value)}
@@ -1819,6 +1823,7 @@ export default function AdminPage() {
                                         variant="outline"
                                         className="h-8 text-green-600"
                                         onClick={() => updateFeedbackMutation.mutate({ id: item.id, status: "resolved" })}
+                                        aria-label="Mark feedback as resolved"
                                         data-testid={`button-resolve-feedback-${item.id}`}
                                       >
                                         <Check className="h-3 w-3" />
@@ -1828,6 +1833,7 @@ export default function AdminPage() {
                                         variant="outline"
                                         className="h-8 text-muted-foreground"
                                         onClick={() => updateFeedbackMutation.mutate({ id: item.id, status: "dismissed" })}
+                                        aria-label="Dismiss feedback"
                                         data-testid={`button-dismiss-feedback-${item.id}`}
                                       >
                                         <X className="h-3 w-3" />

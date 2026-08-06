@@ -186,7 +186,7 @@ export default function CertificatePage() {
             <h1 className="text-2xl md:text-3xl font-bold text-center mb-2">
               {language === "es" ? "Certificado de Aprobación" : "Certificate of Achievement"}
             </h1>
-            <p className="text-center text-white/80 text-sm">
+            <p className="text-center text-white text-sm">
               MyEasyPass - Texas Licensing Exam Prep
             </p>
           </div>

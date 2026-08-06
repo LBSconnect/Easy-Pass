@@ -149,7 +149,11 @@ export default function DashboardPage() {
     { id: "general_lines" as const, totalQuestions: 196 },
   ];
 
-  const hasActiveSubscription = profile?.subscriptionStatus === "active";
+  // "trialing" is a fully valid, exam-taking subscription state (see server/subscriptionCheck.ts
+  // checkSubscriptionActive, which also treats "active" and "trialing" as active). Keeping this
+  // in sync avoids showing a user on a Stripe trial dimmed-out exam categories and a "subscribe"
+  // prompt for access they already have.
+  const hasActiveSubscription = profile?.subscriptionStatus === "active" || profile?.subscriptionStatus === "trialing";
   const greeting = getGreeting(i18n.language);
   const motivationalMessage = getMotivationalMessage(stats.passRate, stats.examsTaken, i18n.language);
   

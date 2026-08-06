@@ -174,7 +174,11 @@ export default function ProfilePage() {
     return "U";
   };
 
-  const hasActiveSubscription = profile?.subscriptionStatus === "active";
+  // "trialing" is a fully valid, exam-taking subscription state (see server/subscriptionCheck.ts
+  // checkSubscriptionActive, which also treats "active" and "trialing" as active). Keeping this
+  // in sync avoids telling a user on a Stripe trial that they have no subscription and need to
+  // resubscribe, which could otherwise cause a duplicate subscription/charge.
+  const hasActiveSubscription = profile?.subscriptionStatus === "active" || profile?.subscriptionStatus === "trialing";
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -465,6 +469,7 @@ export default function ProfilePage() {
                                 <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => cancelSubscriptionMutation.mutate()}
+                                  disabled={cancelSubscriptionMutation.isPending}
                                 >
                                   {i18n.language === "es" ? "Sí, cancelar suscripción" : "Yes, cancel subscription"}
                                 </AlertDialogAction>

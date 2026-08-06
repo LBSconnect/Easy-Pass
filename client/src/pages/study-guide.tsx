@@ -28,8 +28,9 @@ import {
   ChevronRight,
   RotateCcw,
   Trophy,
+  Lock,
 } from "lucide-react";
-import type { StudyProgress } from "@shared/schema";
+import type { StudyProgress, UserProfile, ExamCategory } from "@shared/schema";
 import type { CategoryTopics, StudyTopic } from "@shared/studyTopics";
 
 const categoryIcons = {
@@ -80,18 +81,20 @@ function TopicCard({
   category,
   progress,
   language,
+  locked,
   onStartQuiz,
 }: {
   topic: StudyTopic;
   category: CategoryTopics;
   progress?: StudyProgress;
   language: string;
+  locked: boolean;
   onStartQuiz: () => void;
 }) {
   const { t } = useTranslation();
   const Icon = categoryIcons[category.category] || BookOpen;
   const colorClass = categoryColors[category.category] || "bg-muted";
-  
+
   const accuracy = progress && progress.questionsAnswered > 0
     ? Math.round((progress.correctAnswers / progress.questionsAnswered) * 100)
     : 0;
@@ -100,7 +103,11 @@ function TopicCard({
     : 0;
 
   return (
-    <Card className="hover-elevate transition-all duration-200 cursor-pointer group" onClick={onStartQuiz}>
+    <Card
+      className={`hover-elevate transition-all duration-200 cursor-pointer group ${locked ? "opacity-70" : ""}`}
+      onClick={onStartQuiz}
+      data-testid={`card-topic-${topic.id}`}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-3">
@@ -116,36 +123,54 @@ function TopicCard({
               </CardDescription>
             </div>
           </div>
-          <ChevronRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          {locked ? (
+            <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
+          ) : (
+            <ChevronRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          )}
         </div>
       </CardHeader>
       <CardContent className="pt-0">
         <div className="space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
-              {t("study.progress", "Progress")}
-            </span>
-            <span className="font-medium">{progressPercent}%</span>
-          </div>
-          <Progress value={progressPercent} className="h-2" />
-          
-          <div className="flex items-center justify-between pt-1">
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <Target className="h-3.5 w-3.5" />
-                <span>{progress?.questionsAnswered || 0}/{topic.questionCount}</span>
-              </div>
-              {progress && progress.questionsAnswered > 0 && (
-                <div className="flex items-center gap-1">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-                  <span>{accuracy}%</span>
-                </div>
-              )}
+          {locked ? (
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-xs text-muted-foreground">
+                {t("study.subscriptionRequiredShort", "Subscription required")}
+              </span>
+              <Badge variant="outline" className="text-xs gap-1">
+                <Lock className="h-3 w-3" />
+                {t("study.subscribe", "Subscribe")}
+              </Badge>
             </div>
-            <Badge variant="secondary" className="text-xs">
-              {t("study.startQuiz", "Start Quiz")}
-            </Badge>
-          </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {t("study.progress", "Progress")}
+                </span>
+                <span className="font-medium">{progressPercent}%</span>
+              </div>
+              <Progress value={progressPercent} className="h-2" />
+
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Target className="h-3.5 w-3.5" />
+                    <span>{progress?.questionsAnswered || 0}/{topic.questionCount}</span>
+                  </div>
+                  {progress && progress.questionsAnswered > 0 && (
+                    <div className="flex items-center gap-1">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                      <span>{accuracy}%</span>
+                    </div>
+                  )}
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  {t("study.startQuiz", "Start Quiz")}
+                </Badge>
+              </div>
+            </>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -156,14 +181,17 @@ function CategorySection({
   categoryData,
   progress,
   language,
+  locked,
   onSelectTopic,
 }: {
   categoryData: CategoryTopics;
   progress: StudyProgress[];
   language: string;
+  locked: boolean;
   onSelectTopic: (topicId: string) => void;
 }) {
   const { t } = useTranslation();
+  const [, setLocation] = useLocation();
   const Icon = categoryIcons[categoryData.category] || BookOpen;
   const colorClass = categoryColors[categoryData.category] || "bg-muted";
   const bgGradient = categoryBgColors[categoryData.category] || "from-muted/20 to-muted/5";
@@ -184,27 +212,41 @@ function CategorySection({
               <Icon className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
                 {language === "es" ? categoryData.nameEs : categoryData.nameEn}
+                {locked && (
+                  <Badge variant="outline" className="gap-1 text-xs font-normal">
+                    <Lock className="h-3 w-3" />
+                    {t("study.subscriptionRequiredShort", "Subscription required")}
+                  </Badge>
+                )}
               </h2>
               <p className="text-sm text-muted-foreground">
                 {categoryData.topics.length} {t("study.topics", "topics")} · {totalQuestions} {t("study.questions", "questions")}
               </p>
             </div>
           </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <div className="text-sm text-muted-foreground">{t("study.progress", "Progress")}</div>
-              <div className="font-semibold">{overallProgress}%</div>
-            </div>
-            {answeredQuestions > 0 && (
+
+          {locked ? (
+            <Button asChild size="sm" data-testid={`button-subscribe-${categoryData.category}`}>
+              <Link href={`/pricing?category=${categoryData.category}`}>
+                {t("study.subscribe", "Subscribe")}
+              </Link>
+            </Button>
+          ) : (
+            <div className="flex items-center gap-4">
               <div className="text-right">
-                <div className="text-sm text-muted-foreground">{t("study.accuracy", "Accuracy")}</div>
-                <div className="font-semibold text-green-600 dark:text-green-400">{overallAccuracy}%</div>
+                <div className="text-sm text-muted-foreground">{t("study.progress", "Progress")}</div>
+                <div className="font-semibold">{overallProgress}%</div>
               </div>
-            )}
-          </div>
+              {answeredQuestions > 0 && (
+                <div className="text-right">
+                  <div className="text-sm text-muted-foreground">{t("study.accuracy", "Accuracy")}</div>
+                  <div className="font-semibold text-green-600 dark:text-green-400">{overallAccuracy}%</div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -218,7 +260,12 @@ function CategorySection({
               category={categoryData}
               progress={topicProgress}
               language={language}
-              onStartQuiz={() => onSelectTopic(topic.id)}
+              locked={locked}
+              onStartQuiz={() =>
+                locked
+                  ? setLocation(`/pricing?category=${categoryData.category}`)
+                  : onSelectTopic(topic.id)
+              }
             />
           );
         })}
@@ -544,7 +591,22 @@ export default function StudyGuidePage() {
     enabled: !!user,
   });
 
-  const isLoading = topicsLoading || progressLoading;
+  // The topics list above is public and shows every category regardless of
+  // subscription, but the quiz endpoint enforces per-category access - so we
+  // need the user's own subscription to know which categories to lock here
+  // and avoid sending them into a quiz that will just 403.
+  const { data: profile, isLoading: profileLoading } = useQuery<UserProfile>({
+    queryKey: ["/api/profile"],
+    enabled: !!user,
+  });
+
+  const isLoading = topicsLoading || progressLoading || (!!user && profileLoading);
+
+  const isCategoryLocked = (category: ExamCategory) => {
+    if (!profile) return false; // don't flash "locked" before we know
+    if (profile.role === "admin") return false;
+    return !(profile.allowedCategories || []).includes(category);
+  };
 
   if (selectedTopic) {
     return (
@@ -604,6 +666,7 @@ export default function StudyGuidePage() {
                   categoryData={categoryData}
                   progress={progress || []}
                   language={language}
+                  locked={isCategoryLocked(categoryData.category)}
                   onSelectTopic={setSelectedTopic}
                 />
               ))}

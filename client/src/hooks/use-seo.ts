@@ -75,6 +75,17 @@ export function useSEO(options: SEOOptions) {
     }
     canonical.setAttribute("href", options.canonicalUrl);
 
+    // index.html ships a static hreflang set for the initial ("/") route, and
+    // this hook only ever tracks/removes the elements *it* created. Without
+    // this, the very first client-side navigation away from a page that
+    // doesn't call useSEO (e.g. the homepage) leaves those stale tags in
+    // place forever, so the next page's hreflang set gets layered on top
+    // instead of replacing it - two conflicting URLs per language, which
+    // search engines treat as invalid and ignore. Clear any hreflang
+    // alternates already in the document (static or otherwise) before adding
+    // this page's own, so only one page's set is ever present at a time.
+    document.querySelectorAll('link[rel="alternate"][hreflang]').forEach((el) => el.remove());
+
     const hreflangEls: Element[] = [];
     for (const alt of options.hreflang ?? []) {
       const el = document.createElement("link");

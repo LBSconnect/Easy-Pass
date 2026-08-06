@@ -112,7 +112,7 @@ test.describe('Public Endpoints', () => {
           firstName: 'Jane',
           lastName: 'Doe',
           email: 'jane.doe@example.com',
-          phone: '555-0123',
+          phone: '281-555-0123',
           preferredDay: 'Monday',
           preferredTime: '10:00 AM',
         },
@@ -138,7 +138,7 @@ test.describe('Public Endpoints', () => {
           firstName: '<script>alert(1)</script>',
           lastName: 'Safe',
           email: 'xss-callback@example.com',
-          phone: '555-0124',
+          phone: '281-555-0124',
           preferredDay: 'Tuesday',
           preferredTime: '2:00 PM',
         },
@@ -156,7 +156,7 @@ test.describe('Public Endpoints', () => {
           name: 'John Doe',
           email: 'john@example.com',
           topic: 'Insurance Tips',
-          message: 'Here are my tips for passing the exam.',
+          message: 'Here are my tips for passing the exam. Study a little every day, take practice tests, and review your weak topics.',
         },
       });
       expect(response.status()).toBe(200);

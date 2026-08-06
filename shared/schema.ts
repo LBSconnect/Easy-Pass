@@ -264,9 +264,15 @@ export const insertUserProfileSchema = createInsertSchema(userProfiles, {
   updatedAt: true,
 });
 
+// Note: kept as a plain ZodObject (no top-level .refine()) because
+// server/routes.ts calls insertQuestionSchema.partial() for PATCH updates,
+// which is only available on ZodObject, not on the ZodEffects a .refine()
+// would produce. Cross-field checks (correct answer index in range, EN/ES
+// option counts matching) are applied separately on full creation in
+// server/routes.ts POST /api/admin/questions.
 export const insertQuestionSchema = createInsertSchema(questions, {
-  optionsEn: z.array(z.string()),
-  optionsEs: z.array(z.string()),
+  optionsEn: z.array(z.string().min(1, "Option text is required")).min(2).max(6),
+  optionsEs: z.array(z.string().min(1, "Option text is required")).min(2).max(6),
 }).omit({
   id: true,
   createdAt: true,
@@ -290,7 +296,14 @@ export const insertPaymentHistorySchema = createInsertSchema(paymentHistory).omi
   createdAt: true,
 });
 
-export const insertCallbackRequestSchema = createInsertSchema(callbackRequests).omit({
+export const insertCallbackRequestSchema = createInsertSchema(callbackRequests, {
+  firstName: z.string().min(1, "First name is required").max(100),
+  lastName: z.string().min(1, "Last name is required").max(100),
+  email: z.string().email("Please enter a valid email").max(255),
+  phone: z.string().min(10, "Phone number must be at least 10 digits").max(20),
+  preferredDay: z.string().min(1, "Please select a preferred day").max(20),
+  preferredTime: z.string().min(1, "Please select a preferred time").max(20),
+}).omit({
   id: true,
   status: true,
   createdAt: true,
@@ -319,7 +332,13 @@ export const insertExamCertificateSchema = createInsertSchema(examCertificates).
   createdAt: true,
 });
 
-export const insertGuestArticleSchema = createInsertSchema(guestArticles).omit({
+export const insertGuestArticleSchema = createInsertSchema(guestArticles, {
+  name: z.string().min(2, "Name is required").max(100),
+  email: z.string().email("Please enter a valid email").max(255),
+  topic: z.string().min(1, "Please select a topic").max(200),
+  articleUrl: z.string().url("Please enter a valid URL").max(500).nullable().optional().or(z.literal("")),
+  message: z.string().min(50, "Please write at least 50 characters about your article idea"),
+}).omit({
   id: true,
   status: true,
   adminNotes: true,
@@ -327,7 +346,13 @@ export const insertGuestArticleSchema = createInsertSchema(guestArticles).omit({
 });
 
 export const insertEmployerInquirySchema = createInsertSchema(employerInquiries, {
+  companyName: z.string().min(1, "Company name is required").max(200),
+  contactName: z.string().min(1, "Contact name is required").max(200),
+  email: z.string().email("Please enter a valid email").max(255),
+  phone: z.string().max(20).optional(),
+  teamSize: z.string().max(50).optional(),
   categoriesInterested: z.array(z.string()).optional(),
+  message: z.string().max(2000).optional(),
 }).omit({
   id: true,
   status: true,

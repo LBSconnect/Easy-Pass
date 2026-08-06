@@ -32,6 +32,11 @@ const checkoutSchema = z.object({
   priceId: z.string().min(1),
 });
 
+const profileUpdateSchema = z.object({
+  phone: z.string().max(20).optional(),
+  preferredLanguage: z.enum(["en", "es"]).optional(),
+});
+
 const VALID_PRICE_IDS = new Set<string>();
 
 // Helper to read a Stripe metadata field, handling trailing-space key bugs
@@ -311,17 +316,20 @@ export async function registerRoutes(
   app.patch("/api/profile", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { phone, preferredLanguage } = req.body;
-      
-      const validLanguages = ["en", "es"];
-      const sanitizedLanguage = validLanguages.includes(preferredLanguage) ? preferredLanguage : undefined;
+
+      const parsed = profileUpdateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid profile data", errors: parsed.error.errors });
+      }
+
+      const { phone, preferredLanguage } = parsed.data;
       const sanitizedPhone = phone ? sanitizeHtml(phone) ?? phone : undefined;
-      
+
       const updated = await storage.updateProfile(userId, {
         phone: sanitizedPhone,
-        preferredLanguage: sanitizedLanguage,
+        preferredLanguage,
       });
-      
+
       res.json(updated);
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -612,11 +620,20 @@ export async function registerRoutes(
   // Guest article submission (public endpoint)
   app.post("/api/guest-articles", async (req, res) => {
     try {
+      const clientIp = getClientIp(req);
+      const rateLimitResult = rateLimit(`guest-articles:${clientIp}`, 5, 15 * 60 * 1000);
+      if (!rateLimitResult.allowed) {
+        return res.status(429).json({
+          message: "Too many submissions. Please try again later.",
+          retryAfter: Math.ceil(rateLimitResult.resetIn / 1000),
+        });
+      }
+
       const parsed = insertGuestArticleSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid submission", errors: parsed.error.errors });
       }
-      
+
       const sanitizedData = {
         ...parsed.data,
         name: sanitizeHtml(parsed.data.name) ?? parsed.data.name,
@@ -688,6 +705,15 @@ export async function registerRoutes(
   // Employer inquiry lead form - public submission
   app.post("/api/employer-inquiries", async (req, res) => {
     try {
+      const clientIp = getClientIp(req);
+      const rateLimitResult = rateLimit(`employer-inquiries:${clientIp}`, 5, 15 * 60 * 1000);
+      if (!rateLimitResult.allowed) {
+        return res.status(429).json({
+          message: "Too many submissions. Please try again later.",
+          retryAfter: Math.ceil(rateLimitResult.resetIn / 1000),
+        });
+      }
+
       const parsed = insertEmployerInquirySchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid submission", errors: parsed.error.errors });
@@ -1794,6 +1820,14 @@ export async function registerRoutes(
       }
       
       const validated = insertQuestionSchema.parse(req.body);
+
+      if (validated.optionsEn.length !== validated.optionsEs.length) {
+        return res.status(400).json({ message: "English and Spanish options must have the same number of choices" });
+      }
+      if (validated.correctAnswer < 0 || validated.correctAnswer >= validated.optionsEn.length) {
+        return res.status(400).json({ message: "Correct answer must reference a valid option index" });
+      }
+
       const sanitizedData = {
         ...validated,
         questionTextEn: sanitizeHtml(validated.questionTextEn as string) || validated.questionTextEn,
@@ -1827,7 +1861,15 @@ export async function registerRoutes(
       
       const updateSchema = insertQuestionSchema.partial();
       const validated = updateSchema.parse(req.body);
-      
+
+      if (validated.optionsEn && validated.optionsEs && validated.optionsEn.length !== validated.optionsEs.length) {
+        return res.status(400).json({ message: "English and Spanish options must have the same number of choices" });
+      }
+      if (validated.optionsEn && validated.correctAnswer !== undefined &&
+        (validated.correctAnswer < 0 || validated.correctAnswer >= validated.optionsEn.length)) {
+        return res.status(400).json({ message: "Correct answer must reference a valid option index" });
+      }
+
       const sanitizedData: any = { ...validated };
       if (validated.questionTextEn) sanitizedData.questionTextEn = sanitizeHtml(validated.questionTextEn as string) || validated.questionTextEn;
       if (validated.questionTextEs) sanitizedData.questionTextEs = sanitizeHtml(validated.questionTextEs as string) || validated.questionTextEs;
@@ -1938,11 +1980,20 @@ export async function registerRoutes(
 
   app.post("/api/callback-requests", async (req, res) => {
     try {
+      const clientIp = getClientIp(req);
+      const rateLimitResult = rateLimit(`callback-requests:${clientIp}`, 5, 15 * 60 * 1000);
+      if (!rateLimitResult.allowed) {
+        return res.status(429).json({
+          message: "Too many submissions. Please try again later.",
+          retryAfter: Math.ceil(rateLimitResult.resetIn / 1000),
+        });
+      }
+
       const parsed = insertCallbackRequestSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid data", errors: parsed.error.errors });
       }
-      
+
       const sanitizedData = {
         ...parsed.data,
         firstName: sanitizeHtml(parsed.data.firstName) ?? parsed.data.firstName,

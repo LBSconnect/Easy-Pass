@@ -367,17 +367,49 @@ function QuizView({
   }
 
   if (error) {
+    // The topics list shows every category regardless of subscription, so a
+    // stale page, a direct link, or a race with the profile load can still
+    // land someone here on a 403 from the quiz endpoint even after the
+    // category-page locking above. Give that specific case its own message
+    // and a Subscribe button rather than the raw server error text - but
+    // don't relabel a genuine bug (topic not found, server error) as a
+    // subscription issue.
+    const errorMessage = (error as Error).message;
+    const isSubscriptionError = /subscription/i.test(errorMessage);
+
     return (
       <div className="max-w-3xl mx-auto p-4">
         <Card>
           <CardContent className="py-8 text-center">
             <XCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-            <h2 className="text-lg font-semibold mb-2">{t("study.errorLoading", "Error Loading Quiz")}</h2>
-            <p className="text-muted-foreground mb-4">{(error as Error).message}</p>
-            <Button onClick={onBack} data-testid="button-back-to-topics">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              {t("study.backToTopics", "Back to Topics")}
-            </Button>
+            <h2 className="text-lg font-semibold mb-2">
+              {isSubscriptionError
+                ? t("study.subscriptionRequiredForQuiz", "Subscription required to take this Quiz")
+                : t("study.errorLoading", "Error Loading Quiz")}
+            </h2>
+            <p className="text-muted-foreground mb-4">
+              {isSubscriptionError
+                ? t(
+                    "study.subscriptionRequiredForQuizDesc",
+                    "You need an active subscription for this exam category to take this quiz."
+                  )
+                : errorMessage}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              {isSubscriptionError && (
+                <Button asChild data-testid="button-subscribe-quiz-error">
+                  <Link href="/pricing">{t("study.subscribe", "Subscribe")}</Link>
+                </Button>
+              )}
+              <Button
+                variant={isSubscriptionError ? "outline" : "default"}
+                onClick={onBack}
+                data-testid="button-back-to-topics"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                {t("study.backToTopics", "Back to Topics")}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

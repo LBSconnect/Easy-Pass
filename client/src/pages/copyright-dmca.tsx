@@ -1,7 +1,14 @@
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { useSEO, buildUrl } from "@/hooks/use-seo";
 
 export default function CopyrightDmcaPage() {
+  useSEO({
+    title: "Copyright and DMCA Policy | MyEasyPass",
+    description: "Copyright and DMCA policy for MyEasyPass, including how to submit a copyright infringement notice or counter-notice.",
+    canonicalUrl: buildUrl("/copyright-dmca"),
+  });
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />

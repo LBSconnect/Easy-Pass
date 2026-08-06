@@ -1,8 +1,15 @@
 import { Link } from "wouter";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { useSEO, buildUrl } from "@/hooks/use-seo";
 
 export default function TermsPage() {
+  useSEO({
+    title: "Terms of Service | MyEasyPass",
+    description: "Terms of Service governing use of the MyEasyPass Texas real estate and insurance exam preparation platform, including practice exams and subscriptions.",
+    canonicalUrl: buildUrl("/terms"),
+  });
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />

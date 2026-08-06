@@ -1,7 +1,14 @@
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { useSEO, buildUrl } from "@/hooks/use-seo";
 
 export default function RefundPolicyPage() {
+  useSEO({
+    title: "Refund and Cancellation Policy | MyEasyPass",
+    description: "MyEasyPass's refund and cancellation policy for exam prep subscriptions, including how to cancel and what to expect.",
+    canonicalUrl: buildUrl("/refund-policy"),
+  });
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />

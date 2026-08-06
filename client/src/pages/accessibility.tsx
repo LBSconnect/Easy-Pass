@@ -1,7 +1,14 @@
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { useSEO, buildUrl } from "@/hooks/use-seo";
 
 export default function AccessibilityPage() {
+  useSEO({
+    title: "Accessibility Statement | MyEasyPass",
+    description: "MyEasyPass's commitment to digital accessibility, the standards followed, and how to report accessibility issues on this site.",
+    canonicalUrl: buildUrl("/accessibility"),
+  });
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />

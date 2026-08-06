@@ -1,7 +1,14 @@
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { useSEO, buildUrl } from "@/hooks/use-seo";
 
 export default function ElectronicCommunicationsPage() {
+  useSEO({
+    title: "Electronic Communications, Email & SMS Terms | MyEasyPass",
+    description: "Terms governing electronic communications, email, and SMS messages sent by MyEasyPass and Linton Business Solutions LLC.",
+    canonicalUrl: buildUrl("/electronic-communications"),
+  });
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />

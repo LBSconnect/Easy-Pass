@@ -10,7 +10,10 @@ export type AnalyticsEventName =
   | "checkout_start"
   | "bootcamp_cta_click"
   | "employer_inquiry_submit"
-  | "official_exam_schedule_click";
+  | "official_exam_schedule_click"
+  | "guest_practice_start"
+  | "guest_practice_wall_shown"
+  | "guest_practice_signup_click";
 
 export function trackEvent(event: AnalyticsEventName, metadata?: Record<string, unknown>) {
   try {

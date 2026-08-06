@@ -184,6 +184,58 @@ export async function registerRoutes(
     }
   });
 
+  // Public guest preview of the real quick-practice exam: lets an
+  // unauthenticated visitor try a handful of real questions from the bank
+  // before hitting a sign-up wall. Deliberately does NOT create an
+  // exam_sessions row (that table requires a userId, and a guest never
+  // reaches "submit" - they're walled after GUEST_PREVIEW_QUESTION_COUNT
+  // questions) - this just hands back a few shuffled questions, same as
+  // the diagnostic assessment above. Rate-limited by IP.
+  const GUEST_PREVIEW_QUESTION_COUNT = 5;
+
+  app.post("/api/exams/guest-preview", async (req, res) => {
+    try {
+      const clientIp = getClientIp(req);
+      const rateLimitResult = rateLimit(`guest-preview:${clientIp}`, 10, 15 * 60 * 1000);
+      if (!rateLimitResult.allowed) {
+        return res.status(429).json({
+          message: "Too many attempts. Please try again later.",
+          retryAfter: Math.ceil(rateLimitResult.resetIn / 1000),
+        });
+      }
+
+      const schema = z.object({ category: z.enum(examCategoryEnum.enumValues) });
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid category" });
+      }
+
+      const questions = await storage.getQuestions(parsed.data.category, GUEST_PREVIEW_QUESTION_COUNT);
+      if (questions.length === 0) {
+        return res.status(404).json({ message: "No questions available for this category" });
+      }
+
+      const questionsForClient = questions.map((question) => {
+        const shuffled = shuffleQuestionOptions(
+          question.optionsEn,
+          question.optionsEs,
+          question.correctAnswer,
+        );
+        const { correctAnswer, explanationEn, explanationEs, ...rest } = question;
+        return {
+          ...rest,
+          optionsEn: shuffled.optionsEn,
+          optionsEs: shuffled.optionsEs,
+        };
+      });
+
+      res.json({ questions: questionsForClient, limit: GUEST_PREVIEW_QUESTION_COUNT });
+    } catch (error) {
+      console.error("Error starting guest exam preview:", error);
+      res.status(500).json({ message: "Failed to load practice questions" });
+    }
+  });
+
   app.get("/api/profile", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

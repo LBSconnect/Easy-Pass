@@ -92,8 +92,11 @@ function Router() {
       <Route path="/forgot-password" component={ForgotPasswordPage} />
       <Route path="/reset-password" component={ResetPasswordPage} />
       <Route path="/dashboard" component={() => <ProtectedRoute component={DashboardPage} />} />
-      <Route path="/exams" component={() => <ProtectedRoute component={ExamsPage} />} />
-      <Route path="/exams/:category" component={() => <ProtectedRoute component={ExamsPage} />} />
+      {/* Not wrapped in ProtectedRoute: guests can browse categories and try
+          a short quick-practice preview before being asked to sign up.
+          ExamsPage itself branches on auth state for the rest of the flow. */}
+      <Route path="/exams" component={ExamsPage} />
+      <Route path="/exams/:category" component={ExamsPage} />
       <Route path="/pricing" component={PricingPage} />
       <Route path="/texas-real-estate-exam-prep" component={TexasRealEstateExamPrepPage} />
       <Route path="/texas-property-casualty-exam-prep" component={TexasPropertyCasualtyExamPrepPage} />

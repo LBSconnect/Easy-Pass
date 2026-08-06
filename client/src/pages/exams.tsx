@@ -22,7 +22,9 @@ import {
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { trackEvent } from "@/lib/analytics";
 import {
   Home,
   Shield,
@@ -41,6 +43,7 @@ import {
   Flag,
   Award,
   Share2,
+  Sparkles,
 } from "lucide-react";
 import {
   Dialog,
@@ -1083,12 +1086,312 @@ function ExamSession() {
   );
 }
 
-export default function ExamsPage() {
-  const params = useParams<{ category?: string }>();
+interface GuestPreviewQuestion {
+  id: string;
+  questionTextEn: string;
+  questionTextEs: string;
+  optionsEn: string[];
+  optionsEs: string[];
+}
 
-  if (params.category) {
-    return <ExamSession />;
+// Guests who aren't signed in still get to try the real quick-practice exam,
+// just capped at GUEST_PREVIEW_LIMIT questions (server-enforced too - see
+// POST /api/exams/guest-preview). After the last question, a sign-up dialog
+// pops up instead of letting them continue into the full 50-question set.
+function GuestPracticePreview({ category }: { category: ExamCategory }) {
+  const { t, i18n } = useTranslation();
+  const isSpanish = i18n.language === "es";
+  const Icon = categoryIcons[category];
+
+  const [questions, setQuestions] = useState<GuestPreviewQuestion[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [showWall, setShowWall] = useState(false);
+
+  const startMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/exams/guest-preview", { category });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to load practice questions");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setQuestions(data.questions);
+      setCurrentIndex(0);
+      setAnswers({});
+      setShowWall(false);
+      trackEvent("guest_practice_start", { category });
+    },
+  });
+
+  useEffect(() => {
+    startMutation.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category]);
+
+  const currentQuestion = questions[currentIndex];
+  const questionText = isSpanish ? currentQuestion?.questionTextEs : currentQuestion?.questionTextEn;
+  const options = isSpanish ? currentQuestion?.optionsEs : currentQuestion?.optionsEn;
+
+  const handleAnswer = (value: string) => {
+    if (currentQuestion) {
+      setAnswers((prev) => ({ ...prev, [currentQuestion.id]: parseInt(value, 10) }));
+    }
+  };
+
+  const handleNext = () => {
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+    } else {
+      setShowWall(true);
+      trackEvent("guest_practice_wall_shown", { category });
+    }
+  };
+
+  if (startMutation.isPending || (!startMutation.isError && questions.length === 0)) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
+            <p className="text-muted-foreground">{t("common.loading")}</p>
+          </div>
+        </main>
+      </div>
+    );
   }
 
-  return <ExamCategorySelection />;
+  if (startMutation.isError || !currentQuestion) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
+            <p className="text-muted-foreground">
+              {startMutation.error instanceof Error ? startMutation.error.message : "No questions available"}
+            </p>
+            <Button asChild>
+              <Link href="/exams">{isSpanish ? "Volver" : "Go Back"}</Link>
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  const progress = ((currentIndex + 1) / questions.length) * 100;
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <div className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
+        <div className="container mx-auto flex h-14 items-center justify-between gap-4 px-4">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${categoryColors[category]}`}>
+              <Icon className="h-4 w-4" />
+            </div>
+            <span className="font-medium text-sm hidden sm:inline">
+              {t(`categories.${category}`)}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Badge variant="outline">
+              {isSpanish ? "Vista previa gratuita" : "Free preview"}
+            </Badge>
+            <Badge variant="secondary">
+              {currentIndex + 1}/{questions.length}
+            </Badge>
+          </div>
+        </div>
+        <Progress value={progress} className="h-1" />
+      </div>
+
+      <main className="flex-1">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-3xl mx-auto">
+            <Card className="mb-6">
+              <CardHeader>
+                <Badge variant="secondary">
+                  {t("exam.question")} {currentIndex + 1} {t("exam.of")} {questions.length}
+                </Badge>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <p className="text-lg font-medium leading-relaxed">{questionText}</p>
+                <RadioGroup
+                  value={answers[currentQuestion.id]?.toString() || ""}
+                  onValueChange={handleAnswer}
+                  className="space-y-3"
+                >
+                  {options?.map((option, index) => (
+                    <div
+                      key={index}
+                      className={`flex items-center space-x-3 rounded-lg border p-4 transition-colors hover-elevate ${
+                        answers[currentQuestion.id] === index ? "border-primary bg-primary/5" : ""
+                      }`}
+                    >
+                      <RadioGroupItem
+                        value={index.toString()}
+                        id={`guest-option-${index}`}
+                        data-testid={`radio-guest-option-${index}`}
+                      />
+                      <Label htmlFor={`guest-option-${index}`} className="flex-1 cursor-pointer text-sm">
+                        {option}
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </CardContent>
+            </Card>
+
+            <div className="flex items-center justify-end">
+              <Button
+                onClick={handleNext}
+                disabled={answers[currentQuestion.id] === undefined}
+                data-testid="button-guest-next"
+              >
+                {currentIndex === questions.length - 1
+                  ? (isSpanish ? "Continuar" : "Continue")
+                  : t("exam.next")}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <Footer />
+
+      <Dialog open={showWall} onOpenChange={setShowWall}>
+        <DialogContent className="sm:max-w-md text-center" data-testid="dialog-guest-wall">
+          <DialogHeader>
+            <div className="mx-auto mb-2">
+              <div className={`h-16 w-16 rounded-full flex items-center justify-center ${categoryColors[category]}`}>
+                <Sparkles className="h-8 w-8" />
+              </div>
+            </div>
+            <DialogTitle className="text-xl">
+              {isSpanish ? "¡Sigue practicando!" : "Keep practicing!"}
+            </DialogTitle>
+            <DialogDescription>
+              {isSpanish
+                ? "Creaste una cuenta gratuita para continuar con el resto de las preguntas de práctica de esta categoría."
+                : "Create a free account to continue with the rest of this category's practice questions."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:justify-center">
+            <Button
+              asChild
+              className="gap-2"
+              onClick={() => trackEvent("guest_practice_signup_click", { category })}
+              data-testid="button-guest-wall-signup"
+            >
+              <Link href="/signup">
+                {isSpanish ? "Crear Cuenta Gratis" : "Create Free Account"}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button variant="outline" asChild data-testid="button-guest-wall-login">
+              <Link href="/login">
+                {isSpanish ? "Ya tengo cuenta" : "I already have an account"}
+              </Link>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// Full mock exams stay behind a real account - no free preview, since it's a
+// 150-200 question simulation meant to be taken in one sitting under
+// subscription.
+function GuestSignupRequired({ category }: { category: ExamCategory }) {
+  const { t, i18n } = useTranslation();
+  const isSpanish = i18n.language === "es";
+  const Icon = categoryIcons[category];
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <Navbar />
+      <main className="flex-1">
+        <div className="container mx-auto px-4 py-12">
+          <div className="max-w-lg mx-auto">
+            <Card className="text-center">
+              <CardHeader className="pb-4">
+                <div className="mx-auto mb-4">
+                  <div className={`h-20 w-20 rounded-full flex items-center justify-center ${categoryColors[category]}`}>
+                    <Icon className="h-10 w-10" />
+                  </div>
+                </div>
+                <CardTitle className="text-2xl">
+                  {isSpanish ? "Crea una cuenta gratis" : "Create a free account"}
+                </CardTitle>
+                <CardDescription>
+                  {isSpanish
+                    ? "El examen completo de simulación requiere una cuenta con suscripción activa."
+                    : "The full mock exam requires a signed-in account with an active subscription."}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="p-4 rounded-lg bg-muted">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {isSpanish ? "Examen seleccionado:" : "Selected exam:"}
+                  </p>
+                  <p className="font-medium">{t(`categories.${category}`)}</p>
+                </div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+                  <Button asChild data-testid="button-guest-signup">
+                    <Link href="/signup">
+                      {isSpanish ? "Crear Cuenta" : "Create Account"}
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild data-testid="button-guest-try-practice">
+                    <Link href={`/exams/${category}`}>
+                      {isSpanish ? "Probar Práctica Rápida Gratis" : "Try Free Quick Practice"}
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+export default function ExamsPage() {
+  const params = useParams<{ category?: string }>();
+  const search = useSearch();
+  const mode = new URLSearchParams(search).get("mode") === "full" ? "full" : "practice";
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (!params.category) {
+    return <ExamCategorySelection />;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
+        </main>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    const category = params.category as ExamCategory;
+    if (mode === "full") {
+      return <GuestSignupRequired category={category} />;
+    }
+    return <GuestPracticePreview category={category} />;
+  }
+
+  return <ExamSession />;
 }

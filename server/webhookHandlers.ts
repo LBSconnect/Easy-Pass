@@ -114,6 +114,45 @@ async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
     await updateSubscriptionByCustomerId(customerId, subscription);
   }
+
+  await recordPaymentHistory(invoice, customerId);
+}
+
+// Records a successful payment so admin revenue stats/analytics (which read
+// from payment_history - see getAdminStats/getAdminAnalytics) reflect real
+// Stripe activity. Keyed on Stripe's own payment identifier so a redelivered
+// invoice.paid webhook (Stripe retries on any non-2xx/timeout response)
+// never creates a second row for the same payment.
+async function recordPaymentHistory(invoice: Stripe.Invoice, customerId: string): Promise<void> {
+  const stripePaymentId = ((invoice as any).payment_intent as string) || invoice.id;
+  if (!stripePaymentId) {
+    console.error("Invoice has no id/payment_intent to key payment history on:", invoice.id);
+    return;
+  }
+
+  const allUsers = await storage.getAllUsers();
+  const user = allUsers.find((u) => u.profile?.stripeCustomerId === customerId);
+  if (!user) {
+    console.error("No user found with customerId for payment history:", customerId);
+    return;
+  }
+
+  const existing = await storage.getPaymentByStripeId(stripePaymentId);
+  if (existing) {
+    console.log(`Payment ${stripePaymentId} already recorded, skipping duplicate (idempotent webhook redelivery)`);
+    return;
+  }
+
+  await storage.createPaymentHistory({
+    userId: user.id,
+    stripePaymentId,
+    amount: invoice.amount_paid ?? 0,
+    currency: invoice.currency || "usd",
+    status: "succeeded",
+    description: invoice.description || undefined,
+  });
+
+  console.log(`Recorded payment history for user ${user.id}: ${invoice.amount_paid} ${invoice.currency}`);
 }
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void> {

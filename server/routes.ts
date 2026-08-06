@@ -768,10 +768,11 @@ export async function registerRoutes(
         }))
       });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      console.error("Error in Stripe debug endpoint:", error);
+      res.status(500).json({ error: "Failed to fetch Stripe diagnostic data" });
     }
   });
-  
+
   app.get("/api/stripe/prices", async (req, res) => {
     try {
       const stripe = await getCachedStripeClient();
@@ -848,7 +849,7 @@ export async function registerRoutes(
       res.json(formattedPrices);
     } catch (error: any) {
       console.error("Error fetching prices:", error);
-      res.status(500).json({ message: "Failed to fetch pricing information", error: error.message });
+      res.status(500).json({ message: "Failed to fetch pricing information" });
     }
   });
 
@@ -943,7 +944,7 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Error creating portal:", error?.message || error);
       console.error("Error details:", JSON.stringify(error, null, 2));
-      res.status(500).json({ message: "Failed to create portal session", error: error?.message });
+      res.status(500).json({ message: "Failed to create portal session" });
     }
   });
 

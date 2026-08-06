@@ -6,6 +6,8 @@ vi.mock('../storage', () => ({
     getProfile: vi.fn(),
     updateProfile: vi.fn(),
     getAllUsers: vi.fn(),
+    createPaymentHistory: vi.fn(),
+    getPaymentByStripeId: vi.fn(),
   },
 }));
 
@@ -307,6 +309,8 @@ describe('WebhookHandlers.processWebhook', () => {
       { id: 'user_7', email: 'paid@test.com', profile: { stripeCustomerId: 'cus_paid' } },
     ] as any);
     mockStorage.updateProfile.mockResolvedValue({} as any);
+    mockStorage.getPaymentByStripeId.mockResolvedValue(undefined);
+    mockStorage.createPaymentHistory.mockResolvedValue({} as any);
 
     const event = {
       type: 'invoice.paid',
@@ -315,6 +319,9 @@ describe('WebhookHandlers.processWebhook', () => {
           id: 'inv_paid',
           customer: 'cus_paid',
           subscription: 'sub_inv',
+          payment_intent: 'pi_paid_123',
+          amount_paid: 1999,
+          currency: 'usd',
         },
       },
     };
@@ -326,6 +333,76 @@ describe('WebhookHandlers.processWebhook', () => {
       subscriptionStatus: 'active',
       subscriptionPlan: 'monthly',
     }));
+
+    // Payment is recorded, keyed on Stripe's own payment identifier so a
+    // redelivery of this same event won't double-insert.
+    expect(mockStorage.getPaymentByStripeId).toHaveBeenCalledWith('pi_paid_123');
+    expect(mockStorage.createPaymentHistory).toHaveBeenCalledWith({
+      userId: 'user_7',
+      stripePaymentId: 'pi_paid_123',
+      amount: 1999,
+      currency: 'usd',
+      status: 'succeeded',
+      description: undefined,
+    });
+
+    process.env.NODE_ENV = originalEnv;
+  });
+
+  it('does not double-record payment history on a redelivered invoice.paid event', async () => {
+    const originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'development';
+
+    const mockSubscription = {
+      id: 'sub_inv2',
+      status: 'active',
+      items: {
+        data: [{
+          price: {
+            recurring: { interval: 'month' },
+            metadata: { subscription_type: 'single', allowed_categories: 'general_lines' },
+            product: 'prod_inv2',
+          },
+        }],
+      },
+      current_period_end: Math.floor(Date.now() / 1000) + 2592000,
+      metadata: {},
+    };
+
+    mockGetStripeClient.mockResolvedValue({
+      webhooks: { constructEvent: vi.fn() },
+      subscriptions: {
+        retrieve: vi.fn().mockResolvedValue(mockSubscription),
+      },
+    } as any);
+
+    mockStorage.getAllUsers.mockResolvedValue([
+      { id: 'user_8', email: 'paid2@test.com', profile: { stripeCustomerId: 'cus_paid2' } },
+    ] as any);
+    mockStorage.updateProfile.mockResolvedValue({} as any);
+    // Simulate this payment already having been recorded by a prior delivery
+    // of the same webhook event.
+    mockStorage.getPaymentByStripeId.mockResolvedValue({ id: 'existing-row' } as any);
+
+    const event = {
+      type: 'invoice.paid',
+      data: {
+        object: {
+          id: 'inv_paid2',
+          customer: 'cus_paid2',
+          subscription: 'sub_inv2',
+          payment_intent: 'pi_paid_456',
+          amount_paid: 1999,
+          currency: 'usd',
+        },
+      },
+    };
+
+    const payload = Buffer.from(JSON.stringify(event));
+    await WebhookHandlers.processWebhook(payload, 'sig');
+
+    expect(mockStorage.getPaymentByStripeId).toHaveBeenCalledWith('pi_paid_456');
+    expect(mockStorage.createPaymentHistory).not.toHaveBeenCalled();
 
     process.env.NODE_ENV = originalEnv;
   });

@@ -99,15 +99,24 @@ function isSellableExamPrice(price: { active: boolean; recurring?: unknown; meta
 // e.g. right after a server restart) so the price actually being charged is always verified
 // server-side against Stripe, never assumed from client input.
 async function isValidCheckoutPriceId(stripe: Awaited<ReturnType<typeof getCachedStripeClient>>, priceId: string): Promise<boolean> {
-  if (VALID_PRICE_IDS.has(priceId)) {
-    return true;
-  }
+  // Deliberately NOT short-circuited by VALID_PRICE_IDS.
+  //
+  // That cache never expires, so a price validated once stayed "valid" forever -
+  // including after it was archived. Repricing archives the superseded prices,
+  // so a cached-then-archived id sailed past this check and then failed inside
+  // checkout.sessions.create, surfacing to the student as a bare 500 on the
+  // Subscribe button. Checkout happens once per subscriber; one extra Stripe
+  // lookup is a trivial price for not selling against a stale price id.
   try {
     const price = await stripe.prices.retrieve(priceId, { expand: ["product"] });
     if (isSellableExamPrice(price)) {
       VALID_PRICE_IDS.add(price.id);
       return true;
     }
+    console.warn(
+      `[checkout] price ${priceId} rejected: active=${price.active} ` +
+      `recurring=${Boolean(price.recurring)}`,
+    );
     return false;
   } catch (error) {
     console.error("Error validating price ID:", error);
@@ -1639,7 +1648,40 @@ export async function registerRoutes(
       
       res.json({ url: session.url });
     } catch (error) {
-      console.error("Error creating checkout:", error);
+      // A bare 500 told the student nothing and told us nothing either. Stripe
+      // errors carry a type and code that say exactly what went wrong, so log
+      // them and translate the ones the student can act on.
+      const stripeError = error as {
+        type?: string;
+        code?: string;
+        param?: string;
+        statusCode?: number;
+        message?: string;
+      };
+
+      console.error("Error creating checkout:", {
+        type: stripeError?.type,
+        code: stripeError?.code,
+        param: stripeError?.param,
+        statusCode: stripeError?.statusCode,
+        message: stripeError?.message,
+        // From the raw body: `parsed` is scoped to the try block, and by the
+        // time we are here the id is the single most useful thing to log.
+        priceId: typeof req.body?.priceId === "string" ? req.body.priceId : null,
+      });
+
+      // Stripe rejecting the request itself is a configuration problem on our
+      // side (an archived or otherwise unusable price), not a server fault.
+      // Saying so lets the student retry or contact us instead of staring at
+      // a 500, and points whoever reads the log at the price.
+      if (stripeError?.type === "StripeInvalidRequestError") {
+        return res.status(400).json({
+          message:
+            "This subscription option is temporarily unavailable. Please refresh " +
+            "the page and try again, or contact support if it persists.",
+        });
+      }
+
       res.status(500).json({ message: "Failed to create checkout session" });
     }
   });

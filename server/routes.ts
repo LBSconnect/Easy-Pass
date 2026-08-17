@@ -20,6 +20,8 @@ import { gradePaper, calculateExamScore, calculateTopicBreakdown, type TopicStat
 import { calculateEasyPassScore } from "./easyPassScore";
 import { generateStudyPlan } from "./studyPlan";
 import { selectAdaptiveQuestions, buildHistory } from "./adaptiveSelection";
+import { difficultyFor } from "./alexi/nextBestAction";
+import { assessRisk, quarantineReason, type FeedbackType } from "./contentRisk";
 import { buildNotebook, filterNotebook, notebookCounts, type NotebookFilter } from "./missedQuestions";
 import { buildSimulatorPaper } from "./simulatorPaper";
 import { selectDueCards, scheduleNext, newCardState } from "./spacedRepetition";
@@ -97,15 +99,24 @@ function isSellableExamPrice(price: { active: boolean; recurring?: unknown; meta
 // e.g. right after a server restart) so the price actually being charged is always verified
 // server-side against Stripe, never assumed from client input.
 async function isValidCheckoutPriceId(stripe: Awaited<ReturnType<typeof getCachedStripeClient>>, priceId: string): Promise<boolean> {
-  if (VALID_PRICE_IDS.has(priceId)) {
-    return true;
-  }
+  // Deliberately NOT short-circuited by VALID_PRICE_IDS.
+  //
+  // That cache never expires, so a price validated once stayed "valid" forever -
+  // including after it was archived. Repricing archives the superseded prices,
+  // so a cached-then-archived id sailed past this check and then failed inside
+  // checkout.sessions.create, surfacing to the student as a bare 500 on the
+  // Subscribe button. Checkout happens once per subscriber; one extra Stripe
+  // lookup is a trivial price for not selling against a stale price id.
   try {
     const price = await stripe.prices.retrieve(priceId, { expand: ["product"] });
     if (isSellableExamPrice(price)) {
       VALID_PRICE_IDS.add(price.id);
       return true;
     }
+    console.warn(
+      `[checkout] price ${priceId} rejected: active=${price.active} ` +
+      `recurring=${Boolean(price.recurring)}`,
+    );
     return false;
   } catch (error) {
     console.error("Error validating price ID:", error);
@@ -861,9 +872,18 @@ export async function registerRoutes(
         return res.status(404).json({ message: "No questions available for this category" });
       }
 
+      // Aim the drill at the level this student is actually working at, from
+      // their standing on the weakest topic. Questions the bank has not yet
+      // calibrated score neutral, so this degrades rather than starving the
+      // pool while calibration is still filling in.
+      const weakestAccuracy = mastery.length > 0
+        ? Math.min(...mastery.map((m) => m.accuracy))
+        : null;
+      const targetDifficulty = difficultyFor(weakestAccuracy);
+
       const selected = selectAdaptiveQuestions(
         {
-          candidates: pool.map((q) => ({ id: q.id, topic: q.topic })),
+          candidates: pool.map((q) => ({ id: q.id, topic: q.topic, difficulty: q.difficulty })),
           topicAccuracy: new Map(mastery.map((m) => [m.topic, m.accuracy])),
           history: buildHistory(
             responses.map((r) => ({
@@ -872,6 +892,7 @@ export async function registerRoutes(
               answeredAt: new Date(r.answeredAt),
             })),
           ),
+          targetDifficulty,
           now: new Date(),
         },
         drillSize,
@@ -1627,7 +1648,40 @@ export async function registerRoutes(
       
       res.json({ url: session.url });
     } catch (error) {
-      console.error("Error creating checkout:", error);
+      // A bare 500 told the student nothing and told us nothing either. Stripe
+      // errors carry a type and code that say exactly what went wrong, so log
+      // them and translate the ones the student can act on.
+      const stripeError = error as {
+        type?: string;
+        code?: string;
+        param?: string;
+        statusCode?: number;
+        message?: string;
+      };
+
+      console.error("Error creating checkout:", {
+        type: stripeError?.type,
+        code: stripeError?.code,
+        param: stripeError?.param,
+        statusCode: stripeError?.statusCode,
+        message: stripeError?.message,
+        // From the raw body: `parsed` is scoped to the try block, and by the
+        // time we are here the id is the single most useful thing to log.
+        priceId: typeof req.body?.priceId === "string" ? req.body.priceId : null,
+      });
+
+      // Stripe rejecting the request itself is a configuration problem on our
+      // side (an archived or otherwise unusable price), not a server fault.
+      // Saying so lets the student retry or contact us instead of staring at
+      // a 500, and points whoever reads the log at the price.
+      if (stripeError?.type === "StripeInvalidRequestError") {
+        return res.status(400).json({
+          message:
+            "This subscription option is temporarily unavailable. Please refresh " +
+            "the page and try again, or contact support if it persists.",
+        });
+      }
+
       res.status(500).json({ message: "Failed to create checkout session" });
     }
   });
@@ -2570,6 +2624,39 @@ export async function registerRoutes(
       };
       
       const feedback = await storage.createQuestionFeedback(sanitizedData);
+
+      // Reassess the question's risk now that a new report has landed. A
+      // question whose answer key is wrong teaches something false to every
+      // student who sees it, and it kept doing so until an admin happened to
+      // look. Crossing the threshold pulls it from circulation pending review.
+      //
+      // Wrapped so a failure here can never fail the student's report - losing
+      // the quarantine is recoverable, losing the report is not.
+      try {
+        const reports = await storage.getQuestionFeedback(sanitizedData.questionId);
+        const assessment = assessRisk(
+          reports.map((r) => ({
+            feedbackType: r.feedbackType as FeedbackType,
+            status: r.status as "pending" | "reviewed" | "resolved" | "dismissed",
+            createdAt: new Date(r.createdAt),
+          })),
+          new Date(),
+        );
+
+        if (assessment.shouldQuarantine) {
+          const question = await storage.getQuestion(sanitizedData.questionId);
+          if (question?.isActive) {
+            await storage.updateQuestion(sanitizedData.questionId, { isActive: false });
+            console.warn(
+              `[content-risk] question ${sanitizedData.questionId} pulled from circulation. ` +
+              quarantineReason(assessment),
+            );
+          }
+        }
+      } catch (riskError) {
+        console.error("Error assessing content risk:", riskError);
+      }
+
       res.json({ success: true, feedback });
     } catch (error) {
       console.error("Error creating question feedback:", error);

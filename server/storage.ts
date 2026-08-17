@@ -140,6 +140,8 @@ export interface IStorage {
   getFlashcardReviews(userId: string, category: ExamCategory): Promise<FlashcardReview[]>;
   upsertFlashcardReview(userId: string, questionId: string, category: ExamCategory, state: { streak: number; intervalDays: number; ease: number; dueAt: Date }): Promise<void>;
   countActiveQuestions(category: ExamCategory): Promise<number>;
+  getItemResponseStats(): Promise<Array<{ questionId: string; respondents: number; correct: number }>>;
+  applyItemDifficulty(items: Array<{ questionId: string; difficulty: string; pValue: number }>): Promise<number>;
   
   createCertificate(certificate: InsertExamCertificate): Promise<ExamCertificate>;
   getCertificateBySlug(slug: string): Promise<ExamCertificate | undefined>;
@@ -920,6 +922,60 @@ export class DatabaseStorage implements IStorage {
   async createAnalyticsEvent(event: InsertAnalyticsEvent): Promise<AnalyticsEvent> {
     const [created] = await db.insert(analyticsEvents).values(event).returning();
     return created;
+  }
+
+  /**
+   * Per-item response statistics for difficulty calibration.
+   *
+   * Counts DISTINCT students, not attempts: a student who retries the same
+   * question until they get it right would otherwise make a hard item look
+   * easy. Their first answer is the one that reflects difficulty.
+   */
+  async getItemResponseStats(): Promise<Array<{ questionId: string; respondents: number; correct: number }>> {
+    const rows = await db
+      .select({
+        questionId: sql<string>`first_attempts.question_id`,
+        respondents: sql<number>`count(*)::int`,
+        correct: sql<number>`count(*) filter (where first_attempts.is_correct)::int`,
+      })
+      .from(
+        sql`(
+          select distinct on (question_id, user_id)
+                 question_id, user_id, is_correct
+          from question_responses
+          order by question_id, user_id, answered_at asc
+        ) as first_attempts`,
+      )
+      .groupBy(sql`first_attempts.question_id`);
+
+    return rows.map((r) => ({
+      questionId: r.questionId,
+      respondents: Number(r.respondents),
+      correct: Number(r.correct),
+    }));
+  }
+
+  /** Write calibrated difficulty back onto the bank. */
+  async applyItemDifficulty(
+    items: Array<{ questionId: string; difficulty: string; pValue: number }>,
+  ): Promise<number> {
+    if (items.length === 0) return 0;
+    const now = new Date();
+    let updated = 0;
+
+    for (const item of items) {
+      const res = await db
+        .update(questions)
+        .set({
+          difficulty: item.difficulty,
+          pValueBasisPoints: Math.round(item.pValue * 10000),
+          difficultyCalibratedAt: now,
+        })
+        .where(eq(questions.id, item.questionId));
+      updated += (res as { rowCount?: number }).rowCount ?? 1;
+    }
+
+    return updated;
   }
 
   async createAiUsageEvent(event: InsertAiUsageEvent): Promise<AiUsageEvent> {

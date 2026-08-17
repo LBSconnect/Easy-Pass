@@ -64,6 +64,13 @@ export const questions = pgTable("questions", {
   correctAnswer: integer("correct_answer").notNull(),
   explanationEn: text("explanation_en"),
   explanationEs: text("explanation_es"),
+  // Measured difficulty, not authored. Calibrated from real response data by
+  // server/itemCalibration; null means not enough students have attempted it
+  // yet for a p-value to mean anything. See calibrateItemDifficulty.
+  difficulty: varchar("difficulty", { length: 20 }),
+  /** Proportion answering correctly, x10000 - integers avoid float drift. */
+  pValueBasisPoints: integer("p_value_basis_points"),
+  difficultyCalibratedAt: timestamp("difficulty_calibrated_at"),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

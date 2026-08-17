@@ -65,6 +65,7 @@ import {
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Link } from "wouter";
+import { AiUsagePanel } from "@/components/admin/ai-usage-panel";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -1551,6 +1552,8 @@ export default function AdminPage() {
             </TabsContent>
 
             <TabsContent value="analytics" className="space-y-4">
+              <AiUsagePanel />
+
               <Card>
                 <CardHeader>
                   <CardTitle>Analytics Dashboard</CardTitle>

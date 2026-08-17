@@ -36,8 +36,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
+import { PageShell, PageHeader } from "@/components/page-shell";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -181,20 +180,16 @@ export default function ProfilePage() {
   const hasActiveSubscription = profile?.subscriptionStatus === "active" || profile?.subscriptionStatus === "trialing";
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
-
-      <main className="flex-1">
-        <div className="container mx-auto px-4 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold">{t("profile.title")}</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage your account settings and preferences
-            </p>
+    <PageShell>
+          <div className="mb-8">      <PageHeader
+        icon={User}
+        title={t("profile.title")}
+        subtitle="Manage your account settings and preferences"
+      />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-6">
+            <div className="min-w-0 lg:col-span-2 space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -210,7 +205,7 @@ export default function ProfilePage() {
                       <Skeleton className="h-10 w-full" />
                     </div>
                   ) : (
-                    <div className="space-y-6">
+                    <div className="min-w-0 space-y-6">
                       <div className="flex items-center gap-4">
                         <Avatar className="h-16 w-16">
                           <AvatarImage src={user?.profileImageUrl || undefined} />
@@ -490,10 +485,6 @@ export default function ProfilePage() {
               </Card>
             </div>
           </div>
-        </div>
-      </main>
-
-      <Footer />
-    </div>
+    </PageShell>
   );
 }

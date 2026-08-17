@@ -10,6 +10,7 @@ import {
   guestArticles,
   employerInquiries,
   analyticsEvents,
+  questionResponses,
   diagnosticAttempts,
   type UserProfile,
   type InsertUserProfile,
@@ -37,12 +38,15 @@ import {
   type EmployerInquiryStatus,
   type InsertAnalyticsEvent,
   type AnalyticsEvent,
+  type QuestionResponse,
+  type InsertQuestionResponse,
+  type TopicMastery,
   type DiagnosticAttempt,
   type InsertDiagnosticAttempt,
 } from "@shared/schema";
 import { users, type User } from "@shared/models/auth";
 import { db, pool } from "./db";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, gte, inArray } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -58,6 +62,7 @@ export interface IStorage {
   
   getQuestions(category?: ExamCategory, limit?: number): Promise<Question[]>;
   getQuestion(id: string): Promise<Question | undefined>;
+  getQuestionsByIds(ids: string[]): Promise<Question[]>;
   createQuestion(question: InsertQuestion): Promise<Question>;
   updateQuestion(id: string, data: Partial<InsertQuestion>): Promise<Question | undefined>;
   deleteQuestion(id: string): Promise<boolean>;
@@ -116,6 +121,11 @@ export interface IStorage {
   getStudyProgressByTopic(userId: string, topicId: string): Promise<StudyProgress | undefined>;
   upsertStudyProgress(userId: string, category: ExamCategory, topicId: string, correct: boolean): Promise<StudyProgress>;
   getQuestionsByTopic(category: ExamCategory, topicId: string, limit?: number): Promise<Question[]>;
+
+  recordQuestionResponses(responses: InsertQuestionResponse[]): Promise<number>;
+  getTopicMastery(userId: string, category?: ExamCategory): Promise<TopicMastery[]>;
+  getMissedQuestionIds(userId: string, category?: ExamCategory): Promise<string[]>;
+  getResponsesSince(userId: string, since: Date): Promise<QuestionResponse[]>;
   
   createCertificate(certificate: InsertExamCertificate): Promise<ExamCertificate>;
   getCertificateBySlug(slug: string): Promise<ExamCertificate | undefined>;
@@ -211,6 +221,11 @@ export class DatabaseStorage implements IStorage {
   async getQuestion(id: string): Promise<Question | undefined> {
     const [question] = await db.select().from(questions).where(eq(questions.id, id));
     return question;
+  }
+
+  async getQuestionsByIds(ids: string[]): Promise<Question[]> {
+    if (ids.length === 0) return [];
+    return db.select().from(questions).where(inArray(questions.id, ids));
   }
 
   async createQuestion(question: InsertQuestion): Promise<Question> {
@@ -607,6 +622,71 @@ export class DatabaseStorage implements IStorage {
       return query.orderBy(sql`RANDOM()`).limit(limit);
     }
     return query.orderBy(sql`RANDOM()`);
+  }
+
+  // Append-only. onConflictDoNothing keeps the backfill and a retried submit
+  // from duplicating history via uq_question_responses_session_question.
+  async recordQuestionResponses(responses: InsertQuestionResponse[]): Promise<number> {
+    if (responses.length === 0) return 0;
+    const inserted = await db
+      .insert(questionResponses)
+      .values(responses)
+      .onConflictDoNothing()
+      .returning({ id: questionResponses.id });
+    return inserted.length;
+  }
+
+  async getTopicMastery(userId: string, category?: ExamCategory): Promise<TopicMastery[]> {
+    const filters = [eq(questionResponses.userId, userId)];
+    if (category) filters.push(eq(questionResponses.category, category));
+
+    const rows = await db
+      .select({
+        category: questionResponses.category,
+        topic: questionResponses.topic,
+        answered: sql<number>`count(*)::int`,
+        correct: sql<number>`count(*) FILTER (WHERE ${questionResponses.isCorrect})::int`,
+        lastAnsweredAt: sql<Date>`max(${questionResponses.answeredAt})`,
+      })
+      .from(questionResponses)
+      .where(and(...filters))
+      .groupBy(questionResponses.category, questionResponses.topic);
+
+    return rows.map((r) => ({
+      ...r,
+      accuracy: r.answered > 0 ? Math.round((r.correct / r.answered) * 100) : 0,
+    }));
+  }
+
+  // Questions whose most recent answer was wrong. A later correct answer
+  // clears a question from the notebook without erasing its history.
+  async getMissedQuestionIds(userId: string, category?: ExamCategory): Promise<string[]> {
+    const filters = [eq(questionResponses.userId, userId)];
+    if (category) filters.push(eq(questionResponses.category, category));
+
+    const rows = await db
+      .select({
+        questionId: questionResponses.questionId,
+        latestCorrect: sql<boolean>`(array_agg(${questionResponses.isCorrect} ORDER BY ${questionResponses.answeredAt} DESC))[1]`,
+      })
+      .from(questionResponses)
+      .where(and(...filters))
+      .groupBy(questionResponses.questionId);
+
+    return rows.filter((r) => !r.latestCorrect).map((r) => r.questionId);
+  }
+
+  async getResponsesSince(userId: string, since: Date): Promise<QuestionResponse[]> {
+    return db
+      .select()
+      .from(questionResponses)
+      .where(
+        and(
+          eq(questionResponses.userId, userId),
+          gte(questionResponses.answeredAt, since),
+        ),
+      )
+      .orderBy(questionResponses.answeredAt);
   }
 
   async createCertificate(certificate: InsertExamCertificate): Promise<ExamCertificate> {

@@ -16,7 +16,7 @@ import { db } from "./db";
 import { sql } from "drizzle-orm";
 import { sanitizeHtml } from "./sanitize";
 import { checkSubscriptionActive } from "./subscriptionCheck";
-import { calculateExamScore, calculateTopicBreakdown, type TopicStat } from "./examScoring";
+import { gradePaper, calculateExamScore, calculateTopicBreakdown, type TopicStat } from "./examScoring";
 import { shuffleQuestionOptions } from "./shuffleQuestionOptions";
 
 const startExamSchema = z.object({
@@ -429,33 +429,20 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Exam already submitted" });
       }
       
-      let correctAnswers = 0;
       const questionIds = session.questionIds as string[];
-      const topicStats: Record<string, { correct: number; total: number }> = {};
-      
       const answerOrder = session.answerOrder as Record<string, number> | null;
 
-      for (const questionId of questionIds) {
-        const question = await storage.getQuestion(questionId);
-        if (question) {
-          const topic = question.topic || "General";
-          if (!topicStats[topic]) {
-            topicStats[topic] = { correct: 0, total: 0 };
-          }
-          topicStats[topic].total++;
+      // One query for the whole paper instead of one per question.
+      const sessionQuestions = await storage.getQuestionsByIds(questionIds);
+      const questionsById = new Map(sessionQuestions.map((q) => [q.id, q]));
 
-          // Score against this session's own shuffled option order, not the
-          // shared question bank's order, since the client was shown options
-          // shuffled specifically for this session.
-          const correctIndex = answerOrder?.[questionId] ?? question.correctAnswer;
+      const { correctAnswers, topicStats, responses } = gradePaper(
+        questionIds,
+        questionsById,
+        answers,
+        answerOrder,
+      );
 
-          if (answers[questionId] === correctIndex) {
-            correctAnswers++;
-            topicStats[topic].correct++;
-          }
-        }
-      }
-      
       const totalQuestions = questionIds.length;
       const { score, passed } = calculateExamScore(correctAnswers, totalQuestions);
       const timeTaken = Math.floor(
@@ -479,8 +466,25 @@ export async function registerRoutes(
         timeTaken,
       });
 
+      // Response history feeds mastery, the EasyPass Score and adaptive
+      // selection. It must never cost a student their submitted result, so a
+      // failure here is logged and swallowed rather than surfaced.
+      try {
+        await storage.recordQuestionResponses(
+          responses.map((r) => ({
+            ...r,
+            userId,
+            category: session.category,
+            source: "exam" as const,
+            sessionId,
+          })),
+        );
+      } catch (error) {
+        console.error("Error recording question responses:", error);
+      }
+
       const topicBreakdown = calculateTopicBreakdown(topicStats);
-      
+
       res.json({ result, topicBreakdown });
     } catch (error) {
       console.error("Error submitting exam:", error);

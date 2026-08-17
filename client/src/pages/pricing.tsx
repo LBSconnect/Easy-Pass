@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { trackEvent } from "@/lib/analytics";
 import { useSEO, buildUrl } from "@/hooks/use-seo";
-import { Check, Sparkles, AlertCircle, Package } from "lucide-react";
+import { Check, Sparkles, AlertCircle } from "lucide-react";
 
 const VALID_CATEGORY_IDS = ["real_estate", "property_casualty", "life_insurance", "general_lines"];
 
@@ -89,52 +89,25 @@ export default function PricingPage() {
     if (count === 0) {
       return { type: 'none', message: null, canSubscribe: false };
     }
-    if (count === 1) {
-      return { type: 'single', message: null, canSubscribe: true };
-    }
-    return { 
-      type: 'bundle', 
-      message: isSpanish 
-        ? 'Solo se permite un examen por suscripción individual. Para múltiples exámenes, seleccione el paquete de Seguro + Bienes Raíces.'
-        : 'Only one exam allowed per single subscription. To subscribe to multiple exams, please choose the Insurance + Real Estate bundle.',
-      canSubscribe: true 
-    };
-  }, [selectedCategories, isSpanish]);
+    return { type: 'single', message: null, canSubscribe: true };
+  }, [selectedCategories]);
 
   const applicablePrice = useMemo(() => {
     if (selectedCategories.length === 0) return null;
-    
-    if (selectedCategories.length === 1) {
-      return prices.find(p => 
-        p.subscription_type === 'single' && 
-        p.allowed_categories.includes(selectedCategories[0]) &&
-        p.billing_period === billingPeriod
-      );
-    }
-    
-    return prices.find(p => 
-      p.subscription_type === 'bundle' && 
+    return prices.find(p =>
+      p.subscription_type === 'single' &&
+      p.allowed_categories.includes(selectedCategories[0]) &&
       p.billing_period === billingPeriod
     );
   }, [selectedCategories, billingPeriod, prices]);
 
-  const bundlePrice = useMemo(() => {
-    return prices.find(p => 
-      p.subscription_type === 'bundle' && 
-      p.billing_period === billingPeriod
-    );
-  }, [prices, billingPeriod]);
-
+  // One category per subscription now that the bundle is retired. Picking a
+  // category replaces the previous choice rather than adding to it - otherwise
+  // a multi-selection would silently check out only the first category.
   const handleCategoryToggle = (categoryId: string) => {
-    setSelectedCategories(prev => 
-      prev.includes(categoryId)
-        ? prev.filter(id => id !== categoryId)
-        : [...prev, categoryId]
+    setSelectedCategories(prev =>
+      prev.includes(categoryId) ? [] : [categoryId]
     );
-  };
-
-  const handleSelectBundle = () => {
-    setSelectedCategories(['real_estate', 'property_casualty', 'life_insurance', 'general_lines']);
   };
 
   const handleSubscribe = () => {
@@ -222,28 +195,6 @@ export default function PricingPage() {
                     ))}
                   </div>
 
-                  {selectionState.type === 'bundle' && (
-                    <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-md border border-amber-200 dark:border-amber-800">
-                      <div className="flex items-start gap-3">
-                        <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                        <div>
-                          <p className="text-sm text-amber-800 dark:text-amber-200">
-                            {selectionState.message}
-                          </p>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="mt-3"
-                            onClick={handleSelectBundle}
-                            data-testid="button-select-bundle"
-                          >
-                            <Package className="mr-2 h-4 w-4" />
-                            {isSpanish ? 'Seleccionar Paquete Completo' : 'Select Full Bundle'}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
 
@@ -263,12 +214,10 @@ export default function PricingPage() {
                     <div className="space-y-6">
                       <div>
                         <h2 className="font-medium mb-2">
-                          {selectionState.type === 'bundle'
-                            ? (isSpanish ? 'Paquete de Seguro + Bienes Raíces' : 'Insurance + Real Estate Bundle')
-                            : (isSpanish ? 'Suscripción Individual' : 'Single Category Subscription')}
+                          {isSpanish ? 'Suscripción Individual' : 'Single Category Subscription'}
                         </h2>
                         <ul className="space-y-2">
-                          {(selectionState.type === 'bundle' ? EXAM_CATEGORIES : EXAM_CATEGORIES.filter(c => selectedCategories.includes(c.id))).map(category => (
+                          {EXAM_CATEGORIES.filter(c => selectedCategories.includes(c.id)).map(category => (
                             <li key={category.id} className="flex items-center gap-2 text-sm">
                               <Check className="h-4 w-4 text-green-500" />
                               <span>{isSpanish ? category.labelEs : category.label}</span>
@@ -309,42 +258,6 @@ export default function PricingPage() {
                 </CardContent>
               </Card>
 
-              {bundlePrice && (
-                <Card className="mt-8 bg-gradient-to-r from-primary/5 to-primary/10" data-testid="card-bundle-promo">
-                  <CardContent className="flex items-center justify-between py-6">
-                    <div className="flex items-center gap-4">
-                      <Package className="h-10 w-10 text-primary" />
-                      <div>
-                        <h2 className="font-semibold">
-                          {isSpanish ? 'Paquete Completo: Seguro + Bienes Raíces' : 'Complete Bundle: Insurance + Real Estate'}
-                        </h2>
-                        <p className="text-sm text-muted-foreground">
-                          {isSpanish 
-                            ? 'Acceso a las 4 categorías de exámenes por un precio especial'
-                            : 'Access all 4 exam categories for a special price'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold">
-                        {formatPrice(bundlePrice.unit_amount)}
-                        <span className="text-sm font-normal text-muted-foreground">
-                          /{isSpanish ? 'mes' : 'month'}
-                        </span>
-                      </p>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="mt-2"
-                        onClick={handleSelectBundle}
-                        data-testid="button-get-bundle"
-                      >
-                        {isSpanish ? 'Obtener Paquete' : 'Get Bundle'}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
 
               <div className="mt-12 text-center">
                 <p className="text-muted-foreground mb-6">

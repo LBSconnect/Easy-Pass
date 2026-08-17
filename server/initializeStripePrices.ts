@@ -1,44 +1,12 @@
 import { getCachedStripeClient } from './stripeClient';
+import { REQUIRED_PRICES, isSupersededPrice } from './stripePricing';
 import { storage } from './storage';
 
-export const REQUIRED_PRICES = [
-  {
-    productName: 'Real Estate Exam',
-    category: 'real_estate',
-    prices: [
-      { amount: 1999, interval: 'month' as const, billingPeriod: 'monthly' }
-    ]
-  },
-  {
-    productName: 'Property & Casualty Exam',
-    category: 'property_casualty',
-    prices: [
-      { amount: 1999, interval: 'month' as const, billingPeriod: 'monthly' }
-    ]
-  },
-  {
-    productName: 'Life Insurance Exam',
-    category: 'life_insurance',
-    prices: [
-      { amount: 1999, interval: 'month' as const, billingPeriod: 'monthly' }
-    ]
-  },
-  {
-    productName: 'General Lines Exam',
-    category: 'general_lines',
-    prices: [
-      { amount: 1999, interval: 'month' as const, billingPeriod: 'monthly' }
-    ]
-  },
-  {
-    productName: 'Bundle',
-    category: 'bundle',
-    isBundle: true,
-    prices: [
-      { amount: 3499, interval: 'month' as const, billingPeriod: 'monthly' }
-    ]
-  }
-];
+export {
+  CATEGORY_PRICE_CENTS,
+  REQUIRED_PRICES,
+  isSupersededPrice,
+} from "./stripePricing";
 
 export async function initializeStripePrices(): Promise<void> {
   try {
@@ -50,26 +18,34 @@ export async function initializeStripePrices(): Promise<void> {
     const existingProducts = await stripe.products.list({ active: true, limit: 100 });
     const existingPrices = await stripe.prices.list({ active: true, limit: 100, expand: ['data.product'] });
     
-    // Deactivate weekly prices (no longer offered)
+    // Retire superseded prices: weekly billing, the retired bundle, and any
+    // amount that is no longer the list price. Existing subscriptions on these
+    // prices are untouched and keep billing at their original rate.
     let deactivatedCount = 0;
     for (const price of existingPrices.data) {
-      if (price.recurring?.interval === 'week' && price.active) {
-        const product = typeof price.product === 'object' && !('deleted' in price.product) ? price.product : null;
-        const hasSubscriptionMetadata = price.metadata?.subscription_type || product?.metadata?.subscription_type;
-        
-        if (hasSubscriptionMetadata) {
-          try {
-            await stripe.prices.update(price.id, { active: false });
-            console.log(`[Stripe Init] Deactivated weekly price: ${price.id} (${product?.name || 'Unknown'})`);
-            deactivatedCount++;
-          } catch (err: any) {
-            console.error(`[Stripe Init] Failed to deactivate price ${price.id}:`, err.message);
-          }
-        }
+      const product = typeof price.product === 'object' && !('deleted' in price.product) ? price.product : null;
+
+      if (!isSupersededPrice({
+        active: price.active,
+        unit_amount: price.unit_amount,
+        recurring: price.recurring,
+        metadata: price.metadata,
+        productMetadata: product?.metadata,
+      })) continue;
+
+      try {
+        await stripe.prices.update(price.id, { active: false });
+        console.log(
+          `[Stripe Init] Retired price ${price.id} (${product?.name || 'Unknown'}, ` +
+          `${price.unit_amount}c/${price.recurring?.interval ?? 'one-time'}) - existing subscribers unaffected`
+        );
+        deactivatedCount++;
+      } catch (err: any) {
+        console.error(`[Stripe Init] Failed to deactivate price ${price.id}:`, err.message);
       }
     }
     if (deactivatedCount > 0) {
-      console.log(`[Stripe Init] Deactivated ${deactivatedCount} weekly prices`);
+      console.log(`[Stripe Init] Retired ${deactivatedCount} superseded prices`);
     }
     
     console.log(`[Stripe Init] Found ${existingProducts.data.length} products and ${existingPrices.data.length} prices in Stripe`);

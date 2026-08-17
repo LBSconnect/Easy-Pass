@@ -261,12 +261,17 @@ export function ExamStructure({ category, isSpanish }: SectionProps) {
                       )}
                     </dd>
                   </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">{isSpanish ? "Tiempo" : "Time"}</dt>
-                    <dd className="font-medium tabular-nums">
-                      {p.timeMinutes} {isSpanish ? "minutos" : "minutes"}
-                    </dd>
-                  </div>
+                  {/* Only where the provider times each portion separately.
+                      The insurance exams are one timed sitting covering both
+                      sections, so their time is shown once below instead. */}
+                  {p.timeMinutes !== undefined && (
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">{isSpanish ? "Tiempo" : "Time"}</dt>
+                      <dd className="font-medium tabular-nums">
+                        {p.timeMinutes} {isSpanish ? "minutos" : "minutes"}
+                      </dd>
+                    </div>
+                  )}
                   {p.correctToPass !== undefined && (
                     <div className="flex justify-between gap-4">
                       <dt className="text-muted-foreground">{isSpanish ? "Para aprobar" : "To pass"}</dt>
@@ -280,6 +285,39 @@ export function ExamStructure({ category, isSpanish }: SectionProps) {
             </Card>
           ))}
         </div>
+
+        {/* Whole-exam facts, for providers that time the sitting as one block
+            and report a scaled score rather than a raw count. */}
+        {(facts.totalTimeMinutes !== undefined || facts.passingScaledScore !== undefined) && (
+          <div
+            className="mx-auto mt-4 flex max-w-3xl flex-wrap justify-center gap-x-8 gap-y-2 text-sm"
+            data-testid="exam-total-facts"
+          >
+            {facts.totalTimeMinutes !== undefined && (
+              <p>
+                <span className="text-muted-foreground">
+                  {isSpanish ? "Tiempo total: " : "Total time: "}
+                </span>
+                <span className="font-medium tabular-nums">
+                  {facts.totalTimeMinutes} {isSpanish ? "minutos" : "minutes"}
+                </span>
+              </p>
+            )}
+            {facts.passingScaledScore !== undefined && (
+              <p>
+                <span className="text-muted-foreground">
+                  {isSpanish ? "Puntuación para aprobar: " : "Passing score: "}
+                </span>
+                <span className="font-medium tabular-nums">
+                  {facts.passingScaledScore}
+                </span>
+                <span className="text-muted-foreground">
+                  {isSpanish ? " (escala 0-100)" : " (scaled, 0-100)"}
+                </span>
+              </p>
+            )}
+          </div>
+        )}
 
         <p className="mx-auto mt-6 max-w-3xl text-center text-xs text-muted-foreground">
           {isSpanish ? facts.noteEs ?? facts.note : facts.note}{" "}

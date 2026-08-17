@@ -48,6 +48,14 @@ const categoryColors = {
   general_lines: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
 };
 
+// Surface tint only - no text color, so card copy keeps full foreground contrast.
+const categorySurfaces = {
+  real_estate: "bg-blue-500/10 border-blue-500/20",
+  property_casualty: "bg-amber-500/10 border-amber-500/20",
+  life_insurance: "bg-rose-500/10 border-rose-500/20",
+  general_lines: "bg-emerald-500/10 border-emerald-500/20",
+};
+
 function getGreeting(language: string): string {
   const hour = parseInt(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago', hour: 'numeric', hour12: false }), 10);
   if (language === "es") {
@@ -389,7 +397,7 @@ export default function DashboardPage() {
                     return (
                       <div 
                         key={category.id}
-                        className={`p-4 rounded-xl border-2 ${categoryColors[category.id]} ${!hasActiveSubscription ? "opacity-60" : ""}`}
+                        className={`p-4 rounded-xl border-2 ${categorySurfaces[category.id]}`}
                       >
                         <div className="flex items-start gap-4">
                           <div className={`p-3 rounded-xl ${categoryColors[category.id]}`}>

@@ -37,6 +37,12 @@ export interface PlanTask {
 
 export interface StudyPlan {
   intensity: PlanIntensity;
+  /**
+   * True when this plan is shaped for a student who has sat the exam before.
+   * Retakers already know the format; what failed them was specific content,
+   * so their day leans harder on weak areas and less on breadth.
+   */
+  isRescuePlan: boolean;
   /** Whole days until the exam. Null when no date is set. Negative if past. */
   daysUntilExam: number | null;
   tasks: PlanTask[];
@@ -141,10 +147,19 @@ export function generateStudyPlan(input: PlanInput): StudyPlan {
   //    student's remaining time, and reviewing known misses is.
   if (intensity !== "final_review") {
     // Fewer, deeper drills when time is short; broader when there is room.
-    const drillCount = intensity === "cram_3_day" ? 2 : 3;
+    // Retakers get an extra drill slot: their failure was content-specific,
+    // so covering more of their weak ground matters more than breadth.
+    const baseDrills = intensity === "cram_3_day" ? 2 : 3;
+    const drillCount = input.hasPreviousAttempt ? baseDrills + 1 : baseDrills;
+
+    // Size drills by how many will actually happen, not by the slot count.
+    // Dividing by slots left the day short whenever a student had fewer weak
+    // topics than slots - and worse the more slots we offered.
+    const plannedDrills = Math.min(drillCount, weak.length);
+
     for (const topic of weak.slice(0, drillCount)) {
       if (budget <= 0) break;
-      const count = Math.min(budget, Math.max(5, Math.ceil(budget / drillCount)));
+      const count = Math.min(budget, Math.max(5, Math.ceil(budget / plannedDrills)));
       tasks.push({
         kind: "weak_topic_drill",
         topic: topic.topic,
@@ -200,6 +215,7 @@ export function generateStudyPlan(input: PlanInput): StudyPlan {
 
   return {
     intensity,
+    isRescuePlan: input.hasPreviousAttempt,
     daysUntilExam: daysLeft,
     tasks,
     estimatedMinutes: tasks.reduce((sum, t) => sum + t.estimatedMinutes, 0),

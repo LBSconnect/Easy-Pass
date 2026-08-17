@@ -726,9 +726,13 @@ export async function registerRoutes(
 
   // The missed-question notebook. Returns full question detail including the
   // correct answer and explanation, because reviewing a miss without seeing
-  // why it was wrong is useless - which is also why this is subscription
-  // gated, unlike the readiness score: the payload is the answer key for
-  // every question the student has attempted.
+  // why it was wrong is useless.
+  //
+  // Deliberately NOT subscription gated. The payload is bounded to questions
+  // this student has already answered, and responses are only written on
+  // authenticated exam submit, so a student who never subscribed has no
+  // history to read. Gating it would only stop lapsed students from reviewing
+  // work they already did.
   app.get("/api/missed-questions/:category", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -738,11 +742,6 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Unknown exam category" });
       }
       const examCategory = category as ExamCategory;
-
-      const subscriptionCheck = await ensureSubscriptionActive(userId, examCategory);
-      if (!subscriptionCheck.active) {
-        return res.status(403).json({ message: subscriptionCheck.message });
-      }
 
       const filterParam = String(req.query.filter ?? "all");
       const filter: NotebookFilter = (

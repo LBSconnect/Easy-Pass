@@ -174,6 +174,32 @@ describe("generateStudyPlan", () => {
     expect(kinds(plan)).not.toContain("mock_exam");
   });
 
+  it("flags a retaker's plan as a rescue plan", () => {
+    const first = generateStudyPlan(input({ topics: [topic("Law", 40)] }));
+    const retaker = generateStudyPlan(
+      input({ topics: [topic("Law", 40)], hasPreviousAttempt: true }),
+    );
+
+    expect(first.isRescuePlan).toBe(false);
+    expect(retaker.isRescuePlan).toBe(true);
+  });
+
+  it("drills more distinct weak topics for a retaker", () => {
+    const topics = [
+      topic("A", 30),
+      topic("B", 40),
+      topic("C", 50),
+      topic("D", 60),
+    ];
+    const base = { examDate: inDays(10), topics };
+    const first = generateStudyPlan(input(base));
+    const retaker = generateStudyPlan(input({ ...base, hasPreviousAttempt: true }));
+
+    const drills = (p: typeof first) =>
+      p.tasks.filter((t) => t.kind === "weak_topic_drill").length;
+    expect(drills(retaker)).toBeGreaterThan(drills(first));
+  });
+
   it("gives retakers a heavier day than first-timers", () => {
     const base = { examDate: inDays(10), topics: [topic("Law", 40)] };
     const first = generateStudyPlan(input(base));

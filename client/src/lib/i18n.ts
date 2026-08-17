@@ -190,6 +190,10 @@ const resources = {
         title: "Get Started",
         seoTitle: "Exam Prep, Live Bootcamps & Testing Center",
         subtitle: "Whether you need more practice, live instruction, or help finding our Houston testing center, we've got you covered.",
+        // Split from the subtitle so the Pearson VUE URL can render as a real
+        // link rather than unclickable text in the middle of a sentence.
+        pearsonVueNoteBefore: "However if you are ready to take your exam please visit",
+        pearsonVueNoteAfter: "and select LBS as your test center.",
         visitTestCenter: "Visit Test Center Website",
         pathChooser: {
           heading: "How Can We Help You Today?",
@@ -564,6 +568,8 @@ const resources = {
         title: "Comenzar",
         seoTitle: "Preparación de Examen, Bootcamps en Vivo y Centro de Pruebas",
         subtitle: "Ya sea que necesites más práctica, instrucción en vivo o ayuda para encontrar nuestro centro de pruebas en Houston, te tenemos cubierto.",
+        pearsonVueNoteBefore: "Sin embargo, si estás listo para presentar tu examen, visita",
+        pearsonVueNoteAfter: "y selecciona LBS como tu centro de pruebas.",
         visitTestCenter: "Visitar Sitio Web del Centro de Pruebas",
         pathChooser: {
           heading: "¿Cómo Podemos Ayudarte Hoy?",

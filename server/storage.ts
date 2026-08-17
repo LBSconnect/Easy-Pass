@@ -11,6 +11,7 @@ import {
   employerInquiries,
   analyticsEvents,
   questionResponses,
+  questionBookmarks,
   diagnosticAttempts,
   type UserProfile,
   type InsertUserProfile,
@@ -41,6 +42,7 @@ import {
   type QuestionResponse,
   type InsertQuestionResponse,
   type TopicMastery,
+  type QuestionBookmark,
   type DiagnosticAttempt,
   type InsertDiagnosticAttempt,
 } from "@shared/schema";
@@ -128,6 +130,8 @@ export interface IStorage {
   getMissedQuestionIds(userId: string, category?: ExamCategory): Promise<string[]>;
   getResponsesSince(userId: string, since: Date): Promise<QuestionResponse[]>;
   getResponsesForCategory(userId: string, category: ExamCategory): Promise<QuestionResponse[]>;
+  toggleBookmark(userId: string, questionId: string, category: ExamCategory): Promise<{ bookmarked: boolean }>;
+  getBookmarkedQuestionIds(userId: string, category?: ExamCategory): Promise<string[]>;
   countActiveQuestions(category: ExamCategory): Promise<number>;
   
   createCertificate(certificate: InsertExamCertificate): Promise<ExamCertificate>;
@@ -728,6 +732,44 @@ export class DatabaseStorage implements IStorage {
       .from(questions)
       .where(and(eq(questions.category, category), eq(questions.isActive, true)));
     return row?.count ?? 0;
+  }
+
+  // Idempotent toggle: relies on uq_question_bookmarks_user_question so a
+  // double-tap cannot create duplicate rows.
+  async toggleBookmark(
+    userId: string,
+    questionId: string,
+    category: ExamCategory,
+  ): Promise<{ bookmarked: boolean }> {
+    const [existing] = await db
+      .select({ id: questionBookmarks.id })
+      .from(questionBookmarks)
+      .where(and(
+        eq(questionBookmarks.userId, userId),
+        eq(questionBookmarks.questionId, questionId),
+      ));
+
+    if (existing) {
+      await db.delete(questionBookmarks).where(eq(questionBookmarks.id, existing.id));
+      return { bookmarked: false };
+    }
+
+    await db
+      .insert(questionBookmarks)
+      .values({ userId, questionId, category })
+      .onConflictDoNothing();
+    return { bookmarked: true };
+  }
+
+  async getBookmarkedQuestionIds(userId: string, category?: ExamCategory): Promise<string[]> {
+    const filters = [eq(questionBookmarks.userId, userId)];
+    if (category) filters.push(eq(questionBookmarks.category, category));
+
+    const rows = await db
+      .select({ questionId: questionBookmarks.questionId })
+      .from(questionBookmarks)
+      .where(and(...filters));
+    return rows.map((r) => r.questionId);
   }
 
   async createCertificate(certificate: InsertExamCertificate): Promise<ExamCertificate> {

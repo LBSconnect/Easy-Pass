@@ -40,6 +40,24 @@ export function Footer() {
                   <span className="hover:text-primary transition-colors">{t("nav.exams")}</span>
                 </Link>
               </li>
+              <li>
+                <Link href="/schedule-exam">
+                  <span className="hover:text-primary transition-colors" data-testid="link-footer-schedule-exam">
+                    {t("nav.scheduleExam")}
+                  </span>
+                </Link>
+              </li>
+              <li>
+                <a
+                  href="https://www.lbs4.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-primary transition-colors"
+                  data-testid="link-footer-test-center"
+                >
+                  {t("nav.visitTestCenter")}
+                </a>
+              </li>
               {isAdmin && (
                 <li>
                   <Link href="/admin">

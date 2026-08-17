@@ -29,15 +29,14 @@ export function Navbar() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Kept intentionally short so the row fits on one line at laptop widths in
+  // both locales. Pricing, Get Started and Visit Test Center live in the footer.
   const navLinks = [
-    { href: "/", label: t("nav.home"), show: true, external: false },
-    { href: "/pricing", label: t("nav.pricing"), show: true, external: false },
-    { href: "/study-guide", label: t("nav.studyGuide"), show: isAuthenticated, external: false },
-    { href: "/exams", label: t("nav.exams"), show: true, external: false },
-    { href: "/schedule-exam", label: t("nav.scheduleExam"), show: true, external: false },
-    { href: "https://www.lbs4.com/", label: t("nav.visitTestCenter"), show: true, external: true },
-    { href: "/faq", label: t("nav.faq"), show: true, external: false },
-    { href: "/profile", label: t("nav.profile"), show: isAuthenticated, external: false },
+    { href: "/", label: t("nav.home"), show: true },
+    { href: "/exams", label: t("nav.exams"), show: true },
+    { href: "/study-guide", label: t("nav.studyGuide"), show: isAuthenticated },
+    { href: "/faq", label: t("nav.faq"), show: true },
+    { href: "/profile", label: t("nav.profile"), show: isAuthenticated },
   ];
 
   const getInitials = () => {
@@ -57,35 +56,22 @@ export function Navbar() {
           <img src={logoImage} alt="MyEasyPass" className="h-10 w-auto object-contain" width={996} height={301} />
         </Link>
 
-        <div className="hidden xl:flex items-center gap-4 2xl:gap-6">
+        <div className="hidden lg:flex items-center gap-5 xl:gap-7">
           {navLinks
             .filter((link) => link.show)
             .map((link) => (
-              link.external ? (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="whitespace-nowrap text-sm font-medium transition-colors hover:text-primary text-muted-foreground"
-                  data-testid="link-nav-test-center"
+              <Link key={link.href} href={link.href}>
+                <span
+                  className={`whitespace-nowrap text-sm font-medium transition-colors hover:text-primary ${
+                    location === link.href
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  }`}
+                  data-testid={`link-nav-${link.href.replace("/", "") || "home"}`}
                 >
                   {link.label}
-                </a>
-              ) : (
-                <Link key={link.href} href={link.href}>
-                  <span
-                    className={`whitespace-nowrap text-sm font-medium transition-colors hover:text-primary ${
-                      location === link.href
-                        ? "text-primary"
-                        : "text-muted-foreground"
-                    }`}
-                    data-testid={`link-nav-${link.href.replace("/", "") || "home"}`}
-                  >
-                    {link.label}
-                  </span>
-                </Link>
-              )
+                </span>
+              </Link>
             ))}
         </div>
 
@@ -183,7 +169,7 @@ export function Navbar() {
           )}
 
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild className="xl:hidden">
+            <SheetTrigger asChild className="lg:hidden">
               <Button variant="ghost" size="icon" aria-label="Open menu" data-testid="button-mobile-menu">
                 <Menu className="h-5 w-5" />
               </Button>
@@ -198,34 +184,21 @@ export function Navbar() {
                 {navLinks
                   .filter((link) => link.show)
                   .map((link) => (
-                    link.external ? (
-                      <a
-                        key={link.href}
-                        href={link.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="block py-2 text-lg font-medium text-muted-foreground"
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <span
+                        className={`block py-2 text-lg font-medium ${
+                          location === link.href
+                            ? "text-primary"
+                            : "text-muted-foreground"
+                        }`}
                       >
                         {link.label}
-                      </a>
-                    ) : (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <span
-                          className={`block py-2 text-lg font-medium ${
-                            location === link.href
-                              ? "text-primary"
-                              : "text-muted-foreground"
-                          }`}
-                        >
-                          {link.label}
-                        </span>
-                      </Link>
-                    )
+                      </span>
+                    </Link>
                   ))}
                 {!isAuthenticated && (
                   <div className="flex flex-col gap-3 mt-4 pt-4 border-t">

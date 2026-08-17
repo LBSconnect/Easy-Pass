@@ -20,6 +20,7 @@ import { gradePaper, calculateExamScore, calculateTopicBreakdown, type TopicStat
 import { calculateEasyPassScore } from "./easyPassScore";
 import { generateStudyPlan } from "./studyPlan";
 import { selectAdaptiveQuestions, buildHistory } from "./adaptiveSelection";
+import { buildNotebook, filterNotebook, notebookCounts, type NotebookFilter } from "./missedQuestions";
 import { shuffleQuestionOptions } from "./shuffleQuestionOptions";
 
 const startExamSchema = z.object({
@@ -720,6 +721,108 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error starting weak-area drill:", error);
       res.status(500).json({ message: "Failed to start weak-area drill" });
+    }
+  });
+
+  // The missed-question notebook. Returns full question detail including the
+  // correct answer and explanation, because reviewing a miss without seeing
+  // why it was wrong is useless - which is also why this is subscription
+  // gated, unlike the readiness score: the payload is the answer key for
+  // every question the student has attempted.
+  app.get("/api/missed-questions/:category", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { category } = req.params;
+
+      if (!examCategoryEnum.enumValues.includes(category as ExamCategory)) {
+        return res.status(400).json({ message: "Unknown exam category" });
+      }
+      const examCategory = category as ExamCategory;
+
+      const subscriptionCheck = await ensureSubscriptionActive(userId, examCategory);
+      if (!subscriptionCheck.active) {
+        return res.status(403).json({ message: subscriptionCheck.message });
+      }
+
+      const filterParam = String(req.query.filter ?? "all");
+      const filter: NotebookFilter = (
+        ["all", "struggling", "mastered", "recent", "topic"] as const
+      ).includes(filterParam as NotebookFilter)
+        ? (filterParam as NotebookFilter)
+        : "all";
+      const topic = req.query.topic ? String(req.query.topic) : undefined;
+
+      const [responses, bookmarkedIds] = await Promise.all([
+        storage.getResponsesForCategory(userId, examCategory),
+        storage.getBookmarkedQuestionIds(userId, examCategory),
+      ]);
+
+      const notebook = buildNotebook(
+        responses.map((r) => ({
+          questionId: r.questionId,
+          topic: r.topic,
+          isCorrect: r.isCorrect,
+          answeredAt: new Date(r.answeredAt),
+        })),
+        new Date(),
+      );
+
+      const counts = notebookCounts(notebook);
+      const visible = filterNotebook(notebook, filter, topic);
+
+      // Hydrate only the entries actually being shown.
+      const questionRows = await storage.getQuestionsByIds(visible.map((e) => e.questionId));
+      const byId = new Map(questionRows.map((q) => [q.id, q]));
+      const bookmarked = new Set(bookmarkedIds);
+
+      const entries = visible
+        .map((entry) => {
+          const question = byId.get(entry.questionId);
+          // A question deleted from the bank leaves history behind; drop it
+          // from the notebook rather than rendering a blank card.
+          if (!question) return null;
+          return {
+            ...entry,
+            isBookmarked: bookmarked.has(entry.questionId),
+            question: {
+              id: question.id,
+              topic: question.topic,
+              questionTextEn: question.questionTextEn,
+              questionTextEs: question.questionTextEs,
+              optionsEn: question.optionsEn,
+              optionsEs: question.optionsEs,
+              correctAnswer: question.correctAnswer,
+              explanationEn: question.explanationEn,
+              explanationEs: question.explanationEs,
+            },
+          };
+        })
+        .filter(Boolean);
+
+      const topics = Array.from(new Set(notebook.map((e) => e.topic))).sort();
+
+      res.json({ entries, counts, topics });
+    } catch (error) {
+      console.error("Error fetching missed questions:", error);
+      res.status(500).json({ message: "Failed to fetch missed questions" });
+    }
+  });
+
+  app.post("/api/bookmarks/:questionId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { questionId } = req.params;
+
+      const question = await storage.getQuestion(questionId);
+      if (!question) {
+        return res.status(404).json({ message: "Question not found" });
+      }
+
+      const result = await storage.toggleBookmark(userId, questionId, question.category);
+      res.json(result);
+    } catch (error) {
+      console.error("Error toggling bookmark:", error);
+      res.status(500).json({ message: "Failed to toggle bookmark" });
     }
   });
 

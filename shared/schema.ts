@@ -293,6 +293,21 @@ export const questionResponses = pgTable("question_responses", {
     .where(sql`session_id IS NOT NULL`),
 ]);
 
+// Questions a student has flagged to come back to. Separate from the missed
+// notebook, which is derived from answer history - a bookmark is an explicit
+// choice and survives answering the question correctly.
+export const questionBookmarks = pgTable("question_bookmarks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  questionId: varchar("question_id").notNull(),
+  category: examCategoryEnum("category").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_question_bookmarks_user").on(table.userId),
+  // One bookmark per student per question; makes the toggle idempotent.
+  uniqueIndex("uq_question_bookmarks_user_question").on(table.userId, table.questionId),
+]);
+
 export const analyticsEvents = pgTable("analytics_events", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   event: varchar("event", { length: 100 }).notNull(),
@@ -439,6 +454,11 @@ export const insertQuestionResponseSchema = createInsertSchema(questionResponses
   id: true,
 });
 
+export const insertQuestionBookmarkSchema = createInsertSchema(questionBookmarks).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertAnalyticsEventSchema = createInsertSchema(analyticsEvents, {
   metadata: z.record(z.string(), z.unknown()).optional(),
 }).omit({
@@ -476,6 +496,8 @@ export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
 export type InsertQuestionResponse = z.infer<typeof insertQuestionResponseSchema>;
 export type QuestionResponse = typeof questionResponses.$inferSelect;
 export type ResponseSource = (typeof responseSourceEnum.enumValues)[number];
+export type QuestionBookmark = typeof questionBookmarks.$inferSelect;
+export type InsertQuestionBookmark = z.infer<typeof insertQuestionBookmarkSchema>;
 
 // Aggregated per-topic accuracy, derived from question_responses. Feeds the
 // mastery heatmap, weak-area drills and the EasyPass Score's topic component.

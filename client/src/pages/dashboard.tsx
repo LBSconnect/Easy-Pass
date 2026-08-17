@@ -31,6 +31,7 @@ import {
   Calendar,
   Play,
   Sparkles,
+  RotateCcw,
 } from "lucide-react";
 import type { ExamResult, UserProfile, ExamCategory } from "@shared/schema";
 import { EasyPassScoreCard } from "@/components/easypass-score-card";
@@ -396,6 +397,23 @@ export default function DashboardPage() {
               <StudyPlanCard category={scoreCategory} />
 
               <MasteryHeatmap category={scoreCategory} />
+
+              {/* Entry point to the missed-question notebook. Kept as a plain
+                  row rather than a card so it does not compete with the score
+                  and plan above it. */}
+              <Button
+                variant="outline"
+                asChild
+                className="w-full justify-start"
+                data-testid="link-missed-questions"
+              >
+                <Link href="/missed-questions">
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  {i18n.language === "es"
+                    ? "Repasar Mis Preguntas Falladas"
+                    : "Review My Missed Questions"}
+                </Link>
+              </Button>
 
               {/* Exam Categories - Combined Practice & Full Mock */}
               <Card>

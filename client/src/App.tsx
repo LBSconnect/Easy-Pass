@@ -11,6 +11,7 @@ import "./lib/i18n";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
 import DashboardPage from "@/pages/dashboard";
+import MissedQuestionsPage from "@/pages/missed-questions";
 import ExamsPage from "@/pages/exams";
 import PricingPage from "@/pages/pricing";
 import ProfilePage from "@/pages/profile";
@@ -109,6 +110,7 @@ function Router() {
       <Route path="/forgot-password" component={ForgotPasswordPage} />
       <Route path="/reset-password" component={ResetPasswordPage} />
       <Route path="/dashboard" component={() => <ProtectedRoute component={DashboardPage} />} />
+      <Route path="/missed-questions" component={() => <ProtectedRoute component={MissedQuestionsPage} />} />
       {/* Not wrapped in ProtectedRoute: guests can browse categories and try
           a short quick-practice preview before being asked to sign up.
           ExamsPage itself branches on auth state for the rest of the flow. */}

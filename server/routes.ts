@@ -22,6 +22,8 @@ import { generateStudyPlan } from "./studyPlan";
 import { selectAdaptiveQuestions, buildHistory } from "./adaptiveSelection";
 import { difficultyFor } from "./alexi/nextBestAction";
 import { assessRisk, quarantineReason, type FeedbackType } from "./contentRisk";
+import { checkSchemaHealth } from "./migrations";
+import { pool } from "./db";
 import { buildNotebook, filterNotebook, notebookCounts, type NotebookFilter } from "./missedQuestions";
 import { buildSimulatorPaper } from "./simulatorPaper";
 import { selectDueCards, scheduleNext, newCardState } from "./spacedRepetition";
@@ -818,6 +820,31 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error answering tutor request:", error);
       res.status(500).json({ message: "Failed to answer" });
+    }
+  });
+
+  // Schema health. Reports which expected tables and columns are actually
+  // present in the database.
+  //
+  // The admin gate uses a RAW query for the role rather than storage.getProfile,
+  // because the failure this diagnoses is a missing column on user_profiles -
+  // and getProfile is precisely what breaks then. A diagnostic that fails the
+  // same way as the bug is no diagnostic at all.
+  app.get("/api/admin/schema-health", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const roleResult = await pool.query(
+        "SELECT role FROM user_profiles WHERE user_id = $1 LIMIT 1",
+        [userId],
+      );
+      if (roleResult.rows[0]?.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      res.json(await checkSchemaHealth());
+    } catch (error) {
+      console.error("Error checking schema health:", error);
+      res.status(500).json({ message: "Failed to check schema health" });
     }
   });
 

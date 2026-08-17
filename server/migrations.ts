@@ -1,0 +1,255 @@
+/**
+ * Additive schema migrations, applied automatically at startup.
+ *
+ * WHY THIS EXISTS
+ *
+ * Deploys did not apply schema changes - `npm run db:push` was a manual step
+ * someone had to remember. That gap took checkout down in production: a column
+ * was added to `user_profiles`, the code shipped, the column never did, and
+ * every `getProfile` call started failing. The pricing page did not read the
+ * profile so it looked healthy; the Subscribe button did, so it returned a 500.
+ *
+ * A deploy that ships code needing a column, without the column, is broken by
+ * construction. So the schema is now brought forward on boot.
+ *
+ * SAFETY
+ *
+ * Strictly additive and idempotent. Only CREATE TABLE IF NOT EXISTS, ADD COLUMN
+ * IF NOT EXISTS and CREATE INDEX IF NOT EXISTS appear here. There is no DROP,
+ * no RENAME, no type change, and no data rewrite anywhere in this file, and
+ * nothing here can remove a student's work.
+ *
+ * This is deliberately NOT `drizzle-kit push`, which compares the whole schema
+ * and will happily offer to drop a column it thinks is stale. On a database
+ * holding real student progress, a migration that can only add is worth more
+ * than one that is clever.
+ *
+ * ADDING TO THIS FILE
+ *
+ * Append a step. Never edit or reorder an existing one - they have already run
+ * everywhere. If a change cannot be expressed additively (a genuine rename, a
+ * type change, a backfill), it needs a considered migration and a human, not
+ * this file.
+ */
+
+import { pool } from "./db";
+
+interface Step {
+  name: string;
+  sql: string;
+}
+
+/**
+ * Enum types must exist before columns reference them. `CREATE TYPE` has no
+ * IF NOT EXISTS, so each is wrapped in a DO block that swallows duplicate_object.
+ */
+const ENUM_STEPS: Step[] = [
+  {
+    name: "enum response_source",
+    sql: `DO $$ BEGIN
+      CREATE TYPE response_source AS ENUM ('exam','practice','diagnostic','drill','flashcard');
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;`,
+  },
+];
+
+const STEPS: Step[] = [
+  // --- Response log: the foundation of readiness scoring -------------------
+  {
+    name: "table question_responses",
+    sql: `CREATE TABLE IF NOT EXISTS question_responses (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id varchar NOT NULL,
+      question_id varchar NOT NULL,
+      category exam_category NOT NULL,
+      topic varchar NOT NULL DEFAULT 'General',
+      source response_source NOT NULL,
+      session_id varchar,
+      selected_answer integer,
+      is_correct boolean NOT NULL,
+      time_spent_ms integer,
+      language language NOT NULL DEFAULT 'en',
+      answered_at timestamp NOT NULL DEFAULT now()
+    );`,
+  },
+  {
+    name: "indexes question_responses",
+    sql: `CREATE INDEX IF NOT EXISTS idx_question_responses_user_category
+            ON question_responses (user_id, category);
+          CREATE INDEX IF NOT EXISTS idx_question_responses_answered
+            ON question_responses (answered_at);
+          CREATE UNIQUE INDEX IF NOT EXISTS uq_question_responses_session_question
+            ON question_responses (session_id, question_id)
+            WHERE session_id IS NOT NULL;`,
+  },
+
+  // --- Study planning and retaker rescue ----------------------------------
+  {
+    name: "user_profiles.exam_date",
+    sql: `ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS exam_date timestamp;`,
+  },
+  {
+    name: "user_profiles.has_previous_attempt",
+    sql: `ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS has_previous_attempt boolean;`,
+  },
+
+  // --- Bookmarks and flashcards -------------------------------------------
+  {
+    name: "table question_bookmarks",
+    sql: `CREATE TABLE IF NOT EXISTS question_bookmarks (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id varchar NOT NULL,
+      question_id varchar NOT NULL,
+      category exam_category NOT NULL,
+      created_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_question_bookmarks_user_question
+      ON question_bookmarks (user_id, question_id);`,
+  },
+  {
+    name: "table flashcard_reviews",
+    sql: `CREATE TABLE IF NOT EXISTS flashcard_reviews (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id varchar NOT NULL,
+      question_id varchar NOT NULL,
+      category exam_category NOT NULL,
+      streak integer NOT NULL DEFAULT 0,
+      interval_days integer NOT NULL DEFAULT 0,
+      ease_hundredths integer NOT NULL DEFAULT 250,
+      due_at timestamp NOT NULL DEFAULT now(),
+      last_reviewed_at timestamp NOT NULL DEFAULT now(),
+      review_count integer NOT NULL DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS idx_flashcard_reviews_due
+      ON flashcard_reviews (user_id, category, due_at);
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_flashcard_reviews_user_question
+      ON flashcard_reviews (user_id, question_id);`,
+  },
+
+  // --- Assistant cost accounting ------------------------------------------
+  {
+    name: "table ai_usage_events",
+    sql: `CREATE TABLE IF NOT EXISTS ai_usage_events (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      operation varchar(50) NOT NULL,
+      outcome varchar(20) NOT NULL,
+      provider varchar(30) NOT NULL,
+      model varchar(60),
+      prompt_ref varchar(80),
+      input_tokens integer NOT NULL DEFAULT 0,
+      output_tokens integer NOT NULL DEFAULT 0,
+      estimated_cost_micros integer NOT NULL DEFAULT 0,
+      latency_ms integer NOT NULL DEFAULT 0,
+      category varchar(40),
+      user_id varchar,
+      reason varchar(120),
+      created_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_ai_usage_created ON ai_usage_events (created_at);
+    CREATE INDEX IF NOT EXISTS idx_ai_usage_operation ON ai_usage_events (operation, outcome);`,
+  },
+
+  // --- The column that broke checkout -------------------------------------
+  {
+    name: "user_profiles.preferred_category",
+    sql: `ALTER TABLE user_profiles
+            ADD COLUMN IF NOT EXISTS preferred_category exam_category;`,
+  },
+
+  // --- Measured item difficulty -------------------------------------------
+  {
+    name: "questions difficulty columns",
+    sql: `ALTER TABLE questions ADD COLUMN IF NOT EXISTS difficulty varchar(20);
+          ALTER TABLE questions ADD COLUMN IF NOT EXISTS p_value_basis_points integer;
+          ALTER TABLE questions ADD COLUMN IF NOT EXISTS difficulty_calibrated_at timestamp;`,
+  },
+];
+
+export interface MigrationResult {
+  applied: string[];
+  failed: Array<{ name: string; error: string }>;
+}
+
+/**
+ * Bring the schema forward.
+ *
+ * A failing step is logged and the rest still run: one missing index should
+ * not stop a column the app needs from being added. The summary is returned so
+ * startup can log it and the admin health endpoint can report it.
+ */
+export async function runMigrations(): Promise<MigrationResult> {
+  const result: MigrationResult = { applied: [], failed: [] };
+
+  for (const step of [...ENUM_STEPS, ...STEPS]) {
+    try {
+      await pool.query(step.sql);
+      result.applied.push(step.name);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`[migrate] FAILED ${step.name}: ${message}`);
+      result.failed.push({ name: step.name, error: message });
+    }
+  }
+
+  if (result.failed.length === 0) {
+    console.log(`[migrate] schema up to date (${result.applied.length} steps verified)`);
+  } else {
+    console.error(
+      `[migrate] ${result.failed.length} of ${result.applied.length + result.failed.length} ` +
+      `steps FAILED - the app may not work correctly`,
+    );
+  }
+
+  return result;
+}
+
+/**
+ * Report which expected tables and columns are actually present.
+ *
+ * Deliberately queries information_schema directly rather than going through
+ * the ORM: when a column is missing, the ORM is exactly what is broken, and a
+ * diagnostic that fails in the same way as the bug is no diagnostic at all.
+ */
+export async function checkSchemaHealth(): Promise<{
+  healthy: boolean;
+  missingTables: string[];
+  missingColumns: string[];
+}> {
+  const expectedTables = [
+    "question_responses",
+    "question_bookmarks",
+    "flashcard_reviews",
+    "ai_usage_events",
+  ];
+  const expectedColumns: Array<[string, string]> = [
+    ["user_profiles", "exam_date"],
+    ["user_profiles", "has_previous_attempt"],
+    ["user_profiles", "preferred_category"],
+    ["questions", "difficulty"],
+    ["questions", "p_value_basis_points"],
+    ["questions", "difficulty_calibrated_at"],
+  ];
+
+  const tables = await pool.query(
+    `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'`,
+  );
+  const present = new Set(tables.rows.map((r: { table_name: string }) => r.table_name));
+  const missingTables = expectedTables.filter((t) => !present.has(t));
+
+  const columns = await pool.query(
+    `SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'public'`,
+  );
+  const presentColumns = new Set(
+    columns.rows.map((r: { table_name: string; column_name: string }) =>
+      `${r.table_name}.${r.column_name}`,
+    ),
+  );
+  const missingColumns = expectedColumns
+    .map(([t, c]) => `${t}.${c}`)
+    .filter((k) => !presentColumns.has(k));
+
+  return {
+    healthy: missingTables.length === 0 && missingColumns.length === 0,
+    missingTables,
+    missingColumns,
+  };
+}

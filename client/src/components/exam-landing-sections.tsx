@@ -116,7 +116,7 @@ export function ReadinessPreview({ category, slug, isSpanish }: SectionProps) {
 
         <Button asChild className="mt-4 w-full" data-testid="button-preview-cta">
           <Link
-            href={live ? "/dashboard" : "/diagnostic"}
+            href={live ? "/dashboard" : "/readiness-check"}
             onClick={() =>
               trackEvent(live ? "continue_studying_click" : "readiness_cta_click", {
                 slug, exam_type: category, source: "hero_preview",
@@ -200,7 +200,7 @@ export function ProblemSolution({ category, slug, isSpanish }: SectionProps) {
         <div className="mt-8 text-center">
           <Button asChild size="lg" data-testid="button-find-weak-areas">
             <Link
-              href="/diagnostic"
+              href="/readiness-check"
               onClick={() =>
                 trackEvent("readiness_cta_click", { slug, exam_type: category, source: "problem_solution" })
               }
@@ -387,7 +387,7 @@ export function RetakerRescueSection({ category, slug, isSpanish }: SectionProps
                   data-testid="button-retaker-plan"
                 >
                   <Link
-                    href={profile ? "/dashboard" : "/diagnostic"}
+                    href={profile ? "/dashboard" : "/readiness-check"}
                     onClick={() =>
                       trackEvent("retaker_rescue_start", { slug, exam_type: category, source: "landing" })
                     }

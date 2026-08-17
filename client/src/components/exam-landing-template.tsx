@@ -233,7 +233,7 @@ function ExamLandingPageInner({ content }: { content: ExamLandingPageContent }) 
                 <div className="flex flex-wrap gap-3 pt-2">
                   {/* Primary CTA is the free diagnostic, not checkout: cold
                       traffic converts better after experiencing the product. */}
-                  <Link href="/diagnostic">
+                  <Link href="/readiness-check">
                     <Button
                       size="lg"
                       onClick={() =>

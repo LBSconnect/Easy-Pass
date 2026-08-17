@@ -58,10 +58,12 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 function ExamCard({
   exam,
   isCurrent,
+  mode,
   es,
 }: {
   exam: (typeof EXAMS)[number];
   isCurrent: boolean;
+  mode: PracticeMode;
   es: boolean;
 }) {
   const { data: readiness } = useQuery<Readiness>({
@@ -97,8 +99,18 @@ function ExamCard({
           />
         </div>
 
+        {/*
+          The selected mode is the solid button and comes first. Before this,
+          Full Mock Exam was always the solid one, so picking Quick Practice
+          above appeared to do nothing - the blue button never moved.
+        */}
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          <Button variant="outline" asChild className="min-h-11" data-testid={`button-quick-${exam.id}`}>
+          <Button
+            variant={mode === "quick" ? "default" : "outline"}
+            asChild
+            className={`min-h-11 ${mode === "quick" ? "" : "sm:order-2"}`}
+            data-testid={`button-quick-${exam.id}`}
+          >
             <Link
               href={`/exams/${exam.id}`}
               onClick={() => trackEvent("quiz_me_clicked", { exam_type: exam.id })}
@@ -107,7 +119,12 @@ function ExamCard({
               {es ? "Práctica rápida" : "Quick Practice"}
             </Link>
           </Button>
-          <Button asChild className="min-h-11" data-testid={`button-mock-${exam.id}`}>
+          <Button
+            variant={mode === "full" ? "default" : "outline"}
+            asChild
+            className={`min-h-11 ${mode === "full" ? "sm:order-first" : ""}`}
+            data-testid={`button-mock-${exam.id}`}
+          >
             <Link
               href={`/exams/${exam.id}?mode=full`}
               onClick={() => trackEvent("mock_exam_clicked", { exam_type: exam.id })}
@@ -349,7 +366,13 @@ export function ExamHub() {
           {/* Exam grid */}
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             {EXAMS.map((exam) => (
-              <ExamCard key={exam.id} exam={exam} isCurrent={exam.id === current} es={es} />
+              <ExamCard
+                key={exam.id}
+                exam={exam}
+                isCurrent={exam.id === current}
+                mode={mode}
+                es={es}
+              />
             ))}
           </div>
 

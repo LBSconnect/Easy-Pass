@@ -41,6 +41,7 @@ import {
   ChevronUp,
   Edit2,
   Flag,
+  Bookmark,
   Award,
   Share2,
   Sparkles,
@@ -223,8 +224,18 @@ function ExamSession() {
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [result, setResult] = useState<ExamResult | null>(null);
   const [topicBreakdown, setTopicBreakdown] = useState<Array<{topic: string; correct: number; total: number; percentage: number}>>([]);
+  const [readiness, setReadiness] = useState<{
+    score: number;
+    band: string;
+    delta: number;
+    provisional: boolean;
+    weakestTopic: string | null;
+  } | null>(null);
   const [subscriptionRequired, setSubscriptionRequired] = useState(false);
   const [showReviewPanel, setShowReviewPanel] = useState(false);
+  // Questions the student marked to come back to. Local to the sitting: a
+  // flag is a working note for this attempt, not persisted study data.
+  const [flagged, setFlagged] = useState<Set<string>>(new Set());
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [feedbackType, setFeedbackType] = useState<string>("");
@@ -304,6 +315,7 @@ function ExamSession() {
       setSubscriptionRequired(false);
       setResult(null);
       setTopicBreakdown([]);
+      setReadiness(null);
       setAnswers({});
       setCurrentIndex(0);
       setCertificate(null);
@@ -331,6 +343,7 @@ function ExamSession() {
     onSuccess: (data) => {
       setResult(data.result);
       setTopicBreakdown(data.topicBreakdown || []);
+      setReadiness(data.readiness ?? null);
       queryClient.invalidateQueries({ queryKey: ["/api/results"] });
     },
     onError: (error: Error) => {
@@ -418,6 +431,15 @@ function ExamSession() {
         [currentQuestion.id]: parseInt(value),
       }));
     }
+  };
+
+  const toggleFlag = (questionId: string) => {
+    setFlagged((prev) => {
+      const next = new Set(prev);
+      if (next.has(questionId)) next.delete(questionId);
+      else next.add(questionId);
+      return next;
+    });
   };
 
   const handleSubmit = () => {
@@ -522,6 +544,47 @@ function ExamSession() {
         <main className="flex-1">
           <div className="container mx-auto px-4 py-12">
             <div className="max-w-3xl mx-auto space-y-6">
+              {readiness && (
+                <Card data-testid="card-readiness-impact">
+                  <CardContent className="flex flex-wrap items-center justify-between gap-4 py-5">
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        {i18n.language === "es" ? "Puntuación EasyPass" : "EasyPass Score"}
+                      </p>
+                      <div className="mt-1 flex items-baseline gap-2">
+                        <span className="text-3xl font-bold tabular-nums" data-testid="text-readiness-score">
+                          {readiness.score}
+                        </span>
+                        <span className="text-muted-foreground">/ 100</span>
+                        {readiness.delta !== 0 && (
+                          <span
+                            className={`text-sm font-medium ${
+                              readiness.delta > 0
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : "text-rose-600 dark:text-rose-400"
+                            }`}
+                            data-testid="text-readiness-delta"
+                          >
+                            {readiness.delta > 0 ? "+" : ""}{readiness.delta}{" "}
+                            {i18n.language === "es" ? "por este examen" : "from this exam"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {readiness.weakestTopic && (
+                      <div className="text-sm">
+                        <p className="text-muted-foreground">
+                          {i18n.language === "es" ? "Enfócate ahora en" : "Focus next on"}
+                        </p>
+                        <p className="font-medium" data-testid="text-readiness-followup">
+                          {readiness.weakestTopic}
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
               <Card className="text-center">
                 <CardHeader className="pb-4">
                   <div className="mx-auto mb-4">
@@ -776,6 +839,26 @@ function ExamSession() {
                     {t("exam.question")} {currentIndex + 1} {t("exam.of")}{" "}
                     {questions.length}
                   </Badge>
+                  <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-8 gap-1 ${
+                      flagged.has(questions[currentIndex]?.id)
+                        ? "text-amber-600 dark:text-amber-400"
+                        : "text-muted-foreground"
+                    }`}
+                    onClick={() => toggleFlag(questions[currentIndex].id)}
+                    aria-pressed={flagged.has(questions[currentIndex]?.id)}
+                    data-testid="button-flag-question"
+                  >
+                    <Bookmark className="h-3.5 w-3.5" />
+                    <span className="text-xs hidden sm:inline">
+                      {flagged.has(questions[currentIndex]?.id)
+                        ? (i18n.language === "es" ? "Marcada" : "Flagged")
+                        : (i18n.language === "es" ? "Marcar" : "Flag")}
+                    </span>
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -788,6 +871,7 @@ function ExamSession() {
                       {i18n.language === "es" ? "Reportar" : "Report Issue"}
                     </span>
                   </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -930,6 +1014,13 @@ function ExamSession() {
                             >
                               {index + 1}
                             </Badge>
+                            {flagged.has(question.id) && (
+                              <Bookmark
+                                className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
+                                aria-label={i18n.language === "es" ? "Marcada" : "Flagged"}
+                                data-testid={`review-flagged-${index + 1}`}
+                              />
+                            )}
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium line-clamp-2 mb-1">
                                 {qText}
@@ -968,8 +1059,19 @@ function ExamSession() {
               <br />
               <br />
               {answeredCount < questions.length && (
-                <span className="text-amber-500">
-                  You have {questions.length - answeredCount} unanswered questions.
+                <span className="block text-amber-600 dark:text-amber-400">
+                  {i18n.language === "es"
+                    ? `Tienes ${questions.length - answeredCount} preguntas sin responder.`
+                    : `You have ${questions.length - answeredCount} unanswered question${
+                        questions.length - answeredCount === 1 ? "" : "s"
+                      }.`}
+                </span>
+              )}
+              {flagged.size > 0 && (
+                <span className="block text-amber-600 dark:text-amber-400">
+                  {i18n.language === "es"
+                    ? `Marcaste ${flagged.size} pregunta${flagged.size === 1 ? "" : "s"} para revisar.`
+                    : `You flagged ${flagged.size} question${flagged.size === 1 ? "" : "s"} for review.`}
                 </span>
               )}
             </AlertDialogDescription>

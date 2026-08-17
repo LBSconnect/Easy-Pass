@@ -21,6 +21,7 @@ import { calculateEasyPassScore } from "./easyPassScore";
 import { generateStudyPlan } from "./studyPlan";
 import { selectAdaptiveQuestions, buildHistory } from "./adaptiveSelection";
 import { buildNotebook, filterNotebook, notebookCounts, type NotebookFilter } from "./missedQuestions";
+import { buildSimulatorPaper } from "./simulatorPaper";
 import { shuffleQuestionOptions } from "./shuffleQuestionOptions";
 
 const startExamSchema = z.object({
@@ -369,7 +370,24 @@ export async function registerRoutes(
       const timeLimit = mode === "full" ? 7200 : 5400; // 120 min or 90 min in seconds
       
       console.log(`[Exam Start] Category: ${category}, Mode: ${mode}, Limit: ${questionLimit}, Time: ${timeLimit}s`);
-      const questions = await storage.getQuestions(category, questionLimit);
+      // Full mock = exam-day simulator: the paper is weighted so topics appear
+      // in proportion to the bank rather than by luck of a random draw.
+      // Practice stays a straight random sample.
+      let questions;
+      if (mode === "full") {
+        const activePool = await storage.getActiveQuestions(category);
+        const paper = buildSimulatorPaper({
+          pool: activePool.map((q) => ({ id: q.id, topic: q.topic })),
+          targetCount: questionLimit,
+          seed: Date.now(),
+        });
+        const byId = new Map(activePool.map((q) => [q.id, q]));
+        questions = paper
+          .map((p) => byId.get(p.id))
+          .filter((q): q is NonNullable<typeof q> => Boolean(q));
+      } else {
+        questions = await storage.getQuestions(category, questionLimit);
+      }
       console.log(`[Exam Start] Retrieved ${questions.length} questions for category ${category}`);
       
       if (questions.length === 0) {
@@ -496,7 +514,59 @@ export async function registerRoutes(
 
       const topicBreakdown = calculateTopicBreakdown(topicStats);
 
-      res.json({ result, topicBreakdown });
+      // EasyPass Score impact. Computed twice from the same history - once
+      // including this sitting, once excluding it - so the delta reflects
+      // what this exam actually moved rather than a remembered client value.
+      // Never allowed to fail the submission.
+      let readiness = null;
+      try {
+        const [allResponses, allResults, bankSize] = await Promise.all([
+          storage.getResponsesForCategory(userId, session.category),
+          storage.getExamResults(userId),
+          storage.countActiveQuestions(session.category),
+        ]);
+
+        const categoryResults = allResults
+          .filter((r) => r.category === session.category)
+          .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+
+        const toScoreInput = (
+          rows: typeof allResponses,
+          mockScores: number[],
+        ) => ({
+          responses: rows.map((r) => ({
+            questionId: r.questionId,
+            topic: r.topic,
+            isCorrect: r.isCorrect,
+            answeredAt: new Date(r.answeredAt),
+          })),
+          mockExamScores: mockScores,
+          questionBankSize: bankSize,
+          now: new Date(),
+        });
+
+        const after = calculateEasyPassScore(
+          toScoreInput(allResponses, categoryResults.map((r) => r.score)),
+        );
+        const before = calculateEasyPassScore(
+          toScoreInput(
+            allResponses.filter((r) => r.sessionId !== sessionId),
+            categoryResults.filter((r) => r.sessionId !== sessionId).map((r) => r.score),
+          ),
+        );
+
+        readiness = {
+          score: after.score,
+          band: after.band,
+          delta: after.score - before.score,
+          provisional: after.provisional,
+          weakestTopic: after.weakestTopic,
+        };
+      } catch (error) {
+        console.error("Error computing readiness impact:", error);
+      }
+
+      res.json({ result, topicBreakdown, readiness });
     } catch (error) {
       console.error("Error submitting exam:", error);
       res.status(500).json({ message: "Failed to submit exam" });

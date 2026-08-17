@@ -18,6 +18,7 @@ import { sanitizeHtml } from "./sanitize";
 import { checkSubscriptionActive } from "./subscriptionCheck";
 import { gradePaper, calculateExamScore, calculateTopicBreakdown, type TopicStat } from "./examScoring";
 import { calculateEasyPassScore } from "./easyPassScore";
+import { generateStudyPlan } from "./studyPlan";
 import { shuffleQuestionOptions } from "./shuffleQuestionOptions";
 
 const startExamSchema = z.object({
@@ -36,6 +37,10 @@ const checkoutSchema = z.object({
 const profileUpdateSchema = z.object({
   phone: z.string().max(20).optional(),
   preferredLanguage: z.enum(["en", "es"]).optional(),
+  // null is meaningful: it clears a previously set exam date back to
+  // "not scheduled yet", which is a supported answer rather than a gap.
+  examDate: z.string().datetime().nullable().optional(),
+  hasPreviousAttempt: z.boolean().nullable().optional(),
 });
 
 const VALID_PRICE_IDS = new Set<string>();
@@ -323,12 +328,15 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid profile data", errors: parsed.error.errors });
       }
 
-      const { phone, preferredLanguage } = parsed.data;
+      const { phone, preferredLanguage, examDate, hasPreviousAttempt } = parsed.data;
       const sanitizedPhone = phone ? sanitizeHtml(phone) ?? phone : undefined;
 
       const updated = await storage.updateProfile(userId, {
         phone: sanitizedPhone,
         preferredLanguage,
+        // undefined leaves the field alone; null clears it.
+        ...(examDate !== undefined ? { examDate: examDate ? new Date(examDate) : null } : {}),
+        ...(hasPreviousAttempt !== undefined ? { hasPreviousAttempt } : {}),
       });
 
       res.json(updated);
@@ -556,6 +564,45 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error computing readiness score:", error);
       res.status(500).json({ message: "Failed to compute readiness score" });
+    }
+  });
+
+  // Today's personalised study plan for one category, derived from the
+  // student's actual topic standing, missed-question backlog and exam date.
+  app.get("/api/study-plan/:category", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { category } = req.params;
+
+      if (!examCategoryEnum.enumValues.includes(category as ExamCategory)) {
+        return res.status(400).json({ message: "Unknown exam category" });
+      }
+      const examCategory = category as ExamCategory;
+
+      const [mastery, missedIds, profile, results] = await Promise.all([
+        storage.getTopicMastery(userId, examCategory),
+        storage.getMissedQuestionIds(userId, examCategory),
+        storage.getProfile(userId),
+        storage.getExamResults(userId),
+      ]);
+
+      const plan = generateStudyPlan({
+        topics: mastery.map((m) => ({
+          topic: m.topic,
+          answered: m.answered,
+          accuracy: m.accuracy,
+        })),
+        missedQuestionCount: missedIds.length,
+        examDate: profile?.examDate ? new Date(profile.examDate) : null,
+        now: new Date(),
+        hasPreviousAttempt: profile?.hasPreviousAttempt ?? false,
+        hasSatMock: results.some((r) => r.category === examCategory),
+      });
+
+      res.json(plan);
+    } catch (error) {
+      console.error("Error generating study plan:", error);
+      res.status(500).json({ message: "Failed to generate study plan" });
     }
   });
 

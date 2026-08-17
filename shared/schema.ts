@@ -35,6 +35,13 @@ export const userProfiles = pgTable("user_profiles", {
   subscriptionType: subscriptionTypeEnum("subscription_type"),
   allowedCategories: jsonb("allowed_categories").$type<string[]>(),
   subscriptionEndDate: timestamp("subscription_end_date"),
+  // Scheduled exam date, used for the countdown and to size the study plan.
+  // Null means "not scheduled yet", which is an explicit, supported answer -
+  // those students get an untimed plan rather than being nagged for a date.
+  examDate: timestamp("exam_date"),
+  // Retaker Rescue: a student who has sat the exam before gets a plan that
+  // leans harder on weak areas. Null means they have not told us yet.
+  hasPreviousAttempt: boolean("has_previous_attempt"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import type { ExamResult, UserProfile, ExamCategory } from "@shared/schema";
 import { EasyPassScoreCard } from "@/components/easypass-score-card";
+import { StudyPlanCard } from "@/components/study-plan-card";
 
 const categoryIcons = {
   real_estate: Home,
@@ -390,6 +391,8 @@ export default function DashboardPage() {
             <div className="lg:col-span-8 min-w-0 space-y-6">
 
               <EasyPassScoreCard category={scoreCategory} />
+
+              <StudyPlanCard category={scoreCategory} />
 
               {/* Exam Categories - Combined Practice & Full Mock */}
               <Card>

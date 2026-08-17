@@ -113,7 +113,18 @@ export default function ScheduleExamPage() {
               {t("scheduleExam.title")}
             </h1>
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-2">
-              {t("scheduleExam.subtitle")}
+              {t("scheduleExam.subtitle")}{" "}
+              {t("scheduleExam.pearsonVueNoteBefore")}{" "}
+              <a
+                href="https://www.pearsonvue.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-primary underline underline-offset-4 hover:no-underline"
+                data-testid="link-pearson-vue"
+              >
+                www.pearsonvue.com
+              </a>{" "}
+              {t("scheduleExam.pearsonVueNoteAfter")}
             </p>
           </div>
         </section>

@@ -18,7 +18,13 @@ import { useSEO, buildUrl } from "@/hooks/use-seo";
 import { trackEvent } from "@/lib/analytics";
 import { getTopicsByCategory } from "@shared/studyTopics";
 import { getLandingPageBySlug, examLandingPages, type ExamLandingPageContent } from "@/lib/examLandingContent";
-import type { Question } from "@shared/schema";
+import {
+  ReadinessPreview,
+  ProblemSolution,
+  ExamStructure,
+  RetakerRescueSection,
+} from "@/components/exam-landing-sections";
+import type { Question, ExamCategory } from "@shared/schema";
 
 const CATEGORY_LABELS: Record<string, { en: string; es: string }> = {
   real_estate: { en: "Real Estate", es: "Bienes Raíces" },
@@ -152,6 +158,16 @@ function ExamLandingPageInner({ content }: { content: ExamLandingPageContent }) 
     ],
   };
 
+  // The exam this page sells. Config lists categories; the first is primary
+  // and drives readiness, exam facts and analytics for the page.
+  const primaryCategory = content.categories[0] as ExamCategory;
+
+  // One view event per page load, tagged with the exam so the four products
+  // can be compared against each other in the funnel.
+  useEffect(() => {
+    trackEvent("exam_landing_view", { slug: content.slug, exam_type: primaryCategory });
+  }, [content.slug, primaryCategory]);
+
   useSEO({
     title: content.pageTitle,
     description: content.metaDescription,
@@ -190,46 +206,86 @@ function ExamLandingPageInner({ content }: { content: ExamLandingPageContent }) 
           </div>
         </div>
 
-        {/* Hero */}
+        {/* Hero: copy on the left, live product preview on the right. The
+            preview is the marketing image - the readiness dashboard is the
+            product, so showing it beats any stock photograph. */}
         <section className="py-16 md:py-20 bg-gradient-to-b from-primary/5 via-primary/3 to-background">
           <div className="container mx-auto px-4">
-            <div className="max-w-3xl mx-auto text-center space-y-6">
-              <div className="flex flex-wrap justify-center gap-2">
-                {content.categories.map((category) => (
-                  <Badge key={category} variant="secondary">
-                    {CATEGORY_LABELS[category]?.[content.language]}
-                  </Badge>
-                ))}
+            <div className="grid items-center gap-10 lg:grid-cols-2">
+              <div className="min-w-0 space-y-6">
+                <div className="flex flex-wrap gap-2">
+                  {content.categories.map((category) => (
+                    <Badge key={category} variant="secondary">
+                      {CATEGORY_LABELS[category]?.[content.language]}
+                    </Badge>
+                  ))}
+                </div>
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight" data-testid="heading-landing-h1">
+                  {content.h1}
+                </h1>
+                <p className="text-lg text-muted-foreground">{content.heroSubtitle}</p>
+                <div className="flex flex-wrap gap-3 pt-2">
+                  {/* Primary CTA is the free diagnostic, not checkout: cold
+                      traffic converts better after experiencing the product. */}
+                  <Link href="/diagnostic">
+                    <Button
+                      size="lg"
+                      onClick={() =>
+                        trackEvent("readiness_cta_click", {
+                          slug: content.slug,
+                          exam_type: primaryCategory,
+                          source: "hero",
+                        })
+                      }
+                      data-testid="button-hero-readiness-cta"
+                    >
+                      {isSpanish ? "Tomar Mi Prueba Gratuita" : "Take My Free Readiness Test"}
+                    </Button>
+                  </Link>
+                  <Link href={pricingHref}>
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      onClick={() =>
+                        trackEvent("pricing_cta_click", {
+                          slug: content.slug,
+                          exam_type: primaryCategory,
+                          source: "hero",
+                        })
+                      }
+                      data-testid="button-hero-pricing-cta"
+                    >
+                      {isSpanish ? "Ver Qué Incluye" : "See What's Included"}
+                    </Button>
+                  </Link>
+                </div>
+                <ul className="flex flex-wrap gap-x-5 gap-y-2 pt-1 text-sm text-muted-foreground">
+                  {(isSpanish
+                    ? ["Específico de Texas", "Práctica adaptativa", "Inglés + Español", "Estudia donde sea"]
+                    : ["Texas-Specific", "Adaptive Practice", "English + Español", "Study Anywhere"]
+                  ).map((item) => (
+                    <li key={item} className="flex items-center gap-1.5">
+                      <CheckCircle2 className="h-4 w-4 text-primary" aria-hidden="true" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight" data-testid="heading-landing-h1">
-                {content.h1}
-              </h1>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{content.heroSubtitle}</p>
-              <div className="flex flex-wrap justify-center gap-3 pt-2">
-                <Link href={pricingHref}>
-                  <Button
-                    size="lg"
-                    onClick={() => trackEvent("pricing_cta_click", { slug: content.slug, source: "hero" })}
-                    data-testid="button-hero-pricing-cta"
-                  >
-                    {isSpanish ? "Ver Precios" : "View Pricing"}
-                  </Button>
-                </Link>
-                <a href={bootcampHref} target="_blank" rel="noopener noreferrer">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={() => trackEvent("bootcamp_cta_click", { slug: content.slug, source: "hero" })}
-                    data-testid="button-hero-bootcamp-cta"
-                  >
-                    {isSpanish ? "Ver Bootcamps en Vivo" : "See Live Exam Bootcamps"}
-                    <ExternalLink className="ml-2 h-4 w-4" />
-                  </Button>
-                </a>
+
+              <div className="min-w-0">
+                <ReadinessPreview
+                  category={primaryCategory}
+                  slug={content.slug}
+                  isSpanish={isSpanish}
+                />
               </div>
             </div>
           </div>
         </section>
+
+        <ProblemSolution category={primaryCategory} slug={content.slug} isSpanish={isSpanish} />
+        <ExamStructure category={primaryCategory} slug={content.slug} isSpanish={isSpanish} />
+        <RetakerRescueSection category={primaryCategory} slug={content.slug} isSpanish={isSpanish} />
 
         {/* Audience */}
         <section className="py-12 md:py-16">

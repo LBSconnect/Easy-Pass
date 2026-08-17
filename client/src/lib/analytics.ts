@@ -13,7 +13,14 @@ export type AnalyticsEventName =
   | "official_exam_schedule_click"
   | "guest_practice_start"
   | "guest_practice_wall_shown"
-  | "guest_practice_signup_click";
+  | "guest_practice_signup_click"
+  // Exam landing / readiness funnel. Every one of these carries an
+  // `exam_type` in metadata so conversion can be compared across the four
+  // exam products rather than aggregated into one meaningless number.
+  | "exam_landing_view"
+  | "readiness_cta_click"
+  | "retaker_rescue_start"
+  | "continue_studying_click";
 
 export function trackEvent(event: AnalyticsEventName, metadata?: Record<string, unknown>) {
   try {

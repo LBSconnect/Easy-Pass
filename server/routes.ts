@@ -1645,6 +1645,30 @@ export async function registerRoutes(
       }
 
       let customerId = profile.stripeCustomerId;
+
+      // Verify the stored customer still exists in THIS Stripe account before
+      // using it. A stored id can go stale - the customer was deleted, or it
+      // was created against a different account - and Stripe then rejects the
+      // whole session with "No such customer", which surfaced as a failed
+      // Subscribe with nothing pointing at the cause. Re-creating is safe:
+      // the id is only a pointer, and existing subscriptions live on the
+      // customer record we are about to replace only if it no longer exists.
+      if (customerId) {
+        try {
+          const existing = await stripe.customers.retrieve(customerId);
+          if ((existing as { deleted?: boolean }).deleted) {
+            console.warn(`[checkout] stored customer ${customerId} is deleted; recreating`);
+            customerId = null;
+          }
+        } catch (err) {
+          console.warn(
+            `[checkout] stored customer ${customerId} not found in this account; recreating`,
+            (err as { code?: string }).code,
+          );
+          customerId = null;
+        }
+      }
+
       if (!customerId) {
         const customer = await stripe.customers.create({
           email: user?.email || undefined,

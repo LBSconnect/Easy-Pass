@@ -106,13 +106,16 @@ export function modeLabel(mode: LearningMode, es: boolean): string {
  */
 export function blockHref(mode: LearningMode, category: string): string {
   switch (mode) {
+    // Weak-area deck, not the default mixed one - the recommendation named a
+    // concept, so the destination has to reflect it.
     case "flashcards":
-      return "/flashcards";
+      return "/flashcards?scope=weak";
     case "review":
+      return "/missed-questions?filter=struggling";
     case "teach":
       return "/study-guide";
     case "mock_exam":
-      return `/exams/${category}`;
+      return `/exams/${category}?mode=full`;
     default:
       return `/exams/${category}`;
   }

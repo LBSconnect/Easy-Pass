@@ -24,6 +24,16 @@ import { buildNotebook, filterNotebook, notebookCounts, type NotebookFilter } fr
 import { buildSimulatorPaper } from "./simulatorPaper";
 import { selectDueCards, scheduleNext, newCardState } from "./spacedRepetition";
 import { shuffleQuestionOptions } from "./shuffleQuestionOptions";
+import { studyAssistant } from "./alexi/studyAssistantService";
+import { TUTOR_INTENTS, MAX_STUDENT_MESSAGE_CHARS, type TutorIntent } from "./alexi/tutor";
+
+const alexiTutorSchema = z.object({
+  questionId: z.string().min(1),
+  intent: z.enum(TUTOR_INTENTS as [TutorIntent, ...TutorIntent[]]),
+  // Optional free text, hard-capped. The cap is the substantive control on
+  // how much attacker-controlled text can reach a prompt.
+  message: z.string().max(MAX_STUDENT_MESSAGE_CHARS).optional(),
+});
 
 const startExamSchema = z.object({
   category: z.enum(examCategoryEnum.enumValues),
@@ -695,6 +705,96 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching topic mastery:", error);
       res.status(500).json({ message: "Failed to fetch topic mastery" });
+    }
+  });
+
+  // --- Study assistant (Alexi) ------------------------------------------
+  // Every capability here is feature-flagged and degrades to approved static
+  // content when the AI provider is unavailable, so these routes never become
+  // a dependency for studying.
+
+  // What the browser may know about the assistant. Deliberately excludes
+  // provider, model and prompt versions.
+  app.get("/api/alexi/config", isAuthenticated, async (_req: any, res) => {
+    try {
+      res.json(studyAssistant.getConfig());
+    } catch (error) {
+      console.error("Error fetching assistant config:", error);
+      res.status(500).json({ message: "Failed to fetch assistant config" });
+    }
+  });
+
+  // The headline call: what should this student do next? The decision is
+  // deterministic; only its phrasing may involve a model.
+  app.get("/api/alexi/recommendation/:category", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { category } = req.params;
+
+      if (!examCategoryEnum.enumValues.includes(category as ExamCategory)) {
+        return res.status(400).json({ message: "Unknown exam category" });
+      }
+
+      const parsedMinutes = Number.parseInt(String(req.query.minutes ?? ""), 10);
+      // Clamp rather than reject: a nonsense value should still produce a
+      // sensible session, not an error page.
+      const availableMinutes = Number.isFinite(parsedMinutes)
+        ? Math.min(120, Math.max(5, parsedMinutes))
+        : undefined;
+
+      const result = await studyAssistant.getRecommendation(userId, category as ExamCategory, {
+        availableMinutes,
+      });
+      res.json(result);
+    } catch (error) {
+      console.error("Error building study recommendation:", error);
+      res.status(500).json({ message: "Failed to build recommendation" });
+    }
+  });
+
+  // Grounded tutoring on a question the student has already answered.
+  app.post("/api/alexi/tutor", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validated = alexiTutorSchema.safeParse(req.body);
+      if (!validated.success) {
+        return res.status(400).json({ message: "Invalid request", errors: validated.error.errors });
+      }
+
+      const profile = await storage.getProfile(userId);
+      const result = await studyAssistant.askTutor({
+        userId,
+        questionId: validated.data.questionId,
+        intent: validated.data.intent,
+        studentMessage: validated.data.message ?? null,
+        // Language comes from the stored profile, not the request body - it is
+        // not something a caller should be able to vary per request.
+        language: profile?.preferredLanguage === "es" ? "es" : "en",
+      });
+
+      res.json(result);
+    } catch (error) {
+      console.error("Error answering tutor request:", error);
+      res.status(500).json({ message: "Failed to answer" });
+    }
+  });
+
+  // AI spend and reliability rollup. Admin only - cost data is internal.
+  app.get("/api/admin/ai-usage", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getProfile(userId);
+      if (profile?.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const parsedDays = Number.parseInt(String(req.query.days ?? ""), 10);
+      const days = Number.isFinite(parsedDays) ? Math.min(90, Math.max(1, parsedDays)) : 30;
+
+      res.json(await storage.getAiUsageSummary(days));
+    } catch (error) {
+      console.error("Error fetching AI usage summary:", error);
+      res.status(500).json({ message: "Failed to fetch AI usage" });
     }
   });
 

@@ -20,7 +20,15 @@ export type AnalyticsEventName =
   | "exam_landing_view"
   | "readiness_cta_click"
   | "retaker_rescue_start"
-  | "continue_studying_click";
+  | "continue_studying_click"
+  // Study assistant. These exist to answer whether the assistant actually
+  // improves outcomes, not whether students click it - pair them with mastery
+  // and EasyPass Score movement rather than reading them on their own.
+  | "alexi_opened"
+  | "alexi_recommendation_viewed"
+  | "alexi_recommendation_started"
+  | "alexi_tutor_question"
+  | "alexi_human_help_recommended";
 
 export function trackEvent(event: AnalyticsEventName, metadata?: Record<string, unknown>) {
   try {

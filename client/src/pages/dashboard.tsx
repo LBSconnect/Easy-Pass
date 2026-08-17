@@ -39,6 +39,7 @@ import { EasyPassScoreCard } from "@/components/easypass-score-card";
 import { StudyPlanCard } from "@/components/study-plan-card";
 import { MasteryHeatmap } from "@/components/mastery-heatmap";
 import { RetakerRescueCard } from "@/components/retaker-rescue-card";
+import { AlexiRecommendationCard } from "@/components/alexi-recommendation-card";
 
 const categoryIcons = {
   real_estate: Home,
@@ -398,6 +399,11 @@ export default function DashboardPage() {
                 hasPreviousAttempt={profile?.hasPreviousAttempt}
                 category={scoreCategory}
               />
+
+              {/* Sits above the score: the score tells a student where they
+                  are, this tells them what to do about it, and the second is
+                  the more useful thing to read first. */}
+              <AlexiRecommendationCard category={scoreCategory} />
 
               <EasyPassScoreCard category={scoreCategory} />
 

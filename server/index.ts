@@ -9,6 +9,7 @@ import { setupAuth } from "./simpleAuth";
 import { getWebhookUrl } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
 import { initializeStripePrices } from "./initializeStripePrices";
+import { runMigrations } from "./migrations";
 import { scheduleSubscriptionReconciliation } from "./subscriptionReconciliation";
 
 const app = express();
@@ -126,6 +127,16 @@ async function initStripe() {
     );
   } else if (webhookUrl) {
     console.log(`Stripe webhook endpoint expected at: ${webhookUrl}`);
+  }
+
+  // Bring the schema forward before anything serves a request. Additive only -
+  // see server/migrations.ts. Deploys previously left this to a manual
+  // `npm run db:push`, and the one time it was missed, every getProfile call
+  // started failing and checkout returned a 500.
+  try {
+    await runMigrations();
+  } catch (error: any) {
+    console.error("[migrate] migration runner failed:", error?.message ?? error);
   }
 
   try {

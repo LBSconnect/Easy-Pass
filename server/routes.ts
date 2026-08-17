@@ -22,6 +22,7 @@ import { generateStudyPlan } from "./studyPlan";
 import { selectAdaptiveQuestions, buildHistory } from "./adaptiveSelection";
 import { buildNotebook, filterNotebook, notebookCounts, type NotebookFilter } from "./missedQuestions";
 import { buildSimulatorPaper } from "./simulatorPaper";
+import { selectDueCards, scheduleNext, newCardState } from "./spacedRepetition";
 import { shuffleQuestionOptions } from "./shuffleQuestionOptions";
 
 const startExamSchema = z.object({
@@ -892,6 +893,138 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error toggling bookmark:", error);
       res.status(500).json({ message: "Failed to toggle bookmark" });
+    }
+  });
+
+  // Smart flashcards. Cards are backed by existing questions - front is the
+  // question, back is the correct answer and explanation - so the deck never
+  // drifts from the question bank.
+  app.get("/api/flashcards/:category", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { category } = req.params;
+
+      if (!examCategoryEnum.enumValues.includes(category as ExamCategory)) {
+        return res.status(400).json({ message: "Unknown exam category" });
+      }
+      const examCategory = category as ExamCategory;
+
+      const requested = Number(req.query.limit);
+      const limit = Number.isFinite(requested)
+        ? Math.min(Math.max(Math.trunc(requested), 1), 50)
+        : 20;
+      const scope = String(req.query.scope ?? "smart");
+
+      const [pool, reviews, mastery, responses, bookmarkIds] = await Promise.all([
+        storage.getActiveQuestions(examCategory),
+        storage.getFlashcardReviews(userId, examCategory),
+        storage.getTopicMastery(userId, examCategory),
+        storage.getResponsesForCategory(userId, examCategory),
+        storage.getBookmarkedQuestionIds(userId, examCategory),
+      ]);
+
+      const stateByQuestion = new Map(
+        reviews.map((r) => [
+          r.questionId,
+          {
+            streak: r.streak,
+            intervalDays: r.intervalDays,
+            ease: r.easeHundredths / 100,
+            dueAt: new Date(r.dueAt),
+          },
+        ]),
+      );
+      const accuracyByTopic = new Map(mastery.map((m) => [m.topic, m.accuracy]));
+      const history = buildHistory(
+        responses.map((r) => ({
+          questionId: r.questionId,
+          isCorrect: r.isCorrect,
+          answeredAt: new Date(r.answeredAt),
+        })),
+      );
+      const bookmarked = new Set(bookmarkIds);
+
+      let candidates = pool.map((q) => ({
+        questionId: q.id,
+        topic: q.topic || "General",
+        state: stateByQuestion.get(q.id) ?? null,
+        topicAccuracy: accuracyByTopic.get(q.topic || "General") ?? null,
+        lastWasWrong: history.get(q.id)?.lastWasWrong ?? false,
+        isBookmarked: bookmarked.has(q.id),
+      }));
+
+      // Scopes narrow the deck before scheduling decides the order.
+      if (scope === "bookmarked") {
+        candidates = candidates.filter((c) => c.isBookmarked);
+      } else if (scope === "weak") {
+        candidates = candidates.filter(
+          (c) => c.topicAccuracy !== null && c.topicAccuracy < 70,
+        );
+      } else if (scope === "missed") {
+        candidates = candidates.filter((c) => c.lastWasWrong);
+      } else if (req.query.topic) {
+        candidates = candidates.filter((c) => c.topic === String(req.query.topic));
+      }
+
+      const due = selectDueCards(candidates, new Date(), limit);
+      const byId = new Map(pool.map((q) => [q.id, q]));
+
+      const cards = due
+        .map((c) => byId.get(c.questionId))
+        .filter((q): q is NonNullable<typeof q> => Boolean(q))
+        .map((q) => ({
+          questionId: q.id,
+          topic: q.topic || "General",
+          frontEn: q.questionTextEn,
+          frontEs: q.questionTextEs,
+          backEn: q.optionsEn[q.correctAnswer],
+          backEs: q.optionsEs[q.correctAnswer],
+          explanationEn: q.explanationEn,
+          explanationEs: q.explanationEs,
+        }));
+
+      res.json({ cards, dueCount: candidates.filter((c) => !c.state || c.state.dueAt <= new Date()).length });
+    } catch (error) {
+      console.error("Error building flashcard deck:", error);
+      res.status(500).json({ message: "Failed to build flashcard deck" });
+    }
+  });
+
+  app.post("/api/flashcards/:questionId/review", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { questionId } = req.params;
+      const rating = req.body?.rating;
+
+      if (rating !== "known" && rating !== "needs_work") {
+        return res.status(400).json({ message: "rating must be 'known' or 'needs_work'" });
+      }
+
+      const question = await storage.getQuestion(questionId);
+      if (!question) {
+        return res.status(404).json({ message: "Question not found" });
+      }
+
+      const now = new Date();
+      const existing = (await storage.getFlashcardReviews(userId, question.category))
+        .find((r) => r.questionId === questionId);
+
+      const current = existing
+        ? {
+            streak: existing.streak,
+            intervalDays: existing.intervalDays,
+            ease: existing.easeHundredths / 100,
+            dueAt: new Date(existing.dueAt),
+          }
+        : newCardState(now);
+
+      const next = scheduleNext(current, rating, now);
+      await storage.upsertFlashcardReview(userId, questionId, question.category, next);
+
+      res.json({ dueAt: next.dueAt, intervalDays: next.intervalDays, streak: next.streak });
+    } catch (error) {
+      console.error("Error recording flashcard review:", error);
+      res.status(500).json({ message: "Failed to record review" });
     }
   });
 

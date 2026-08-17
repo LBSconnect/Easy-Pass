@@ -12,6 +12,7 @@ import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
 import DashboardPage from "@/pages/dashboard";
 import MissedQuestionsPage from "@/pages/missed-questions";
+import FlashcardsPage from "@/pages/flashcards";
 import ExamsPage from "@/pages/exams";
 import PricingPage from "@/pages/pricing";
 import ProfilePage from "@/pages/profile";
@@ -111,6 +112,7 @@ function Router() {
       <Route path="/reset-password" component={ResetPasswordPage} />
       <Route path="/dashboard" component={() => <ProtectedRoute component={DashboardPage} />} />
       <Route path="/missed-questions" component={() => <ProtectedRoute component={MissedQuestionsPage} />} />
+      <Route path="/flashcards" component={() => <ProtectedRoute component={FlashcardsPage} />} />
       {/* Not wrapped in ProtectedRoute: guests can browse categories and try
           a short quick-practice preview before being asked to sign up.
           ExamsPage itself branches on auth state for the rest of the flow. */}

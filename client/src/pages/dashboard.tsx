@@ -32,6 +32,7 @@ import {
   Play,
   Sparkles,
   RotateCcw,
+  Layers,
 } from "lucide-react";
 import type { ExamResult, UserProfile, ExamCategory } from "@shared/schema";
 import { EasyPassScoreCard } from "@/components/easypass-score-card";
@@ -418,6 +419,18 @@ export default function DashboardPage() {
                   {i18n.language === "es"
                     ? "Repasar Mis Preguntas Falladas"
                     : "Review My Missed Questions"}
+                </Link>
+              </Button>
+
+              <Button
+                variant="outline"
+                asChild
+                className="w-full justify-start"
+                data-testid="link-flashcards"
+              >
+                <Link href="/flashcards">
+                  <Layers className="mr-2 h-4 w-4" />
+                  {i18n.language === "es" ? "Tarjetas de Estudio" : "Flashcards"}
                 </Link>
               </Button>
 

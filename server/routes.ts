@@ -17,6 +17,7 @@ import { sql } from "drizzle-orm";
 import { sanitizeHtml } from "./sanitize";
 import { checkSubscriptionActive } from "./subscriptionCheck";
 import { gradePaper, calculateExamScore, calculateTopicBreakdown, type TopicStat } from "./examScoring";
+import { calculateEasyPassScore } from "./easyPassScore";
 import { shuffleQuestionOptions } from "./shuffleQuestionOptions";
 
 const startExamSchema = z.object({
@@ -512,6 +513,49 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error cancelling exam:", error);
       res.status(500).json({ message: "Failed to cancel exam" });
+    }
+  });
+
+  // EasyPass Score for one category. Deliberately not gated on subscription:
+  // a lapsed student should still be able to see where they stand, and the
+  // response contains no question content.
+  app.get("/api/readiness/:category", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { category } = req.params;
+
+      if (!examCategoryEnum.enumValues.includes(category as ExamCategory)) {
+        return res.status(400).json({ message: "Unknown exam category" });
+      }
+      const examCategory = category as ExamCategory;
+
+      const [responses, results, questionBankSize] = await Promise.all([
+        storage.getResponsesForCategory(userId, examCategory),
+        storage.getExamResults(userId),
+        storage.countActiveQuestions(examCategory),
+      ]);
+
+      const mockExamScores = results
+        .filter((r) => r.category === examCategory)
+        .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+        .map((r) => r.score);
+
+      const readiness = calculateEasyPassScore({
+        responses: responses.map((r) => ({
+          questionId: r.questionId,
+          topic: r.topic,
+          isCorrect: r.isCorrect,
+          answeredAt: new Date(r.answeredAt),
+        })),
+        mockExamScores,
+        questionBankSize,
+        now: new Date(),
+      });
+
+      res.json(readiness);
+    } catch (error) {
+      console.error("Error computing readiness score:", error);
+      res.status(500).json({ message: "Failed to compute readiness score" });
     }
   });
 

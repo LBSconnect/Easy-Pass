@@ -126,6 +126,8 @@ export interface IStorage {
   getTopicMastery(userId: string, category?: ExamCategory): Promise<TopicMastery[]>;
   getMissedQuestionIds(userId: string, category?: ExamCategory): Promise<string[]>;
   getResponsesSince(userId: string, since: Date): Promise<QuestionResponse[]>;
+  getResponsesForCategory(userId: string, category: ExamCategory): Promise<QuestionResponse[]>;
+  countActiveQuestions(category: ExamCategory): Promise<number>;
   
   createCertificate(certificate: InsertExamCertificate): Promise<ExamCertificate>;
   getCertificateBySlug(slug: string): Promise<ExamCertificate | undefined>;
@@ -687,6 +689,29 @@ export class DatabaseStorage implements IStorage {
         ),
       )
       .orderBy(questionResponses.answeredAt);
+  }
+
+  // Oldest-first: the score's recovery component reads answer sequences in
+  // chronological order.
+  async getResponsesForCategory(userId: string, category: ExamCategory): Promise<QuestionResponse[]> {
+    return db
+      .select()
+      .from(questionResponses)
+      .where(
+        and(
+          eq(questionResponses.userId, userId),
+          eq(questionResponses.category, category),
+        ),
+      )
+      .orderBy(questionResponses.answeredAt);
+  }
+
+  async countActiveQuestions(category: ExamCategory): Promise<number> {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(questions)
+      .where(and(eq(questions.category, category), eq(questions.isActive, true)));
+    return row?.count ?? 0;
   }
 
   async createCertificate(certificate: InsertExamCertificate): Promise<ExamCertificate> {

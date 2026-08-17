@@ -20,6 +20,7 @@ import { gradePaper, calculateExamScore, calculateTopicBreakdown, type TopicStat
 import { calculateEasyPassScore } from "./easyPassScore";
 import { generateStudyPlan } from "./studyPlan";
 import { selectAdaptiveQuestions, buildHistory } from "./adaptiveSelection";
+import { difficultyFor } from "./alexi/nextBestAction";
 import { buildNotebook, filterNotebook, notebookCounts, type NotebookFilter } from "./missedQuestions";
 import { buildSimulatorPaper } from "./simulatorPaper";
 import { selectDueCards, scheduleNext, newCardState } from "./spacedRepetition";
@@ -861,9 +862,18 @@ export async function registerRoutes(
         return res.status(404).json({ message: "No questions available for this category" });
       }
 
+      // Aim the drill at the level this student is actually working at, from
+      // their standing on the weakest topic. Questions the bank has not yet
+      // calibrated score neutral, so this degrades rather than starving the
+      // pool while calibration is still filling in.
+      const weakestAccuracy = mastery.length > 0
+        ? Math.min(...mastery.map((m) => m.accuracy))
+        : null;
+      const targetDifficulty = difficultyFor(weakestAccuracy);
+
       const selected = selectAdaptiveQuestions(
         {
-          candidates: pool.map((q) => ({ id: q.id, topic: q.topic })),
+          candidates: pool.map((q) => ({ id: q.id, topic: q.topic, difficulty: q.difficulty })),
           topicAccuracy: new Map(mastery.map((m) => [m.topic, m.accuracy])),
           history: buildHistory(
             responses.map((r) => ({
@@ -872,6 +882,7 @@ export async function registerRoutes(
               answeredAt: new Date(r.answeredAt),
             })),
           ),
+          targetDifficulty,
           now: new Date(),
         },
         drillSize,

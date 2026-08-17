@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
+import { PageShell, PageHeader } from "@/components/page-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -73,21 +72,15 @@ export default function FlashcardsPage() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
-      <main className="flex-1">
-        <div className="container mx-auto max-w-2xl px-4 py-8">
-          <div className="flex items-center gap-2">
-            <Layers className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold md:text-3xl">
-              {es ? "Tarjetas de Estudio" : "Flashcards"}
-            </h1>
-          </div>
-          <p className="mt-1 text-muted-foreground">
-            {es
-              ? "Las tarjetas que marques como difíciles vuelven antes."
-              : "Cards you find hard come back sooner."}
-          </p>
+    <PageShell width="narrow">      <PageHeader
+        icon={Layers}
+        title={es ? "Tarjetas de Estudio" : "Flashcards"}
+        subtitle={
+          es
+            ? "Las tarjetas que marques como difíciles vuelven antes."
+            : "Cards you find hard come back sooner."
+        }
+      />
 
           <div className="mt-5 flex flex-wrap gap-2">
             {SCOPES.map((s) => (
@@ -203,9 +196,6 @@ export default function FlashcardsPage() {
               )}
             </>
           )}
-        </div>
-      </main>
-      <Footer />
-    </div>
+    </PageShell>
   );
 }

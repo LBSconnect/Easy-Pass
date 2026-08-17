@@ -11,6 +11,11 @@
 export interface CandidateQuestion {
   id: string;
   topic: string | null;
+  /**
+   * Measured difficulty from item calibration. Null/absent when the question
+   * has not been answered by enough students to estimate it.
+   */
+  difficulty?: string | null;
 }
 
 export interface QuestionHistory {
@@ -28,8 +33,23 @@ export interface SelectionInput {
   topicAccuracy: Map<string, number>;
   /** History keyed by question id. Absent means never seen. */
   history: Map<string, QuestionHistory>;
+  /**
+   * The level this student should be working at. Omitted means difficulty is
+   * ignored entirely, which is the behaviour before calibration existed.
+   */
+  targetDifficulty?: string | null;
   now: Date;
 }
+
+/**
+ * Matching the student's level is worth about as much as a topic being 30
+ * points weak - enough to shape a session, not enough to override a concept
+ * the student is actively failing.
+ */
+export const DIFFICULTY_MATCH_BONUS = 30;
+/** Cost per rung away from target, so adjacent levels stay usable. */
+export const DIFFICULTY_STEP_PENALTY = 18;
+export const DIFFICULTY_LADDER = ["foundation", "standard", "exam_level", "challenge"];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -71,6 +91,18 @@ export function scoreCandidate(
     score += (100 - accuracy) * WEAK_TOPIC_WEIGHT;
   } else {
     score += 25;
+  }
+
+  // Match the student's working level. Calibrated difficulty is optional -
+  // an uncalibrated question scores neutral rather than being excluded, so a
+  // partially calibrated bank still works.
+  if (input.targetDifficulty && candidate.difficulty) {
+    score += candidate.difficulty === input.targetDifficulty
+      ? DIFFICULTY_MATCH_BONUS
+      : -Math.abs(
+          DIFFICULTY_LADDER.indexOf(candidate.difficulty) -
+          DIFFICULTY_LADDER.indexOf(input.targetDifficulty),
+        ) * DIFFICULTY_STEP_PENALTY;
   }
 
   if (!hist) {

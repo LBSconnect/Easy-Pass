@@ -231,3 +231,96 @@ describe("selectAdaptiveQuestions", () => {
     expect(ids(selected)).toEqual(["weak-missed", "weak-unseen", "mastered"]);
   });
 });
+
+describe("difficulty matching", () => {
+  const NOW2 = new Date("2026-08-17T12:00:00Z");
+  const base = {
+    topicAccuracy: new Map<string, number>(),
+    history: new Map(),
+    now: NOW2,
+  };
+
+  it("prefers questions at the student's working level", () => {
+    const picked = selectAdaptiveQuestions(
+      {
+        ...base,
+        targetDifficulty: "foundation",
+        candidates: [
+          { id: "hard", topic: "Law", difficulty: "challenge" },
+          { id: "easy", topic: "Law", difficulty: "foundation" },
+        ],
+      },
+      1,
+    );
+
+    expect(picked.map((c) => c.id)).toEqual(["easy"]);
+  });
+
+  it("does not throw a failing student at the hardest questions", () => {
+    // The anti-goal this whole feature exists to prevent.
+    const picked = selectAdaptiveQuestions(
+      {
+        ...base,
+        targetDifficulty: "foundation",
+        candidates: [
+          { id: "c1", topic: "Law", difficulty: "challenge" },
+          { id: "c2", topic: "Law", difficulty: "challenge" },
+          { id: "f1", topic: "Law", difficulty: "foundation" },
+        ],
+      },
+      2,
+    );
+
+    expect(picked.map((c) => c.id)).toContain("f1");
+  });
+
+  it("treats an adjacent level as better than a distant one", () => {
+    const picked = selectAdaptiveQuestions(
+      {
+        ...base,
+        targetDifficulty: "standard",
+        candidates: [
+          { id: "far", topic: "Law", difficulty: "challenge" },
+          { id: "near", topic: "Law", difficulty: "exam_level" },
+        ],
+      },
+      1,
+    );
+
+    expect(picked.map((c) => c.id)).toEqual(["near"]);
+  });
+
+  it("keeps working on a partially calibrated bank", () => {
+    // Uncalibrated questions score neutral rather than being excluded, so
+    // calibration can roll out gradually without starving selection.
+    const picked = selectAdaptiveQuestions(
+      {
+        ...base,
+        targetDifficulty: "standard",
+        candidates: [
+          { id: "uncalibrated", topic: "Law", difficulty: null },
+          { id: "wrong-level", topic: "Law", difficulty: "challenge" },
+        ],
+      },
+      2,
+    );
+
+    expect(picked).toHaveLength(2);
+  });
+
+  it("ignores difficulty entirely when no target is set", () => {
+    // Behaviour before calibration existed must be unchanged.
+    const withTarget = selectAdaptiveQuestions(
+      {
+        ...base,
+        candidates: [
+          { id: "a", topic: "Law", difficulty: "challenge" },
+          { id: "b", topic: "Law", difficulty: "foundation" },
+        ],
+      },
+      2,
+    );
+
+    expect(withTarget).toHaveLength(2);
+  });
+});

@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
+import { PageShell, PageHeader } from "@/components/page-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,18 +76,15 @@ export default function MissedQuestionsPage() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
-      <main className="flex-1">
-        <div className="container mx-auto max-w-3xl px-4 py-8">
-          <h1 className="text-2xl font-bold md:text-3xl">
-            {es ? "Mis Preguntas Falladas" : "My Missed Questions"}
-          </h1>
-          <p className="mt-1 text-muted-foreground">
-            {es
-              ? "Repasa lo que fallaste y por qué la respuesta correcta lo es."
-              : "Review what you got wrong, and why the right answer is right."}
-          </p>
+    <PageShell>      <PageHeader
+        icon={RotateCcw}
+        title={es ? "Mis Preguntas Falladas" : "My Missed Questions"}
+        subtitle={
+          es
+            ? "Repasa lo que fallaste y por qué la respuesta correcta lo es."
+            : "Review what you got wrong, and why the right answer is right."
+        }
+      />
 
           <div className="mt-5 flex flex-wrap gap-2">
             {FILTERS.map((f) => (
@@ -230,9 +226,6 @@ export default function MissedQuestionsPage() {
               );
             })}
           </div>
-        </div>
-      </main>
-      <Footer />
-    </div>
+    </PageShell>
   );
 }

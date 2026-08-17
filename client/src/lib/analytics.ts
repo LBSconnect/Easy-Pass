@@ -28,7 +28,22 @@ export type AnalyticsEventName =
   | "alexi_recommendation_viewed"
   | "alexi_recommendation_started"
   | "alexi_tutor_question"
-  | "alexi_human_help_recommended";
+  | "alexi_human_help_recommended"
+  // Dashboard and exams-page navigation. Named for the student action rather
+  // than the card, so renaming a card does not orphan its history.
+  | "dashboard_view"
+  | "easypass_score_clicked"
+  | "todays_plan_started"
+  | "mastery_topic_clicked"
+  | "quiz_me_clicked"
+  | "flashcards_clicked"
+  | "review_mistakes_clicked"
+  | "mock_exam_clicked"
+  | "ask_alexi_clicked"
+  | "change_exam_clicked"
+  | "exam_date_set"
+  | "upgrade_clicked"
+  | "exams_page_view";
 
 export function trackEvent(event: AnalyticsEventName, metadata?: Record<string, unknown>) {
   try {

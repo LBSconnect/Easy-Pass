@@ -37,6 +37,7 @@ import type { ExamResult, UserProfile, ExamCategory } from "@shared/schema";
 import { EasyPassScoreCard } from "@/components/easypass-score-card";
 import { StudyPlanCard } from "@/components/study-plan-card";
 import { MasteryHeatmap } from "@/components/mastery-heatmap";
+import { RetakerRescueCard } from "@/components/retaker-rescue-card";
 
 const categoryIcons = {
   real_estate: Home,
@@ -391,6 +392,11 @@ export default function DashboardPage() {
           <div className="grid gap-6 lg:grid-cols-12">
             {/* Left Column - Main Actions */}
             <div className="lg:col-span-8 min-w-0 space-y-6">
+
+              <RetakerRescueCard
+                hasPreviousAttempt={profile?.hasPreviousAttempt}
+                category={scoreCategory}
+              />
 
               <EasyPassScoreCard category={scoreCategory} />
 

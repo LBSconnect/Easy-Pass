@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { CalendarDays, ListChecks, Play, Target, RefreshCw, BookOpen, Layers } from "lucide-react";
+import { RescueBanner } from "@/components/retaker-rescue-card";
 import type { ExamCategory } from "@shared/schema";
 
 type TaskKind =
@@ -28,6 +29,7 @@ interface PlanTask {
 
 interface StudyPlan {
   intensity: string;
+  isRescuePlan: boolean;
   daysUntilExam: number | null;
   tasks: PlanTask[];
   estimatedMinutes: number;
@@ -168,6 +170,8 @@ export function StudyPlanCard({ category }: { category: ExamCategory }) {
             </div>
           )}
         </div>
+
+        {plan.isRescuePlan && <RescueBanner />}
 
         <ol className="mt-4 space-y-3">
           {plan.tasks.map((task, i) => {

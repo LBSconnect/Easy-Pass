@@ -21,6 +21,7 @@ import { calculateEasyPassScore } from "./easyPassScore";
 import { generateStudyPlan } from "./studyPlan";
 import { selectAdaptiveQuestions, buildHistory } from "./adaptiveSelection";
 import { difficultyFor } from "./alexi/nextBestAction";
+import { assessRisk, quarantineReason, type FeedbackType } from "./contentRisk";
 import { buildNotebook, filterNotebook, notebookCounts, type NotebookFilter } from "./missedQuestions";
 import { buildSimulatorPaper } from "./simulatorPaper";
 import { selectDueCards, scheduleNext, newCardState } from "./spacedRepetition";
@@ -2581,6 +2582,39 @@ export async function registerRoutes(
       };
       
       const feedback = await storage.createQuestionFeedback(sanitizedData);
+
+      // Reassess the question's risk now that a new report has landed. A
+      // question whose answer key is wrong teaches something false to every
+      // student who sees it, and it kept doing so until an admin happened to
+      // look. Crossing the threshold pulls it from circulation pending review.
+      //
+      // Wrapped so a failure here can never fail the student's report - losing
+      // the quarantine is recoverable, losing the report is not.
+      try {
+        const reports = await storage.getQuestionFeedback(sanitizedData.questionId);
+        const assessment = assessRisk(
+          reports.map((r) => ({
+            feedbackType: r.feedbackType as FeedbackType,
+            status: r.status as "pending" | "reviewed" | "resolved" | "dismissed",
+            createdAt: new Date(r.createdAt),
+          })),
+          new Date(),
+        );
+
+        if (assessment.shouldQuarantine) {
+          const question = await storage.getQuestion(sanitizedData.questionId);
+          if (question?.isActive) {
+            await storage.updateQuestion(sanitizedData.questionId, { isActive: false });
+            console.warn(
+              `[content-risk] question ${sanitizedData.questionId} pulled from circulation. ` +
+              quarantineReason(assessment),
+            );
+          }
+        }
+      } catch (riskError) {
+        console.error("Error assessing content risk:", riskError);
+      }
+
       res.json({ success: true, feedback });
     } catch (error) {
       console.error("Error creating question feedback:", error);

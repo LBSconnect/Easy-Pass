@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { SiLinkedin, SiX, SiFacebook } from "react-icons/si";
 import { format } from "date-fns";
+import { parseDate } from "@shared/safeDate";
 import { Link } from "wouter";
 import { useSEO, buildUrl } from "@/hooks/use-seo";
 
@@ -241,10 +242,15 @@ export default function CertificatePage() {
                 </Badge>
               </div>
 
-              <p className="text-sm text-muted-foreground" data-testid="text-date">
-                {language === "es" ? "Fecha: " : "Date: "}
-                {format(new Date(certificate.completedAt), "MMMM d, yyyy")}
-              </p>
+              {/* date-fns format() throws a RangeError on an invalid Date,
+                  which in a render unmounts the tree and blanks the page. Drop
+                  the line rather than take the certificate down with it. */}
+              {parseDate(certificate.completedAt) && (
+                <p className="text-sm text-muted-foreground" data-testid="text-date">
+                  {language === "es" ? "Fecha: " : "Date: "}
+                  {format(parseDate(certificate.completedAt)!, "MMMM d, yyyy")}
+                </p>
+              )}
             </div>
 
             <div className="border-t pt-6 mt-6">

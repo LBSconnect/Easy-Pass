@@ -180,12 +180,20 @@ function ExamSession() {
         const errorData = await res.json();
         throw new Error(errorData.message || "Failed to start exam");
       }
-      return res.json();
+      const data = await res.json();
+      // Validate the shape here rather than in onSuccess. A 200 whose body is
+      // missing `session` or `questions` used to sail past the error path and
+      // then throw mid-render, blanking the page; failing in the mutation
+      // routes it to the existing "couldn't start" screen instead.
+      if (!data?.session || !Array.isArray(data.questions) || data.questions.length === 0) {
+        throw new Error("No questions available");
+      }
+      return data;
     },
     onSuccess: (data) => {
       setSession(data.session);
       setQuestions(data.questions);
-      setTimeRemaining(data.session.timeLimit);
+      setTimeRemaining(data.session.timeLimit ?? 3600);
       setSubscriptionRequired(false);
       setResult(null);
       setTopicBreakdown([]);
@@ -1094,7 +1102,9 @@ function GuestPracticePreview({ category }: { category: ExamCategory }) {
       return res.json();
     },
     onSuccess: (data) => {
-      setQuestions(data.questions);
+      // Normalise: a 200 whose body lacks `questions` would otherwise
+      // replace the safe [] default with undefined and crash the render.
+      setQuestions(Array.isArray(data.questions) ? data.questions : []);
       setCurrentIndex(0);
       setAnswers({});
       setShowWall(false);

@@ -52,6 +52,11 @@ export default function MissedQuestionsPage() {
     queryKey: [`/api/missed-questions/${category}?filter=${filter}`],
   });
 
+  // Normalise the response shape once. Checking `data` alone is not enough -
+  // a truthy body missing `entries` threw on `.length` here and took the whole
+  // page down with it.
+  const entries = Array.isArray(data?.entries) ? data.entries : [];
+
   const toggleBookmark = useMutation({
     mutationFn: async (questionId: string) => {
       const res = await apiRequest("POST", `/api/bookmarks/${questionId}`);
@@ -119,7 +124,7 @@ export default function MissedQuestionsPage() {
             </Card>
           )}
 
-          {data && data.entries.length === 0 && (
+          {data && entries.length === 0 && (
             <Card className="mt-6" data-testid="card-notebook-empty">
               <CardContent className="py-10 text-center">
                 <CircleCheck className="mx-auto h-8 w-8 text-emerald-600 dark:text-emerald-400" />
@@ -137,7 +142,7 @@ export default function MissedQuestionsPage() {
           )}
 
           <div className="mt-6 space-y-4">
-            {data?.entries.map((entry) => {
+            {entries.map((entry) => {
               const q = entry.question;
               const options = es ? q.optionsEs : q.optionsEn;
               const explanation = es ? q.explanationEs : q.explanationEn;

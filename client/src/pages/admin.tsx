@@ -64,6 +64,7 @@ import {
 } from "@/components/ui/select";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -176,24 +177,40 @@ export default function AdminPage() {
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ExamCategory | "all">("all");
 
+  // Authorization gate. The server already refuses admin data to non-admins,
+  // so nothing leaks - but without this the page fired every admin query,
+  // received {message:"Forbidden"} where it expected arrays, and crashed on
+  // .map(). A non-admin who types /admin saw a broken page instead of being
+  // told they lack access. Queries stay disabled until the role is confirmed
+  // so we do not fire requests we know will be refused.
+  const { data: viewerProfile, isLoading: viewerLoading } = useQuery<{ role?: string }>({
+    queryKey: ["/api/profile"],
+  });
+  const isAdmin = viewerProfile?.role === "admin";
+
   const { data: stats, isLoading: statsLoading } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
+    enabled: isAdmin,
   });
 
   const { data: analytics, isLoading: analyticsLoading } = useQuery<AdminAnalytics>({
     queryKey: ["/api/admin/analytics"],
+    enabled: isAdmin,
   });
 
   const { data: users, isLoading: usersLoading } = useQuery<AdminUser[]>({
     queryKey: ["/api/admin/users"],
+    enabled: isAdmin,
   });
 
   const { data: questions, isLoading: questionsLoading } = useQuery<Question[]>({
     queryKey: ["/api/admin/questions"],
+    enabled: isAdmin,
   });
 
   const { data: feedback, isLoading: feedbackLoading } = useQuery<QuestionFeedback[]>({
     queryKey: ["/api/admin/question-feedback"],
+    enabled: isAdmin,
   });
 
   const [selectedFeedback, setSelectedFeedback] = useState<QuestionFeedback | null>(null);
@@ -684,6 +701,39 @@ export default function AdminPage() {
   const filteredQuestions = questions?.filter(
     (q) => selectedCategory === "all" || q.category === selectedCategory
   );
+
+  // Placed after every hook so hook order stays stable across renders.
+  if (viewerLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center p-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center p-4">
+          <div className="max-w-md text-center" data-testid="admin-access-denied">
+            <h1 className="text-xl font-bold">Admin access required</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              This area is limited to MyEasyPass administrators.
+            </p>
+            <Button asChild className="mt-6">
+              <Link href="/dashboard">Go to dashboard</Link>
+            </Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">

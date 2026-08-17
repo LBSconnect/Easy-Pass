@@ -32,7 +32,8 @@ import {
   Play,
   Sparkles,
 } from "lucide-react";
-import type { ExamResult, UserProfile } from "@shared/schema";
+import type { ExamResult, UserProfile, ExamCategory } from "@shared/schema";
+import { EasyPassScoreCard } from "@/components/easypass-score-card";
 
 const categoryIcons = {
   real_estate: Home,
@@ -162,6 +163,18 @@ export default function DashboardPage() {
   // in sync avoids showing a user on a Stripe trial dimmed-out exam categories and a "subscribe"
   // prompt for access they already have.
   const hasActiveSubscription = profile?.subscriptionStatus === "active" || profile?.subscriptionStatus === "trialing";
+
+  // The category the EasyPass Score is shown for. Most students only ever have
+  // one, so prefer the one they last sat an exam in, then whatever they have
+  // access to, and fall back to the first category so the card can still
+  // render its "start practising" state for a brand new account.
+  const allowed = (profile?.allowedCategories as ExamCategory[] | null) ?? [];
+  const mostRecentCategory = results
+    ?.slice()
+    .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())[0]
+    ?.category as ExamCategory | undefined;
+  const scoreCategory: ExamCategory =
+    mostRecentCategory ?? allowed[0] ?? categories[0].id;
   const greeting = getGreeting(i18n.language);
   const motivationalMessage = getMotivationalMessage(stats.passRate, stats.examsTaken, i18n.language);
   
@@ -204,14 +217,16 @@ export default function DashboardPage() {
                   {motivationalMessage}
                 </p>
               </div>
-              <div className="flex gap-3">
-                <Button asChild data-testid="button-start-practice">
+              {/* wrap + shrink-0: both labels are nowrap buttons, so on a narrow
+                  phone the pair overflowed the viewport rather than stacking. */}
+              <div className="flex flex-wrap gap-3">
+                <Button asChild className="shrink-0" data-testid="button-start-practice">
                   <Link href="/exams">
                     <Play className="mr-2 h-4 w-4" />
                     {i18n.language === "es" ? "Practicar Ahora" : "Practice Now"}
                   </Link>
                 </Button>
-                <Button variant="outline" asChild data-testid="button-schedule-exam">
+                <Button variant="outline" asChild className="shrink-0" data-testid="button-schedule-exam">
                   <Link href="/schedule-exam">
                     <Calendar className="mr-2 h-4 w-4" />
                     {i18n.language === "es" ? "Programar Examen" : "Schedule Exam"}
@@ -365,10 +380,17 @@ export default function DashboardPage() {
           )}
 
           {/* Main Content Grid */}
+          {/* min-w-0 on the grid items: the exam-card titles use `truncate`,
+              which sets white-space:nowrap and so makes their min-content the
+              full title width. Without min-w-0 the column refuses to shrink
+              below that and drags the whole page into horizontal scroll on
+              phones (689px wide at a 375px viewport before this). */}
           <div className="grid gap-6 lg:grid-cols-12">
             {/* Left Column - Main Actions */}
-            <div className="lg:col-span-8 space-y-6">
-              
+            <div className="lg:col-span-8 min-w-0 space-y-6">
+
+              <EasyPassScoreCard category={scoreCategory} />
+
               {/* Exam Categories - Combined Practice & Full Mock */}
               <Card>
                 <CardHeader className="pb-4">
@@ -491,7 +513,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Right Column - Subscription & Quick Stats */}
-            <div className="lg:col-span-4 space-y-6">
+            <div className="lg:col-span-4 min-w-0 space-y-6">
               
               {/* Subscription Card */}
               {hasActiveSubscription && (

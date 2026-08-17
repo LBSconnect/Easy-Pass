@@ -308,6 +308,27 @@ export const questionBookmarks = pgTable("question_bookmarks", {
   uniqueIndex("uq_question_bookmarks_user_question").on(table.userId, table.questionId),
 ]);
 
+// Spaced-repetition state, one row per student per card. Cards are backed by
+// existing questions rather than separate content, so flashcards stay in sync
+// with the question bank instead of drifting into a second source of truth.
+export const flashcardReviews = pgTable("flashcard_reviews", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  questionId: varchar("question_id").notNull(),
+  category: examCategoryEnum("category").notNull(),
+  streak: integer("streak").default(0).notNull(),
+  intervalDays: integer("interval_days").default(0).notNull(),
+  // Stored in hundredths to keep the column integral; 250 = ease 2.50.
+  easeHundredths: integer("ease_hundredths").default(250).notNull(),
+  dueAt: timestamp("due_at").defaultNow().notNull(),
+  lastReviewedAt: timestamp("last_reviewed_at").defaultNow().notNull(),
+  reviewCount: integer("review_count").default(0).notNull(),
+}, (table) => [
+  // Due-card lookup for one student in one category.
+  index("idx_flashcard_reviews_due").on(table.userId, table.category, table.dueAt),
+  uniqueIndex("uq_flashcard_reviews_user_question").on(table.userId, table.questionId),
+]);
+
 export const analyticsEvents = pgTable("analytics_events", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   event: varchar("event", { length: 100 }).notNull(),
@@ -497,6 +518,7 @@ export type InsertQuestionResponse = z.infer<typeof insertQuestionResponseSchema
 export type QuestionResponse = typeof questionResponses.$inferSelect;
 export type ResponseSource = (typeof responseSourceEnum.enumValues)[number];
 export type QuestionBookmark = typeof questionBookmarks.$inferSelect;
+export type FlashcardReview = typeof flashcardReviews.$inferSelect;
 export type InsertQuestionBookmark = z.infer<typeof insertQuestionBookmarkSchema>;
 
 // Aggregated per-topic accuracy, derived from question_responses. Feeds the

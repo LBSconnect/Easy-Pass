@@ -12,6 +12,7 @@ import {
   analyticsEvents,
   questionResponses,
   questionBookmarks,
+  flashcardReviews,
   diagnosticAttempts,
   type UserProfile,
   type InsertUserProfile,
@@ -43,6 +44,7 @@ import {
   type InsertQuestionResponse,
   type TopicMastery,
   type QuestionBookmark,
+  type FlashcardReview,
   type DiagnosticAttempt,
   type InsertDiagnosticAttempt,
 } from "@shared/schema";
@@ -132,6 +134,8 @@ export interface IStorage {
   getResponsesForCategory(userId: string, category: ExamCategory): Promise<QuestionResponse[]>;
   toggleBookmark(userId: string, questionId: string, category: ExamCategory): Promise<{ bookmarked: boolean }>;
   getBookmarkedQuestionIds(userId: string, category?: ExamCategory): Promise<string[]>;
+  getFlashcardReviews(userId: string, category: ExamCategory): Promise<FlashcardReview[]>;
+  upsertFlashcardReview(userId: string, questionId: string, category: ExamCategory, state: { streak: number; intervalDays: number; ease: number; dueAt: Date }): Promise<void>;
   countActiveQuestions(category: ExamCategory): Promise<number>;
   
   createCertificate(certificate: InsertExamCertificate): Promise<ExamCertificate>;
@@ -770,6 +774,44 @@ export class DatabaseStorage implements IStorage {
       .from(questionBookmarks)
       .where(and(...filters));
     return rows.map((r) => r.questionId);
+  }
+
+  async getFlashcardReviews(userId: string, category: ExamCategory): Promise<FlashcardReview[]> {
+    return db
+      .select()
+      .from(flashcardReviews)
+      .where(and(
+        eq(flashcardReviews.userId, userId),
+        eq(flashcardReviews.category, category),
+      ));
+  }
+
+  // Upsert on the unique (user, question) index so a review is idempotent
+  // per card rather than accumulating rows.
+  async upsertFlashcardReview(
+    userId: string,
+    questionId: string,
+    category: ExamCategory,
+    state: { streak: number; intervalDays: number; ease: number; dueAt: Date },
+  ): Promise<void> {
+    const row = {
+      userId,
+      questionId,
+      category,
+      streak: state.streak,
+      intervalDays: state.intervalDays,
+      easeHundredths: Math.round(state.ease * 100),
+      dueAt: state.dueAt,
+      lastReviewedAt: new Date(),
+    };
+
+    await db
+      .insert(flashcardReviews)
+      .values({ ...row, reviewCount: 1 })
+      .onConflictDoUpdate({
+        target: [flashcardReviews.userId, flashcardReviews.questionId],
+        set: { ...row, reviewCount: sql`${flashcardReviews.reviewCount} + 1` },
+      });
   }
 
   async createCertificate(certificate: InsertExamCertificate): Promise<ExamCertificate> {

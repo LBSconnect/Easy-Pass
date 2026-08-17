@@ -42,6 +42,10 @@ export const userProfiles = pgTable("user_profiles", {
   // Retaker Rescue: a student who has sat the exam before gets a plan that
   // leans harder on weak areas. Null means they have not told us yet.
   hasPreviousAttempt: boolean("has_previous_attempt"),
+  // The exam the student is actively studying for. Persisted so the dashboard
+  // does not make them re-pick on every visit; null falls back to whichever
+  // category they most recently sat or have access to.
+  preferredCategory: examCategoryEnum("preferred_category"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

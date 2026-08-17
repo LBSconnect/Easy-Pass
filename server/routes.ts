@@ -55,6 +55,8 @@ const profileUpdateSchema = z.object({
   // "not scheduled yet", which is a supported answer rather than a gap.
   examDate: z.string().datetime().nullable().optional(),
   hasPreviousAttempt: z.boolean().nullable().optional(),
+  // The exam the student is actively studying for.
+  preferredCategory: z.enum(examCategoryEnum.enumValues).nullable().optional(),
 });
 
 const VALID_PRICE_IDS = new Set<string>();
@@ -342,7 +344,8 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid profile data", errors: parsed.error.errors });
       }
 
-      const { phone, preferredLanguage, examDate, hasPreviousAttempt } = parsed.data;
+      const { phone, preferredLanguage, examDate, hasPreviousAttempt, preferredCategory } =
+        parsed.data;
       const sanitizedPhone = phone ? sanitizeHtml(phone) ?? phone : undefined;
 
       const updated = await storage.updateProfile(userId, {
@@ -351,6 +354,7 @@ export async function registerRoutes(
         // undefined leaves the field alone; null clears it.
         ...(examDate !== undefined ? { examDate: examDate ? new Date(examDate) : null } : {}),
         ...(hasPreviousAttempt !== undefined ? { hasPreviousAttempt } : {}),
+        ...(preferredCategory !== undefined ? { preferredCategory } : {}),
       });
 
       res.json(updated);
@@ -631,19 +635,46 @@ export async function registerRoutes(
         .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
         .map((r) => r.score);
 
+      const now = new Date();
+      const scoreInput = responses.map((r) => ({
+        questionId: r.questionId,
+        topic: r.topic,
+        isCorrect: r.isCorrect,
+        answeredAt: new Date(r.answeredAt),
+      }));
+
       const readiness = calculateEasyPassScore({
-        responses: responses.map((r) => ({
-          questionId: r.questionId,
-          topic: r.topic,
-          isCorrect: r.isCorrect,
-          answeredAt: new Date(r.answeredAt),
-        })),
+        responses: scoreInput,
         mockExamScores,
         questionBankSize,
-        now: new Date(),
+        now,
       });
 
-      res.json(readiness);
+      // Weekly movement, computed rather than invented: re-run the same pure
+      // scoring function over only the work that existed a week ago. A student
+      // with under a week of history has no trend, and reporting one would be
+      // a fabricated number on the most prominent card on the dashboard.
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const priorResponses = scoreInput.filter((r) => r.answeredAt <= weekAgo);
+      let weeklyDelta: number | null = null;
+
+      if (priorResponses.length > 0) {
+        const prior = calculateEasyPassScore({
+          responses: priorResponses,
+          mockExamScores: results
+            .filter((r) => r.category === examCategory && new Date(r.completedAt) <= weekAgo)
+            .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+            .map((r) => r.score),
+          questionBankSize,
+          now: weekAgo,
+        });
+        // A provisional prior score is not a baseline worth subtracting from.
+        if (!prior.provisional && !readiness.provisional) {
+          weeklyDelta = readiness.score - prior.score;
+        }
+      }
+
+      res.json({ ...readiness, weeklyDelta });
     } catch (error) {
       console.error("Error computing readiness score:", error);
       res.status(500).json({ message: "Failed to compute readiness score" });

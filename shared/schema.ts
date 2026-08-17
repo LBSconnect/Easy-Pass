@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp, pgEnum, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, pgEnum, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -11,6 +11,16 @@ export const subscriptionPlanEnum = pgEnum("subscription_plan", ["weekly", "mont
 export const subscriptionTypeEnum = pgEnum("subscription_type", ["single", "bundle"]);
 export const examCategoryEnum = pgEnum("exam_category", ["real_estate", "property_casualty", "life_insurance", "general_lines"]);
 export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
+// Where a question response came from. "practice" and "exam" both originate
+// from exam_sessions today; the rest are placeholders for the adaptive
+// features that write to this table later.
+export const responseSourceEnum = pgEnum("response_source", [
+  "exam",
+  "practice",
+  "diagnostic",
+  "drill",
+  "flashcard",
+]);
 
 export const userProfiles = pgTable("user_profiles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -231,6 +241,51 @@ export const diagnosticAttempts = pgTable("diagnostic_attempts", {
   index("idx_diagnostic_attempts_created").on(table.createdAt),
 ]);
 
+// Response-level history: one row per question answered, per attempt.
+//
+// exam_sessions.answers only holds the latest answer map for a single session
+// and exam_results only stores aggregates, so neither can answer "which
+// questions has this user missed, and when?". Topic mastery, the EasyPass
+// Score, adaptive question selection and the missed-question notebook all read
+// from this table. Rows are append-only - a re-answer is a new row, so the
+// history stays intact.
+export const questionResponses = pgTable("question_responses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  questionId: varchar("question_id").notNull(),
+  category: examCategoryEnum("category").notNull(),
+  // Denormalized from questions.topic so mastery queries avoid a join, and so
+  // history survives a later re-topic of the question bank.
+  topic: varchar("topic").notNull().default("General"),
+  source: responseSourceEnum("source").notNull(),
+  // Null for sources that are not tied to a session row (e.g. flashcards).
+  sessionId: varchar("session_id"),
+  // Index into the options array as shown to the user. Null means unanswered
+  // (skipped or ran out of time), which still counts as exposure.
+  selectedAnswer: integer("selected_answer"),
+  isCorrect: boolean("is_correct").notNull(),
+  timeSpentMs: integer("time_spent_ms"),
+  language: languageEnum("language").notNull().default("en"),
+  answeredAt: timestamp("answered_at").defaultNow().notNull(),
+}, (table) => [
+  // Recency windows for the EasyPass Score ("last N days of activity").
+  index("idx_question_responses_user_time").on(table.userId, table.answeredAt),
+  // Per-category mastery and score breakdowns.
+  index("idx_question_responses_user_category").on(table.userId, table.category),
+  // Mastery heatmap and weak-area drills.
+  index("idx_question_responses_user_topic").on(table.userId, table.topic),
+  // "Have they seen this question before, and did they miss it?" - drives
+  // adaptive selection, exposure rotation and the missed-question notebook.
+  index("idx_question_responses_user_question").on(table.userId, table.questionId),
+  // Admin question-quality analytics (per-question success rates).
+  index("idx_question_responses_question").on(table.questionId),
+  // Backfill idempotency: one row per (session, question) for session-backed
+  // sources, so re-running the backfill cannot duplicate history.
+  uniqueIndex("uq_question_responses_session_question")
+    .on(table.sessionId, table.questionId)
+    .where(sql`session_id IS NOT NULL`),
+]);
+
 export const analyticsEvents = pgTable("analytics_events", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   event: varchar("event", { length: 100 }).notNull(),
@@ -371,6 +426,12 @@ export const insertDiagnosticAttemptSchema = createInsertSchema(diagnosticAttemp
   createdAt: true,
 });
 
+// answeredAt is left settable (it defaults to now()) so the backfill can
+// preserve the original completion timestamps of historical exam sessions.
+export const insertQuestionResponseSchema = createInsertSchema(questionResponses).omit({
+  id: true,
+});
+
 export const insertAnalyticsEventSchema = createInsertSchema(analyticsEvents, {
   metadata: z.record(z.string(), z.unknown()).optional(),
 }).omit({
@@ -405,6 +466,20 @@ export type InsertDiagnosticAttempt = z.infer<typeof insertDiagnosticAttemptSche
 export type DiagnosticAttempt = typeof diagnosticAttempts.$inferSelect;
 export type InsertAnalyticsEvent = z.infer<typeof insertAnalyticsEventSchema>;
 export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
+export type InsertQuestionResponse = z.infer<typeof insertQuestionResponseSchema>;
+export type QuestionResponse = typeof questionResponses.$inferSelect;
+export type ResponseSource = (typeof responseSourceEnum.enumValues)[number];
+
+// Aggregated per-topic accuracy, derived from question_responses. Feeds the
+// mastery heatmap, weak-area drills and the EasyPass Score's topic component.
+export type TopicMastery = {
+  category: ExamCategory;
+  topic: string;
+  answered: number;
+  correct: number;
+  accuracy: number;
+  lastAnsweredAt: Date;
+};
 
 export type ExamCategory = "real_estate" | "property_casualty" | "life_insurance" | "general_lines";
 export type GuestArticleStatus = "pending" | "approved" | "rejected";

@@ -14,6 +14,7 @@ import {
   questionBookmarks,
   flashcardReviews,
   diagnosticAttempts,
+  aiUsageEvents,
   type UserProfile,
   type InsertUserProfile,
   type Question,
@@ -47,6 +48,8 @@ import {
   type FlashcardReview,
   type DiagnosticAttempt,
   type InsertDiagnosticAttempt,
+  type AiUsageEvent,
+  type InsertAiUsageEvent,
 } from "@shared/schema";
 import { users, type User } from "@shared/models/auth";
 import { db, pool } from "./db";
@@ -154,9 +157,29 @@ export interface IStorage {
 
   createAnalyticsEvent(event: InsertAnalyticsEvent): Promise<AnalyticsEvent>;
 
+  createAiUsageEvent(event: InsertAiUsageEvent): Promise<AiUsageEvent>;
+  getAiUsageSummary(sinceDays: number): Promise<AiUsageSummary>;
+
   createDiagnosticAttempt(attempt: InsertDiagnosticAttempt): Promise<DiagnosticAttempt>;
   getDiagnosticAttempt(id: string): Promise<DiagnosticAttempt | undefined>;
   completeDiagnosticAttempt(id: string, data: { score: number; correctAnswers: number }): Promise<DiagnosticAttempt | undefined>;
+}
+
+export interface AiUsageSummary {
+  sinceDays: number;
+  totalCalls: number;
+  totalCostUsd: number;
+  cacheHitRate: number;
+  errorRate: number;
+  byOperation: Array<{
+    operation: string;
+    outcome: string;
+    calls: number;
+    inputTokens: number;
+    outputTokens: number;
+    costUsd: number;
+    avgLatencyMs: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -897,6 +920,65 @@ export class DatabaseStorage implements IStorage {
   async createAnalyticsEvent(event: InsertAnalyticsEvent): Promise<AnalyticsEvent> {
     const [created] = await db.insert(analyticsEvents).values(event).returning();
     return created;
+  }
+
+  async createAiUsageEvent(event: InsertAiUsageEvent): Promise<AiUsageEvent> {
+    const [created] = await db.insert(aiUsageEvents).values(event).returning();
+    return created;
+  }
+
+  /**
+   * Roll up AI spend and reliability for the admin dashboard.
+   *
+   * Grouped by operation and outcome so a cache-hit rate and a validation
+   * failure rate both fall out of the same query - the two numbers that say
+   * whether the AI layer is behaving economically and correctly.
+   */
+  async getAiUsageSummary(sinceDays: number): Promise<AiUsageSummary> {
+    const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000);
+
+    const rows = await db
+      .select({
+        operation: aiUsageEvents.operation,
+        outcome: aiUsageEvents.outcome,
+        calls: sql<number>`count(*)::int`,
+        inputTokens: sql<number>`coalesce(sum(${aiUsageEvents.inputTokens}), 0)::int`,
+        outputTokens: sql<number>`coalesce(sum(${aiUsageEvents.outputTokens}), 0)::int`,
+        costMicros: sql<number>`coalesce(sum(${aiUsageEvents.estimatedCostMicros}), 0)::bigint`,
+        avgLatencyMs: sql<number>`coalesce(avg(${aiUsageEvents.latencyMs}), 0)::int`,
+      })
+      .from(aiUsageEvents)
+      .where(gte(aiUsageEvents.createdAt, since))
+      .groupBy(aiUsageEvents.operation, aiUsageEvents.outcome);
+
+    const byOperation = rows.map((r) => ({
+      operation: r.operation,
+      outcome: r.outcome,
+      calls: Number(r.calls),
+      inputTokens: Number(r.inputTokens),
+      outputTokens: Number(r.outputTokens),
+      costUsd: Number(r.costMicros) / 1_000_000,
+      avgLatencyMs: Number(r.avgLatencyMs),
+    }));
+
+    const totalCalls = byOperation.reduce((sum, r) => sum + r.calls, 0);
+    const cacheHits = byOperation
+      .filter((r) => r.outcome === "cache_hit")
+      .reduce((sum, r) => sum + r.calls, 0);
+    const errors = byOperation
+      .filter((r) => r.outcome === "error" || r.outcome === "fallback")
+      .reduce((sum, r) => sum + r.calls, 0);
+
+    return {
+      sinceDays,
+      totalCalls,
+      totalCostUsd: byOperation.reduce((sum, r) => sum + r.costUsd, 0),
+      // Guard the divisions: a fresh deployment has no rows and 0/0 would
+      // render as NaN on the admin dashboard.
+      cacheHitRate: totalCalls > 0 ? cacheHits / totalCalls : 0,
+      errorRate: totalCalls > 0 ? errors / totalCalls : 0,
+      byOperation,
+    };
   }
 
   async createDiagnosticAttempt(attempt: InsertDiagnosticAttempt): Promise<DiagnosticAttempt> {

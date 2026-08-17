@@ -97,7 +97,11 @@ export function EasyPassScoreCard({ category }: { category: ExamCategory }) {
     );
   }
 
-  const label = BAND_LABELS[data.band][es ? "es" : "en"];
+  // Defensive lookup: an unrecognised band (a server-side band added ahead of
+  // a client deploy) previously threw here and white-screened the entire
+  // dashboard, not just this card. Degrade to a neutral label instead.
+  const bandLabel = BAND_LABELS[data.band] ?? BAND_LABELS.improving;
+  const label = bandLabel[es ? "es" : "en"];
 
   return (
     <Card data-testid="card-easypass-score">
@@ -126,7 +130,10 @@ export function EasyPassScoreCard({ category }: { category: ExamCategory }) {
           <span className="text-lg text-muted-foreground">/ 100</span>
         </div>
 
-        <p className={`mt-1 font-medium ${BAND_TONE[data.band]}`} data-testid="text-score-band">
+        <p
+          className={`mt-1 font-medium ${BAND_TONE[data.band] ?? BAND_TONE.improving}`}
+          data-testid="text-score-band"
+        >
           {label}
         </p>
 

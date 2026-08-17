@@ -341,6 +341,38 @@ export const analyticsEvents = pgTable("analytics_events", {
   index("idx_analytics_events_created").on(table.createdAt),
 ]);
 
+/**
+ * AI usage and cost accounting.
+ *
+ * One row per provider operation. Holds no student text - operation type,
+ * model and token counts answer every cost and cache question we have, and a
+ * table full of tutor conversations would be a privacy liability for no
+ * analytical gain.
+ */
+export const aiUsageEvents = pgTable("ai_usage_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  operation: varchar("operation", { length: 50 }).notNull(),
+  /** success | cache_hit | fallback | error | blocked */
+  outcome: varchar("outcome", { length: 20 }).notNull(),
+  provider: varchar("provider", { length: 30 }).notNull(),
+  model: varchar("model", { length: 60 }),
+  /** Versioned prompt identifier, e.g. "tutor_explanation@v1". */
+  promptRef: varchar("prompt_ref", { length: 80 }),
+  inputTokens: integer("input_tokens").default(0).notNull(),
+  outputTokens: integer("output_tokens").default(0).notNull(),
+  /** Millionths of a USD - integer maths avoids float drift when summing. */
+  estimatedCostMicros: integer("estimated_cost_micros").default(0).notNull(),
+  latencyMs: integer("latency_ms").default(0).notNull(),
+  category: varchar("category", { length: 40 }),
+  userId: varchar("user_id"),
+  /** Short machine-readable reason on non-success outcomes. */
+  reason: varchar("reason", { length: 120 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_ai_usage_created").on(table.createdAt),
+  index("idx_ai_usage_operation").on(table.operation, table.outcome),
+]);
+
 export const userProfilesRelations = relations(userProfiles, ({ many }) => ({
   examSessions: many(examSessions),
   examResults: many(examResults),
@@ -487,6 +519,11 @@ export const insertAnalyticsEventSchema = createInsertSchema(analyticsEvents, {
   createdAt: true,
 });
 
+export const insertAiUsageEventSchema = createInsertSchema(aiUsageEvents).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
@@ -516,6 +553,8 @@ export type InsertAnalyticsEvent = z.infer<typeof insertAnalyticsEventSchema>;
 export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
 export type InsertQuestionResponse = z.infer<typeof insertQuestionResponseSchema>;
 export type QuestionResponse = typeof questionResponses.$inferSelect;
+export type InsertAiUsageEvent = z.infer<typeof insertAiUsageEventSchema>;
+export type AiUsageEvent = typeof aiUsageEvents.$inferSelect;
 export type ResponseSource = (typeof responseSourceEnum.enumValues)[number];
 export type QuestionBookmark = typeof questionBookmarks.$inferSelect;
 export type FlashcardReview = typeof flashcardReviews.$inferSelect;

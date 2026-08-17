@@ -14,6 +14,7 @@ import DashboardPage from "@/pages/dashboard";
 import MissedQuestionsPage from "@/pages/missed-questions";
 import FlashcardsPage from "@/pages/flashcards";
 import StudyAssistantPage from "@/pages/study-assistant";
+import { PageErrorBoundary } from "@/components/error-boundary";
 import ExamsPage from "@/pages/exams";
 import PricingPage from "@/pages/pricing";
 import ProfilePage from "@/pages/profile";
@@ -105,7 +106,10 @@ function HomePage() {
 
 function Router() {
   return (
-    <Switch>
+    // Page-level boundary: without this, one render error anywhere unmounts
+    // the entire tree and the user gets a blank white page with no way out.
+    <PageErrorBoundary label="route">
+      <Switch>
       <Route path="/" component={HomePage} />
       <Route path="/login" component={AuthPage} />
       <Route path="/signup" component={AuthPage} />
@@ -146,7 +150,8 @@ function Router() {
       <Route path="/exam-disclaimer" component={ExamDisclaimerPage} />
       <Route path="/electronic-communications" component={ElectronicCommunicationsPage} />
       <Route component={NotFound} />
-    </Switch>
+      </Switch>
+    </PageErrorBoundary>
   );
 }
 

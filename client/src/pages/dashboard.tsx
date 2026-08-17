@@ -28,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { trackEvent } from "@/lib/analytics";
 import { deriveDashboardState, sectionsFor, type DashboardSection } from "@shared/dashboardState";
 import { useStudyAssistantConfig } from "@/lib/studyAssistant";
+import { CardErrorBoundary } from "@/components/error-boundary";
 import { WelcomeCard } from "@/components/dashboard/welcome-card";
 import { DashboardOnboarding } from "@/components/dashboard/onboarding";
 import { AlexiCard } from "@/components/dashboard/alexi-card";
@@ -253,13 +254,13 @@ export default function DashboardPage() {
                 <div className="grid gap-6 lg:grid-cols-2">
                   {alexiFirst ? (
                     <>
-                      <AlexiCard category={category} hasHistory={totalAttempts > 0} />
-                      <ScoreCard category={category} />
+                      <CardErrorBoundary label="alexi"><AlexiCard category={category} hasHistory={totalAttempts > 0} /></CardErrorBoundary>
+                      <CardErrorBoundary label="score"><ScoreCard category={category} /></CardErrorBoundary>
                     </>
                   ) : (
                     <>
-                      <ScoreCard category={category} />
-                      <AlexiCard category={category} hasHistory={totalAttempts > 0} />
+                      <CardErrorBoundary label="score"><ScoreCard category={category} /></CardErrorBoundary>
+                      <CardErrorBoundary label="alexi"><AlexiCard category={category} hasHistory={totalAttempts > 0} /></CardErrorBoundary>
                     </>
                   )}
                 </div>
@@ -270,12 +271,12 @@ export default function DashboardPage() {
                   <div
                     className={`min-w-0 lg:col-span-6 ${quickActionsFirst ? "lg:order-2" : ""}`}
                   >
-                    <TodaysPlanCard category={category} />
+                    <CardErrorBoundary label="plan"><TodaysPlanCard category={category} /></CardErrorBoundary>
                   </div>
                   <div
                     className={`min-w-0 lg:col-span-3 ${quickActionsFirst ? "lg:order-3" : ""}`}
                   >
-                    <MasteryCard category={category} />
+                    <CardErrorBoundary label="mastery"><MasteryCard category={category} /></CardErrorBoundary>
                   </div>
                   <div
                     className={`min-w-0 lg:col-span-3 ${quickActionsFirst ? "lg:order-1" : ""}`}

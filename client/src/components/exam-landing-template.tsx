@@ -50,10 +50,16 @@ function SampleQuestion({ categories, language }: { categories: string[]; langua
     return <p className="text-muted-foreground">{isSpanish ? "Cargando pregunta de muestra..." : "Loading sample question..."}</p>;
   }
 
-  if (!question) return null;
+  const questionText = isSpanish ? question?.questionTextEs : question?.questionTextEn;
+  const options = isSpanish ? question?.optionsEs : question?.optionsEn;
 
-  const questionText = isSpanish ? question.questionTextEs : question.questionTextEn;
-  const options = isSpanish ? question.optionsEs : question.optionsEn;
+  // Check the shape, not just presence. A truthy response missing its options
+  // used to throw here and blank the whole landing page - the top of the
+  // signup funnel - rather than dropping one optional sample card.
+  if (!question || !questionText || !Array.isArray(options) || options.length === 0) {
+    return null;
+  }
+
   const explanation = isSpanish ? question.explanationEs : question.explanationEn;
 
   return (

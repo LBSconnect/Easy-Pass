@@ -113,4 +113,97 @@ DECIDED RECOMMENDATION:
 ${v.recommendation}`,
 };
 
-export const ALL_PROMPTS: PromptTemplate[] = [TUTOR_EXPLANATION, RECOMMENDATION_PHRASING];
+/**
+ * Question generation.
+ *
+ * Scoped to producing VARIANTS of approved bank questions - same concept, new
+ * scenario, new distractors. It is never asked to write questions about Texas
+ * law from its own knowledge, because we hold no approved regulatory source to
+ * ground that against. A variant's grounding is the source question and its
+ * reviewed explanation, both of which we do have.
+ *
+ * "Create 20 Texas insurance questions" is precisely the prompt this design
+ * refuses to send.
+ */
+export const QUESTION_GENERATION: PromptTemplate = {
+  id: "question_generation",
+  version: "v1",
+  build: (v) => `${SAFETY_RULES}
+
+TASK: Write ${v.count} NEW multiple-choice practice questions that test the SAME
+underlying concept as the approved source questions below.
+
+GROUNDING RULES - these are not style preferences:
+- Every factual claim must be supported by the approved source material below.
+- Do NOT introduce any regulatory fact, deadline, dollar amount, percentage,
+  form number or licensing requirement that does not appear in that material.
+- If you cannot write ${v.count} questions within those limits, write fewer.
+  Returning 3 well-grounded questions is correct; returning 8 with invented
+  facts is a failure.
+- Every question must cite the ids of the source questions it derives from.
+
+VARIETY RULES:
+- Change the scenario, the wording, and the distractors.
+- Do NOT reproduce a source question with synonyms swapped in.
+- Do NOT repeat a scenario between the questions you write.
+
+QUALITY RULES:
+- Exactly 4 options, exactly one defensibly correct.
+- Distractors must be plausible to someone who half-knows the concept, and
+  each must be wrong for a specific, stateable reason.
+- Do not use "all of the above" or "none of the above".
+- Keep the correct option similar in length to the distractors.
+- Do not echo distinctive wording from the question stem in the correct option.
+- Write at ${v.difficulty} difficulty.
+- Write in ${v.language}.
+
+Concept under test: ${v.conceptLabel}
+Exam: ${v.examId}
+
+APPROVED SOURCE MATERIAL:
+${v.sources}`,
+};
+
+/**
+ * Independent validation pass.
+ *
+ * Deliberately given the question WITHOUT the generator's reasoning, and told
+ * to default to failing. A validator that sees the case for a question tends
+ * to agree with it; one that only sees the artefact and the source material
+ * has to judge it on its merits.
+ */
+export const QUESTION_VALIDATION: PromptTemplate = {
+  id: "question_validation",
+  version: "v1",
+  build: (v) => `${SAFETY_RULES}
+
+TASK: Independently review a draft exam question. You are the last check before
+a student preparing for a professional licensing exam sees it.
+
+Judge ONLY against the approved source material below. Answer these:
+1. Is exactly one option defensibly correct?
+2. Does the stated explanation actually support the stated correct answer?
+3. Is every factual claim supported by the approved source material?
+4. Is the question ambiguous or does it have more than one defensible answer?
+5. Are the distractors plausible but clearly wrong?
+6. Does it test the intended concept?
+7. Does it introduce any regulatory claim the source material does not support?
+
+BIAS: default to FAIL. If you are unsure whether a claim is supported, that is
+a FAIL. A wrongly rejected question costs us one question. A wrongly approved
+one can teach a student something false before their exam.
+
+Do not rewrite or repair the question. Judge it.
+
+Concept under test: ${v.conceptLabel}
+
+APPROVED SOURCE MATERIAL:
+${v.sources}`,
+};
+
+export const ALL_PROMPTS: PromptTemplate[] = [
+  TUTOR_EXPLANATION,
+  RECOMMENDATION_PHRASING,
+  QUESTION_GENERATION,
+  QUESTION_VALIDATION,
+];

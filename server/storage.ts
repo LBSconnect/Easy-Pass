@@ -121,6 +121,7 @@ export interface IStorage {
   getStudyProgressByTopic(userId: string, topicId: string): Promise<StudyProgress | undefined>;
   upsertStudyProgress(userId: string, category: ExamCategory, topicId: string, correct: boolean): Promise<StudyProgress>;
   getQuestionsByTopic(category: ExamCategory, topicId: string, limit?: number): Promise<Question[]>;
+  getActiveQuestions(category: ExamCategory): Promise<Question[]>;
 
   recordQuestionResponses(responses: InsertQuestionResponse[]): Promise<number>;
   getTopicMastery(userId: string, category?: ExamCategory): Promise<TopicMastery[]>;
@@ -614,16 +615,31 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
+  // Previously ignored topicId entirely and returned random questions from the
+  // whole category, so "study this topic" silently studied everything.
   async getQuestionsByTopic(category: ExamCategory, topicId: string, limit?: number): Promise<Question[]> {
-    let query = db
+    const query = db
       .select()
       .from(questions)
-      .where(and(eq(questions.category, category), eq(questions.isActive, true)));
-    
+      .where(and(
+        eq(questions.category, category),
+        eq(questions.isActive, true),
+        eq(questions.topic, topicId),
+      ));
+
     if (limit) {
       return query.orderBy(sql`RANDOM()`).limit(limit);
     }
     return query.orderBy(sql`RANDOM()`);
+  }
+
+  // Full active bank for a category, used as the candidate pool for adaptive
+  // selection. Unordered: the selector decides the ordering, not the database.
+  async getActiveQuestions(category: ExamCategory): Promise<Question[]> {
+    return db
+      .select()
+      .from(questions)
+      .where(and(eq(questions.category, category), eq(questions.isActive, true)));
   }
 
   // Append-only. onConflictDoNothing keeps the backfill and a retried submit

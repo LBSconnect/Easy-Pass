@@ -35,6 +35,7 @@ import {
 import type { ExamResult, UserProfile, ExamCategory } from "@shared/schema";
 import { EasyPassScoreCard } from "@/components/easypass-score-card";
 import { StudyPlanCard } from "@/components/study-plan-card";
+import { MasteryHeatmap } from "@/components/mastery-heatmap";
 
 const categoryIcons = {
   real_estate: Home,
@@ -393,6 +394,8 @@ export default function DashboardPage() {
               <EasyPassScoreCard category={scoreCategory} />
 
               <StudyPlanCard category={scoreCategory} />
+
+              <MasteryHeatmap category={scoreCategory} />
 
               {/* Exam Categories - Combined Practice & Full Mock */}
               <Card>

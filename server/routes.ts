@@ -19,6 +19,7 @@ import { checkSubscriptionActive } from "./subscriptionCheck";
 import { gradePaper, calculateExamScore, calculateTopicBreakdown, type TopicStat } from "./examScoring";
 import { calculateEasyPassScore } from "./easyPassScore";
 import { generateStudyPlan } from "./studyPlan";
+import { selectAdaptiveQuestions, buildHistory } from "./adaptiveSelection";
 import { shuffleQuestionOptions } from "./shuffleQuestionOptions";
 
 const startExamSchema = z.object({
@@ -603,6 +604,122 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error generating study plan:", error);
       res.status(500).json({ message: "Failed to generate study plan" });
+    }
+  });
+
+  // Topic mastery for the heatmap. Sorted weakest-first so the UI shows what
+  // needs work at the top without re-sorting.
+  app.get("/api/mastery/:category", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { category } = req.params;
+
+      if (!examCategoryEnum.enumValues.includes(category as ExamCategory)) {
+        return res.status(400).json({ message: "Unknown exam category" });
+      }
+
+      const mastery = await storage.getTopicMastery(userId, category as ExamCategory);
+      res.json(mastery.sort((a, b) => a.accuracy - b.accuracy));
+    } catch (error) {
+      console.error("Error fetching topic mastery:", error);
+      res.status(500).json({ message: "Failed to fetch topic mastery" });
+    }
+  });
+
+  // Weak-area drill: a practice session built from the questions most likely
+  // to move this student's readiness, rather than a random draw from the bank.
+  app.post("/api/drills/weak-areas/:category", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { category } = req.params;
+
+      if (!examCategoryEnum.enumValues.includes(category as ExamCategory)) {
+        return res.status(400).json({ message: "Unknown exam category" });
+      }
+      const examCategory = category as ExamCategory;
+
+      const subscriptionCheck = await ensureSubscriptionActive(userId, examCategory);
+      if (!subscriptionCheck.active) {
+        return res.status(403).json({ message: subscriptionCheck.message });
+      }
+
+      const requested = Number(req.body?.questionCount);
+      const drillSize = Number.isFinite(requested)
+        ? Math.min(Math.max(Math.trunc(requested), 5), 50)
+        : 20;
+
+      const [pool, mastery, responses] = await Promise.all([
+        storage.getActiveQuestions(examCategory),
+        storage.getTopicMastery(userId, examCategory),
+        storage.getResponsesForCategory(userId, examCategory),
+      ]);
+
+      if (pool.length === 0) {
+        return res.status(404).json({ message: "No questions available for this category" });
+      }
+
+      const selected = selectAdaptiveQuestions(
+        {
+          candidates: pool.map((q) => ({ id: q.id, topic: q.topic })),
+          topicAccuracy: new Map(mastery.map((m) => [m.topic, m.accuracy])),
+          history: buildHistory(
+            responses.map((r) => ({
+              questionId: r.questionId,
+              isCorrect: r.isCorrect,
+              answeredAt: new Date(r.answeredAt),
+            })),
+          ),
+          now: new Date(),
+        },
+        drillSize,
+      );
+
+      const byId = new Map(pool.map((q) => [q.id, q]));
+      const drillQuestions = selected
+        .map((s) => byId.get(s.id))
+        .filter((q): q is NonNullable<typeof q> => Boolean(q));
+
+      // Same per-session option shuffling as a normal exam, so the shared
+      // question bank is never mutated and each attempt gets its own order.
+      const answerOrder: Record<string, number> = {};
+      const questionsForClient = drillQuestions.map((question) => {
+        const shuffled = shuffleQuestionOptions(
+          question.optionsEn,
+          question.optionsEs,
+          question.correctAnswer,
+        );
+        answerOrder[question.id] = shuffled.correctAnswer;
+
+        const { correctAnswer, explanationEn, explanationEs, ...rest } = question;
+        return { ...rest, optionsEn: shuffled.optionsEn, optionsEs: shuffled.optionsEs };
+      });
+
+      const session = await storage.createExamSession({
+        userId,
+        category: examCategory,
+        questionIds: drillQuestions.map((q) => q.id),
+        answerOrder,
+        currentQuestionIndex: 0,
+        // Roughly 90 seconds per question; drills are practice, not timed exams.
+        timeLimit: drillQuestions.length * 90,
+        isCompleted: false,
+      });
+
+      const { answerOrder: _omit, ...sessionForClient } = session;
+
+      res.json({
+        session: sessionForClient,
+        questions: questionsForClient,
+        // What the drill targeted, so the UI can say why these questions.
+        targetedTopics: mastery
+          .filter((m) => m.accuracy < 70)
+          .sort((a, b) => a.accuracy - b.accuracy)
+          .slice(0, 3)
+          .map((m) => ({ topic: m.topic, accuracy: m.accuracy })),
+      });
+    } catch (error) {
+      console.error("Error starting weak-area drill:", error);
+      res.status(500).json({ message: "Failed to start weak-area drill" });
     }
   });
 

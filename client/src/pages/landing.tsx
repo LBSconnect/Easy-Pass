@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,17 +24,6 @@ import {
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { trackEvent } from "@/lib/analytics";
-import platformPreviewImage from "@assets/platform-preview-practice-question.png";
-import platformPreviewImageDark from "@assets/platform-preview-practice-question-dark.png";
-
-interface StripePrice {
-  id: string;
-  unit_amount: number;
-  currency: string;
-  subscription_type: "single" | "bundle";
-  allowed_categories: string[];
-  billing_period: string;
-}
 
 // Confirmed by owner: LBS4 bootcamp services listing.
 const BOOTCAMP_HREF = "https://www.lbs4.com/services?filter=bootcamp";
@@ -135,20 +123,6 @@ export default function LandingPage() {
     { value: "4", label: isSpanish ? "Categorías" : "Categories" },
     { value: "EN/ES", label: isSpanish ? "Bilingüe" : "Bilingual" },
   ];
-
-  const { data: prices = [], isLoading: pricesLoading } = useQuery<StripePrice[]>({
-    queryKey: ["/api/stripe/prices"],
-  });
-
-  const lowestSinglePrice = prices
-    .filter((p) => p.subscription_type === "single" && p.billing_period === "monthly")
-    .sort((a, b) => a.unit_amount - b.unit_amount)[0];
-
-  const bundlePrice = prices.find(
-    (p) => p.subscription_type === "bundle" && p.billing_period === "monthly"
-  );
-
-  const formatPrice = (amount: number) => `$${(amount / 100).toFixed(2)}`;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -402,47 +376,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Platform Preview - real screenshot of the practice-question interface */}
-        <section className="py-12 md:py-16 bg-muted/30" id="platform-preview">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-8 md:mb-10">
-              <h2 className="text-2xl md:text-3xl font-bold mb-3">
-                {isSpanish ? "Así se Ve la Práctica" : "See the Practice Experience"}
-              </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-                {isSpanish
-                  ? "Preguntas reales en formato de examen, con seguimiento de tiempo y progreso"
-                  : "Real exam-format questions, with live timing and progress tracking"}
-              </p>
-            </div>
-            <div className="max-w-3xl mx-auto rounded-2xl border bg-card shadow-lg overflow-hidden">
-              <img
-                src={platformPreviewImage}
-                alt={
-                  isSpanish
-                    ? "Captura de pantalla de la interfaz de preguntas de práctica de MyEasyPass mostrando una pregunta de examen de bienes raíces de Texas con opciones de respuesta y temporizador"
-                    : "Screenshot of the MyEasyPass practice-question interface showing a Texas real estate exam question with answer options and a countdown timer"
-                }
-                className="w-full h-auto block dark:hidden"
-                loading="lazy"
-                width={900}
-                height={610}
-              />
-              <img
-                src={platformPreviewImageDark}
-                alt={
-                  isSpanish
-                    ? "Captura de pantalla de la interfaz de preguntas de práctica de MyEasyPass mostrando una pregunta de examen de bienes raíces de Texas con opciones de respuesta y temporizador"
-                    : "Screenshot of the MyEasyPass practice-question interface showing a Texas real estate exam question with answer options and a countdown timer"
-                }
-                className="w-full h-auto hidden dark:block"
-                loading="lazy"
-                width={900}
-                height={610}
-              />
-            </div>
-          </div>
-        </section>
 
         {/* What's Included */}
         <section className="py-12 md:py-16" id="whats-included">
@@ -496,98 +429,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Pricing Preview */}
-        <section className="py-12 md:py-16 bg-muted/30" id="pricing-preview">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-8 md:mb-10">
-              <h2 className="text-2xl md:text-3xl font-bold mb-3">
-                {isSpanish ? "Precios Simples" : "Simple Pricing"}
-              </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-                {isSpanish
-                  ? "Elige un examen individual o ahorra con el paquete completo"
-                  : "Choose a single exam or save with the complete bundle"}
-              </p>
-            </div>
-
-            {pricesLoading ? (
-              <div className="grid gap-5 sm:grid-cols-2 max-w-3xl mx-auto">
-                <div className="h-44 rounded-2xl bg-card border animate-pulse" />
-                <div className="h-44 rounded-2xl bg-card border animate-pulse" />
-              </div>
-            ) : lowestSinglePrice || bundlePrice ? (
-              <div className="grid gap-5 sm:grid-cols-2 max-w-3xl mx-auto">
-                {lowestSinglePrice && (
-                  <Card className="border-2" data-testid="card-pricing-preview-single">
-                    <CardHeader>
-                      <CardTitle className="text-lg">
-                        {isSpanish ? "Examen Individual" : "Single Exam"}
-                      </CardTitle>
-                      <CardDescription>
-                        {isSpanish ? "Acceso a una categoría de examen" : "Access to one exam category"}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-3xl font-bold mb-4">
-                        {formatPrice(lowestSinglePrice.unit_amount)}
-                        <span className="text-base font-normal text-muted-foreground">
-                          /{isSpanish ? "mes" : "mo"}
-                        </span>
-                      </p>
-                      <Button variant="outline" className="w-full" asChild data-testid="cta-pricing-preview-single">
-                        <Link href="/pricing">{isSpanish ? "Elegir Examen" : "Choose Exam"}</Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
-                {bundlePrice && (
-                  <Card className="relative overflow-hidden border-2 border-primary bg-gradient-to-br from-primary/5 to-primary/10" data-testid="card-pricing-preview-bundle">
-                    <div className="absolute top-0 right-0">
-                      <Badge className="rounded-none rounded-bl-lg">
-                        {isSpanish ? "Más Popular" : "Most Popular"}
-                      </Badge>
-                    </div>
-                    <CardHeader>
-                      <CardTitle className="text-lg">
-                        {isSpanish ? "Paquete Completo" : "Complete Bundle"}
-                      </CardTitle>
-                      <CardDescription>
-                        {isSpanish ? "Acceso a las 4 categorías de examen" : "Access to all 4 exam categories"}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-3xl font-bold mb-4">
-                        {formatPrice(bundlePrice.unit_amount)}
-                        <span className="text-base font-normal text-muted-foreground">
-                          /{isSpanish ? "mes" : "mo"}
-                        </span>
-                      </p>
-                      <Button className="w-full" asChild data-testid="cta-pricing-preview-bundle">
-                        <Link href="/pricing">{isSpanish ? "Obtener Paquete" : "Get Bundle"}</Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            ) : null}
-
-            <div className="text-center mt-8">
-              <Button
-                variant="outline"
-                asChild
-                className="gap-2"
-                data-testid="cta-pricing-preview-view-all"
-                data-analytics="pricing-preview-view-all"
-                onClick={() => trackEvent("pricing_cta_click", { source: "homepage_preview" })}
-              >
-                <Link href="/pricing">
-                  {isSpanish ? "Ver Todas las Opciones de Precios" : "View All Pricing Options"}
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </section>
 
         {/* Live Bootcamp */}
         <section className="py-12 md:py-16 bg-muted/30">

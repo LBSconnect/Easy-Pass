@@ -31,6 +31,7 @@ import { shuffleQuestionOptions } from "./shuffleQuestionOptions";
 import { studyAssistant } from "./alexi/studyAssistantService";
 import { TUTOR_INTENTS, MAX_STUDENT_MESSAGE_CHARS, type TutorIntent } from "./alexi/tutor";
 import { buildSessionPlan, type PlannableQuestion } from "./alexi/sessionPlan";
+import { keyPointsFor } from "./alexi/keyPoints";
 
 const alexiTutorSchema = z.object({
   questionId: z.string().min(1),
@@ -907,12 +908,30 @@ export async function registerRoutes(
         };
       });
 
+      // Key points for the teach step. Authored content in the study-topic
+      // config wins; otherwise they are distilled from the approved
+      // explanations on this concept, so every line is something the question
+      // bank already says rather than something a model recalled.
+      const conceptTopic = recommendation.recommendation.concept?.label ?? null;
+      const authored = getTopicsByCategory(examCategory)
+        .find((topic) =>
+          [topic.nameEn, topic.nameEs].some(
+            (n) => n.trim().toLowerCase() === conceptTopic?.trim().toLowerCase(),
+          ),
+        );
+      const { points: keyPoints } = keyPointsFor(
+        language === "es" ? authored?.keyPointsEs : authored?.keyPointsEn,
+        plannable.map((q) => ({ topic: q.topic, explanation: q.explanation })),
+        conceptTopic,
+      );
+
       const plan = buildSessionPlan({
         blocks: recommendation.recommendation.blocks,
         pool: plannable,
         missedQuestionIds: missedIds,
         answeredQuestionIds: new Set(responses.map((r) => r.questionId)),
-        conceptTopic: recommendation.recommendation.concept?.label ?? null,
+        conceptTopic,
+        keyPoints,
       });
 
       if (plan.blocks.length === 0) {

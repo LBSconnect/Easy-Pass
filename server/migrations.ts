@@ -221,8 +221,18 @@ const STEPS: Step[] = [
     CREATE INDEX IF NOT EXISTS idx_glossary_category ON glossary_terms (category);
     -- One definition per term per exam. Two rows for the same word would put
     -- contradictory definitions in front of a student with no way to choose.
-    CREATE UNIQUE INDEX IF NOT EXISTS uq_glossary_term
-      ON glossary_terms (lower(term_en), COALESCE(category::text, ''));`,
+    --
+    -- Two partial indexes rather than one over COALESCE(category::text, ''):
+    -- casting an enum to text is only STABLE, not IMMUTABLE, so Postgres
+    -- refuses it in an index expression. Splitting on the null also states
+    -- the intent plainly - a term with no category is global, and there can
+    -- be only one of those per word.
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_glossary_term_per_category
+      ON glossary_terms (lower(term_en), category)
+      WHERE category IS NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_glossary_term_global
+      ON glossary_terms (lower(term_en))
+      WHERE category IS NULL;`,
   },
 
   // --- Measured item difficulty -------------------------------------------

@@ -119,6 +119,25 @@ export const questions = pgTable("questions", {
  * reason generated questions are: half a bilingual glossary is a blank
  * where a Spanish-speaking student expects an answer.
  */
+/**
+ * What the tutor said, and what the student asked, per question.
+ *
+ * Scoped to one student and one question on purpose. The tutor may only
+ * discuss a question the student has already answered - otherwise it would be
+ * handing out answers to questions still ahead of them - and per-question
+ * memory keeps that true. Memory spanning questions could carry an earlier
+ * discussion of one question into another and leak its answer.
+ */
+export const tutorTurns = pgTable("tutor_turns", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  questionId: varchar("question_id").notNull(),
+  /** student | assistant */
+  role: varchar("role", { length: 16 }).notNull(),
+  text: text("text").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const glossaryTerms = pgTable("glossary_terms", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   /** Null when the term applies across exams rather than to one. */
@@ -624,6 +643,8 @@ export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
 export type GeneratedQuestionRow = typeof generatedQuestions.$inferSelect;
 export type InsertGeneratedQuestion = typeof generatedQuestions.$inferInsert;
+export type TutorTurnRow = typeof tutorTurns.$inferSelect;
+export type InsertTutorTurn = typeof tutorTurns.$inferInsert;
 export type GlossaryTerm = typeof glossaryTerms.$inferSelect;
 export type InsertGlossaryTerm = typeof glossaryTerms.$inferInsert;
 export type Question = typeof questions.$inferSelect;

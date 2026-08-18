@@ -201,6 +201,22 @@ const STEPS: Step[] = [
             WHERE user_id IS NOT NULL;`,
   },
 
+  // --- Tutor conversation memory --------------------------------------------
+  {
+    name: "tutor_turns",
+    sql: `CREATE TABLE IF NOT EXISTS tutor_turns (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id varchar NOT NULL,
+      question_id varchar NOT NULL,
+      role varchar(16) NOT NULL,
+      text text NOT NULL,
+      created_at timestamp NOT NULL DEFAULT now()
+    );
+    -- Every read is "this student, this question, most recent first".
+    CREATE INDEX IF NOT EXISTS idx_tutor_turns_lookup
+      ON tutor_turns (user_id, question_id, created_at DESC);`,
+  },
+
   // --- Bilingual glossary ---------------------------------------------------
   {
     name: "glossary_terms",
@@ -301,6 +317,7 @@ export async function checkSchemaHealth(): Promise<{
     "ai_usage_events",
     "generated_questions",
     "glossary_terms",
+    "tutor_turns",
   ];
   const expectedColumns: Array<[string, string]> = [
     ["user_profiles", "exam_date"],

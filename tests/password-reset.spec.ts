@@ -156,13 +156,15 @@ test.describe('Password Reset - Browser Tests', () => {
     await page.fill('[data-testid="input-forgot-email"]', uniqueEmail);
     await page.click('[data-testid="button-send-reset"]');
     
-    await page.waitForTimeout(3000);
-    
-    const successVisible = await page.locator('text=/Check Your Email|Revisa tu Correo/i').isVisible();
-    const toastVisible = await page.locator('[role="status"], [data-state="open"]').isVisible();
-    const buttonDisabled = await page.locator('[data-testid="button-send-reset"]').isDisabled();
-    
-    expect(successVisible || toastVisible || buttonDisabled).toBe(true);
+    // Either outcome is acceptable here - the point is that submitting does
+    // something visible - but the three conditions could not be evaluated the
+    // way they were. On success the form is replaced by the confirmation
+    // panel, so the button no longer exists, and isDisabled() on a missing
+    // locator waits until the test times out. It never reached the success
+    // check that would have passed.
+    const success = page.locator('text=/Check Your Email|Revisa tu Correo/i').first();
+    const toast = page.locator('[role="status"]').first();
+    await expect(success.or(toast)).toBeVisible({ timeout: 10000 });
   });
 
   test('forgot password form validates email format', async ({ page }) => {

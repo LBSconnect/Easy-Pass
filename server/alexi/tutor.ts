@@ -56,6 +56,15 @@ export interface TutorRequestInput {
   /** Optional free text. Untrusted. */
   studentMessage?: string | null;
   language: "en" | "es";
+  /**
+   * Earlier turns on this same question, oldest first.
+   *
+   * Continuity only. The system prompt still binds every answer to the
+   * approved material, so remembering the conversation cannot widen what the
+   * tutor is allowed to say - it only stops a follow-up like "why not the
+   * second one?" arriving with no idea what was just discussed.
+   */
+  history?: Array<{ role: "student" | "assistant"; text: string }>;
 }
 
 /** Free-text cap. Anything longer is a payload, not a question. */
@@ -173,10 +182,24 @@ export function buildTutorRequest(input: TutorRequestInput): CompletionRequest {
     userContent += `\n\n${wrapUntrusted("student_message", message)}`;
   }
 
+  // Earlier turns, as real conversation turns rather than pasted into the
+  // prompt. A remembered student message stays wrapped as untrusted: it was
+  // untrusted when it arrived and nothing about having stored it makes it
+  // safer to hand back unmarked.
+  const priorTurns = (input.history ?? [])
+    .map((turn) => {
+      const text = turn.role === "student" ? sanitizeStudentMessage(turn.text) : turn.text.trim();
+      if (!text) return null;
+      return turn.role === "student"
+        ? { role: "user" as const, content: wrapUntrusted("student_message", text) }
+        : { role: "assistant" as const, content: text };
+    })
+    .filter((turn): turn is { role: "user" | "assistant"; content: string } => turn !== null);
+
   return {
     role: "tutor",
     system,
-    messages: [{ role: "user", content: userContent }],
+    messages: [...priorTurns, { role: "user", content: userContent }],
     // "Explain more" is the one intent allowed to run long, and only because
     // the student explicitly asked for it.
     maxTokens: input.intent === "explain_more" ? 900 : undefined,

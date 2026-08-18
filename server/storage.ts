@@ -3,6 +3,7 @@ import {
   questions,
   generatedQuestions,
   glossaryTerms,
+  tutorTurns,
   examSessions,
   examResults,
   paymentHistory,
@@ -23,6 +24,8 @@ import {
   type GeneratedQuestionRow,
   type InsertGeneratedQuestion,
   type GlossaryTerm,
+  type TutorTurnRow,
+  type InsertTutorTurn,
   type InsertGlossaryTerm,
   type InsertQuestion,
   type ExamSession,
@@ -184,6 +187,10 @@ export interface IStorage {
 
   createDiagnosticAttempt(attempt: InsertDiagnosticAttempt): Promise<DiagnosticAttempt>;
   getDiagnosticAttempt(id: string): Promise<DiagnosticAttempt | undefined>;
+  /** Recent tutor conversation for one student on one question. */
+  getTutorTurns(userId: string, questionId: string, limit: number): Promise<TutorTurnRow[]>;
+  appendTutorTurns(turns: InsertTutorTurn[]): Promise<number>;
+
   /** Published glossary terms a student can see, for one exam or all. */
   getPublishedGlossary(category?: ExamCategory): Promise<GlossaryTerm[]>;
   /** Everything, including drafts. Admin only. */
@@ -1184,6 +1191,39 @@ export class DatabaseStorage implements IStorage {
    * submitted - has no score, and treating one as "done" would tick the
    * onboarding step off without the student ever seeing a result.
    */
+  /**
+   * The last few turns, newest first.
+   *
+   * The caller re-sorts for the prompt; this order is what the index serves
+   * cheaply, and asking for the newest is the whole point of a window.
+   */
+  async getTutorTurns(userId: string, questionId: string, limit: number): Promise<TutorTurnRow[]> {
+    return db
+      .select()
+      .from(tutorTurns)
+      .where(and(eq(tutorTurns.userId, userId), eq(tutorTurns.questionId, questionId)))
+      .orderBy(desc(tutorTurns.createdAt))
+      .limit(limit);
+  }
+
+  /**
+   * Record a turn or two.
+   *
+   * Never lets a failure here break the answer the student is waiting for -
+   * memory is an enhancement, and losing one exchange of it matters far less
+   * than losing the reply.
+   */
+  async appendTutorTurns(turns: InsertTutorTurn[]): Promise<number> {
+    if (turns.length === 0) return 0;
+    try {
+      const inserted = await db.insert(tutorTurns).values(turns).returning();
+      return inserted.length;
+    } catch (error) {
+      console.error("Error recording tutor turns:", error);
+      return 0;
+    }
+  }
+
   /**
    * What a student sees. Published terms only - a draft is someone's
    * half-written definition, and a half-written definition of a legal term is

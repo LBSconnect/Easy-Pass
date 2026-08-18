@@ -2,7 +2,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import cors from 'cors';
 import { buildAllowedOrigins } from '@shared/corsOrigins';
-import { resolveApiRateLimit } from '@shared/rateLimitConfig';
+import { resolveApiRateLimit, resolveAuthRateLimit } from '@shared/rateLimitConfig';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
@@ -115,7 +115,10 @@ const apiLimiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  // Configurable only so the specs that prove this limiter works can run on
+  // their own server without poisoning every other auth spec from the same
+  // IP. Default, and production, is 5.
+  max: resolveAuthRateLimit(process.env.AUTH_RATE_LIMIT_MAX),
   message: 'Too many login attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,

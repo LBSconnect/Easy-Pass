@@ -167,7 +167,9 @@ test.describe('Public Endpoints', () => {
           message: 'Here are my tips for passing the exam. Study a little every day, take practice tests, and review your weak topics.',
         },
       });
-      expect(response.status()).toBe(200);
+      // 201 Created is the right answer for a creation, and what the route
+      // actually returns. The spec asserted 200 and had never been run.
+      expect(response.status()).toBe(201);
       const body = await response.json();
       expect(body.id).toBeDefined();
     });

@@ -46,11 +46,24 @@ export default defineConfig({
   },
   projects: [
     {
-      // End-to-end against a real server and database.
+      // End-to-end against a real server and database, with the per-IP caps
+      // raised - a limiter is not what these are testing, and the whole suite
+      // shares one IP.
       name: 'e2e',
       testDir: './tests',
-      testIgnore: '**/ui/**',
+      testIgnore: ['**/ui/**', '**/rate-limits/**'],
       use: { ...devices['Desktop Chrome'], baseURL },
+    },
+    {
+      // The limiters, against a second server that still has the real ones.
+      // Separate because these prove the limits work by exhausting them,
+      // which would otherwise 429 every auth spec that ran afterwards.
+      name: 'rate-limits',
+      testDir: './tests/rate-limits',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: process.env.RATE_LIMIT_BASE_URL || 'http://localhost:5001',
+      },
     },
     {
       // Interface behaviour under backend states that are awkward to produce

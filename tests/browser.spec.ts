@@ -22,8 +22,10 @@ test('login shows error with invalid credentials', async ({ page }) => {
   await page.fill('input[name="password"]', 'wrongpassword123');
   await page.click('button[type="submit"]');
 
-  // Should show an error message (toast or inline)
-  await expect(page.locator('text=/invalid|error|failed/i')).toBeVisible({ timeout: 5000 });
+  // Should show an error message (toast or inline). The toast renders a title
+  // and the server's message, so the text matches more than once - take the
+  // first rather than failing on the ambiguity.
+  await expect(page.locator('text=/invalid|error|failed/i').first()).toBeVisible({ timeout: 5000 });
 });
 
 test('registration form validates required fields', async ({ page }) => {
@@ -38,12 +40,14 @@ test('registration form validates required fields', async ({ page }) => {
   // Submit without filling fields
   await page.click('button[type="submit"]');
 
-  // Browser validation or custom validation should prevent submission
-  const emailInput = page.locator('input[name="email"]');
-  const isInvalid = await emailInput.evaluate(
-    (el: HTMLInputElement) => !el.validity.valid
-  );
-  expect(isInvalid).toBe(true);
+  // The form validates with Zod through React Hook Form, not with native
+  // constraint attributes - so `validity.valid` is always true here and
+  // asserting on it tested nothing. What a user actually needs is that the
+  // form refuses to submit and says why.
+  await expect(page.locator('text=/required|valid email|at least/i').first()).toBeVisible({
+    timeout: 5000,
+  });
+  await expect(page).toHaveURL(/\/(login|signup)/);
 });
 
 test('forgot password page loads', async ({ page }) => {

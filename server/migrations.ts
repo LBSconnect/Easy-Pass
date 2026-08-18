@@ -201,6 +201,56 @@ const STEPS: Step[] = [
             WHERE user_id IS NOT NULL;`,
   },
 
+  // --- Tutor conversation memory --------------------------------------------
+  {
+    name: "tutor_turns",
+    sql: `CREATE TABLE IF NOT EXISTS tutor_turns (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id varchar NOT NULL,
+      question_id varchar NOT NULL,
+      role varchar(16) NOT NULL,
+      text text NOT NULL,
+      created_at timestamp NOT NULL DEFAULT now()
+    );
+    -- Every read is "this student, this question, most recent first".
+    CREATE INDEX IF NOT EXISTS idx_tutor_turns_lookup
+      ON tutor_turns (user_id, question_id, created_at DESC);`,
+  },
+
+  // --- Bilingual glossary ---------------------------------------------------
+  {
+    name: "glossary_terms",
+    sql: `CREATE TABLE IF NOT EXISTS glossary_terms (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      category exam_category,
+      term_en varchar(120) NOT NULL,
+      term_es varchar(120) NOT NULL,
+      definition_en text NOT NULL,
+      definition_es text NOT NULL,
+      source_question_ids jsonb,
+      status varchar(20) NOT NULL DEFAULT 'draft',
+      created_by varchar,
+      created_at timestamp NOT NULL DEFAULT now(),
+      updated_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_glossary_status ON glossary_terms (status);
+    CREATE INDEX IF NOT EXISTS idx_glossary_category ON glossary_terms (category);
+    -- One definition per term per exam. Two rows for the same word would put
+    -- contradictory definitions in front of a student with no way to choose.
+    --
+    -- Two partial indexes rather than one over COALESCE(category::text, ''):
+    -- casting an enum to text is only STABLE, not IMMUTABLE, so Postgres
+    -- refuses it in an index expression. Splitting on the null also states
+    -- the intent plainly - a term with no category is global, and there can
+    -- be only one of those per word.
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_glossary_term_per_category
+      ON glossary_terms (lower(term_en), category)
+      WHERE category IS NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_glossary_term_global
+      ON glossary_terms (lower(term_en))
+      WHERE category IS NULL;`,
+  },
+
   // --- Measured item difficulty -------------------------------------------
   {
     name: "questions difficulty columns",
@@ -266,6 +316,8 @@ export async function checkSchemaHealth(): Promise<{
     "flashcard_reviews",
     "ai_usage_events",
     "generated_questions",
+    "glossary_terms",
+    "tutor_turns",
   ];
   const expectedColumns: Array<[string, string]> = [
     ["user_profiles", "exam_date"],

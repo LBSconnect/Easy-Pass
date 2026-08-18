@@ -13,6 +13,7 @@
 
 import { storage } from "../storage";
 import { rateLimit } from "../rateLimit";
+import { selectRecentTurns, MAX_REMEMBERED_TURNS } from "./conversationMemory";
 import { getAIConfig, hasCredentials } from "../ai/config";
 import { getProvider } from "../ai";
 import { AIError } from "../ai/provider";
@@ -400,6 +401,25 @@ export class StudyAssistantService {
       (a, b) => new Date(b.answeredAt).getTime() - new Date(a.answeredAt).getTime(),
     )[0];
 
+    // Earlier turns on this same question, so a follow-up like "why not the
+    // second one?" is not answered in a vacuum. Fetching more than the window
+    // needs would just be discarded, so ask for the window.
+    const history = await storage
+      .getTutorTurns(userId, question.id, MAX_REMEMBERED_TURNS * 2)
+      .catch((error) => {
+        // Memory is an enhancement. Losing it costs continuity; failing the
+        // request costs the student their answer.
+        console.error("Error loading tutor history:", error);
+        return [];
+      });
+    const window = selectRecentTurns(
+      history.map((turn) => ({
+        role: turn.role === "assistant" ? ("assistant" as const) : ("student" as const),
+        text: turn.text,
+        createdAt: turn.createdAt,
+      })),
+    );
+
     const started = Date.now();
     try {
       const response = await getProvider().complete(
@@ -409,6 +429,7 @@ export class StudyAssistantService {
           studentAnswerIndex: latest.selectedAnswer ?? null,
           studentMessage: params.studentMessage,
           language,
+          history: window.turns.map((turn) => ({ role: turn.role, text: turn.text })),
         }),
       );
 
@@ -424,6 +445,23 @@ export class StudyAssistantService {
         category: question.category,
         userId,
       });
+
+      // Record the exchange for the next follow-up. Only a grounded answer is
+      // remembered: a fallback is the approved explanation verbatim, and
+      // replaying it as conversation would teach the tutor to repeat itself.
+      await storage.appendTutorTurns(
+        [
+          params.studentMessage?.trim()
+            ? {
+                userId,
+                questionId: question.id,
+                role: "student",
+                text: params.studentMessage.trim(),
+              }
+            : null,
+          { userId, questionId: question.id, role: "assistant", text: response.text },
+        ].filter((turn): turn is NonNullable<typeof turn> => turn !== null),
+      );
 
       return { answer: response.text, source: "grounded" };
     } catch (error) {

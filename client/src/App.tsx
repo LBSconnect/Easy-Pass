@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import "./lib/i18n";
 
 import NotFound from "@/pages/not-found";
+import GlossaryPage from "@/pages/glossary";
 import LandingPage from "@/pages/landing";
 import DashboardPage from "@/pages/dashboard";
 import MissedQuestionsPage from "@/pages/missed-questions";
@@ -214,6 +215,7 @@ function Router() {
       <Route path="/admin" component={() => <ProtectedRoute component={AdminPage} />} />
       <Route path="/certificates/:slug" component={CertificatePage} />
       <Route path="/faq" component={FAQPage} />
+      <Route path="/glossary" component={GlossaryPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/cookie-policy" component={CookiePolicyPage} />

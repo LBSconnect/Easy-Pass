@@ -74,6 +74,13 @@ jobs:
       # start failing on 429. The auth and password-reset limiters keep their
       # real values - specs assert those return 429.
       API_RATE_LIMIT_MAX: "100000"
+      # Raised for the functional server only. The second server below keeps
+      # the real 5, so the specs that prove the limiter works still do.
+      AUTH_RATE_LIMIT_MAX: "100000"
+      RATE_LIMIT_BASE_URL: http://localhost:5001
+      # The in-process per-IP limiters on the public endpoints have the same
+      # one-IP problem. Scaled together so their relative sizes stay intact.
+      RATE_LIMIT_SCALE: "1000"
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.pw-browsers
 
     steps:
@@ -135,6 +142,31 @@ jobs:
       # Migration failures are logged and survived by design, so the server
       # comes up either way. Without this the job would go green on a broken
       # migration.
+      # A second server with the real limits, for the rate-limit specs. Same
+      # database: they only exercise auth and password-reset endpoints, and
+      # nothing they do depends on isolated data.
+      - name: Start rate-limit server
+        env:
+          NODE_ENV: production
+          PORT: "5001"
+          API_RATE_LIMIT_MAX: ""
+          AUTH_RATE_LIMIT_MAX: ""
+          RATE_LIMIT_SCALE: ""
+          CORS_ALLOWED_ORIGINS: http://localhost:5001
+        run: |
+          node dist/index.cjs > /tmp/server-limits.log 2>&1 &
+          echo $! > /tmp/server-limits.pid
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:5001/api/study-guide/topics > /dev/null; then
+              echo "rate-limit server up after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "rate-limit server did not come up; log follows:"
+          cat /tmp/server-limits.log
+          exit 1
+
       - name: Check migrations applied
         run: |
           if grep -q "\[migrate\] .*FAILED" /tmp/server.log; then
@@ -162,6 +194,8 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
-      - name: Stop server
+      - name: Stop servers
         if: always()
-        run: kill "$(cat /tmp/server.pid)" 2>/dev/null || true
+        run: |
+          kill "$(cat /tmp/server.pid)" 2>/dev/null || true
+          kill "$(cat /tmp/server-limits.pid)" 2>/dev/null || true

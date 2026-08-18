@@ -46,6 +46,7 @@ import {
   Award,
   Share2,
   Sparkles,
+  X,
 } from "lucide-react";
 import {
   Dialog,
@@ -510,8 +511,15 @@ function ExamSession() {
                       </div>
                     </div>
                     <div className="p-4 rounded-lg bg-muted">
+                      {/* Same guard as the profile history: a result without
+                          a recorded duration rendered "NaN:NaN" in the middle
+                          of the score summary. */}
                       <div className="text-2xl font-bold">
-                        {Math.floor(result.timeTaken / 60)}:{String(result.timeTaken % 60).padStart(2, "0")}
+                        {Number.isFinite(result.timeTaken)
+                          ? `${Math.floor(Number(result.timeTaken) / 60)}:${String(
+                              Number(result.timeTaken) % 60,
+                            ).padStart(2, "0")}`
+                          : "—"}
                       </div>
                       <div className="text-sm text-muted-foreground">
                         {t("exam.results.timeTaken")}
@@ -686,20 +694,20 @@ function ExamSession() {
 
       <div className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
         <div className="container mx-auto flex h-14 items-center justify-between gap-4 px-4">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${categoryColors[category]}`}>
+          <div className="flex min-w-0 items-center gap-3">
+            <div className={`shrink-0 p-2 rounded-lg ${categoryColors[category]}`}>
               <Icon className="h-4 w-4" />
             </div>
             {/* The exam runner had no heading at all - nothing announced on
                 arrival, nothing to navigate by. The exam's name is the page's
                 subject, so it is the h1. It is visually hidden below sm where
                 the header has no room, but never hidden from assistive tech. */}
-            <h1 className="font-medium text-sm max-sm:sr-only">
+            <h1 className="truncate font-medium text-sm max-sm:sr-only">
               {t(`categories.${category}`)}
             </h1>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-4">
             <Badge variant="outline" className="gap-1">
               <Clock className="h-3 w-3" />
               {formatTime(timeRemaining)}
@@ -707,13 +715,20 @@ function ExamSession() {
             <Badge variant="secondary">
               {answeredCount}/{questions.length}
             </Badge>
-            <Button 
-              variant="outline" 
+            {/* Icon-only on narrow screens. "Cancelar" plus "Terminar Examen"
+                does not fit a 390px header, and Spanish runs 20-30% longer
+                than the English this row was measured against. The label is
+                kept for assistive tech either way. */}
+            <Button
+              variant="outline"
               size="sm"
               onClick={() => setShowCancelDialog(true)}
+              aria-label={t("exam.cancel")}
+              className="max-sm:h-9 max-sm:w-9 max-sm:p-0"
               data-testid="button-cancel-exam"
             >
-              {t("exam.cancel")}
+              <X className="h-4 w-4 sm:hidden" aria-hidden="true" />
+              <span className="max-sm:sr-only">{t("exam.cancel")}</span>
             </Button>
             <Button 
               variant="destructive" 
@@ -1206,15 +1221,15 @@ function GuestPracticePreview({ category }: { category: ExamCategory }) {
     <div className="min-h-screen flex flex-col bg-background">
       <div className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
         <div className="container mx-auto flex h-14 items-center justify-between gap-4 px-4">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${categoryColors[category]}`}>
+          <div className="flex min-w-0 items-center gap-3">
+            <div className={`shrink-0 p-2 rounded-lg ${categoryColors[category]}`}>
               <Icon className="h-4 w-4" />
             </div>
             {/* The exam runner had no heading at all - nothing announced on
                 arrival, nothing to navigate by. The exam's name is the page's
                 subject, so it is the h1. It is visually hidden below sm where
                 the header has no room, but never hidden from assistive tech. */}
-            <h1 className="font-medium text-sm max-sm:sr-only">
+            <h1 className="truncate font-medium text-sm max-sm:sr-only">
               {t(`categories.${category}`)}
             </h1>
           </div>

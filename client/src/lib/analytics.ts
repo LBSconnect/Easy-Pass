@@ -39,6 +39,7 @@ export type AnalyticsEventName =
   | "flashcards_clicked"
   | "review_mistakes_clicked"
   | "mock_exam_clicked"
+  | "targeted_practice_clicked"
   | "ask_alexi_clicked"
   | "change_exam_clicked"
   | "exam_date_set"

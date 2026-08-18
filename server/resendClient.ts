@@ -81,13 +81,22 @@ export async function sendPasswordResetEmail(
 </div>
     `;
     
-    await client.emails.send({
+    const result = await client.emails.send({
       from: fromEmail || 'MyEasyPass <noreply@myeasypass.net>',
       to: toEmail,
       subject: 'Reset Your Password - MyEasyPass',
       html: emailHtml
     });
-    
+
+    // Resend reports a rejected send by returning an error rather than
+    // throwing, so without this an expired API key or a blocked address
+    // returned true and the caller told the user to check their inbox for a
+    // message that was never sent.
+    if (result?.error) {
+      console.error('[Email] Provider rejected password reset:', result.error);
+      return false;
+    }
+
     console.log('[Email] Password reset sent to:', toEmail);
     return true;
   } catch (error) {

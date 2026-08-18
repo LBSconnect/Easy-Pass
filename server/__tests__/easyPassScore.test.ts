@@ -305,3 +305,60 @@ describe("calculateEasyPassScore", () => {
     }
   });
 });
+
+describe("drill answers and recent accuracy", () => {
+  const at = (daysAgo: number) => new Date(NOW.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+
+  const responses = (count: number, correct: boolean, source?: string) =>
+    Array.from({ length: count }, (_, i) => ({
+      questionId: `${source ?? "exam"}-${i}`,
+      topic: "Topic A",
+      isCorrect: correct,
+      answeredAt: at(1),
+      source,
+    }));
+
+  const componentOf = (input: Parameters<typeof calculateEasyPassScore>[0], key: string) =>
+    calculateEasyPassScore(input).components.find((c) => c.key === key);
+
+  it("ignores drills when judging recent accuracy", () => {
+    // The student is doing well on representative papers and, as expected,
+    // badly on a drill aimed at their weakest topic. The drill must not drag
+    // the reading down - that would penalise them for the remedial work.
+    const base = { mockExamScores: [], questionBankSize: 200, now: NOW };
+
+    const withoutDrill = componentOf(
+      { ...base, responses: responses(20, true) },
+      "recent_accuracy",
+    );
+    const withDrill = componentOf(
+      { ...base, responses: [...responses(20, true), ...responses(20, false, "drill")] },
+      "recent_accuracy",
+    );
+
+    expect(withoutDrill?.value).toBe(100);
+    expect(withDrill?.value).toBe(100);
+  });
+
+  it("leaves other components counting drill answers", () => {
+    // Coverage is about questions seen, and a drill really was seen.
+    const base = { mockExamScores: [], questionBankSize: 200, now: NOW };
+    const alone = componentOf({ ...base, responses: responses(20, true) }, "coverage");
+    const plusDrill = componentOf(
+      { ...base, responses: [...responses(20, true), ...responses(20, false, "drill")] },
+      "coverage",
+    );
+
+    expect(plusDrill!.value).toBeGreaterThan(alone!.value);
+  });
+
+  it("does not claim a reading from drills alone", () => {
+    // A student whose only history is drills has no representative sample, so
+    // the component reports itself inapplicable rather than inventing a value.
+    const component = componentOf(
+      { responses: responses(20, false, "drill"), mockExamScores: [], questionBankSize: 200, now: NOW },
+      "recent_accuracy",
+    );
+    expect(component?.applicable).toBe(false);
+  });
+});

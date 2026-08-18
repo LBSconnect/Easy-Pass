@@ -56,6 +56,16 @@ export const userProfiles = pgTable("user_profiles", {
   // does not make them re-pick on every visit; null falls back to whichever
   // category they most recently sat or have access to.
   preferredCategory: examCategoryEnum("preferred_category"),
+  // Study reminder emails, off unless the student turns them on. Null and
+  // false both mean off; only an explicit true is consent, because a nullable
+  // column defaulting to "yes" would opt in everyone who already exists.
+  emailRemindersOptIn: boolean("email_reminders_opt_in"),
+  // When the last reminder email went out, so one student cannot be emailed
+  // twice for the same week however often the dispatcher runs.
+  lastReminderEmailAt: timestamp("last_reminder_email_at"),
+  // Lets a one-click unsubscribe work without a login. Random, per student,
+  // and only ever able to turn reminders off - it grants no other access.
+  unsubscribeToken: varchar("unsubscribe_token"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
@@ -195,6 +205,10 @@ export const examSessions = pgTable("exam_sessions", {
   completedAt: timestamp("completed_at"),
   timeLimit: integer("time_limit").default(3600).notNull(),
   isCompleted: boolean("is_completed").default(false).notNull(),
+  // "practice" | "full" | "targeted" - see shared/examMode.ts. Stored as text
+  // rather than an enum so adding a mode is a code change, not a type
+  // migration on a table holding every sitting a student has ever taken.
+  mode: varchar("mode", { length: 20 }).default("practice").notNull(),
 }, (table) => [
   index("idx_exam_sessions_user").on(table.userId),
   index("idx_exam_sessions_category").on(table.category),

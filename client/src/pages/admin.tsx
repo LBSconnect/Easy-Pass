@@ -35,6 +35,7 @@ import { Sparkles,
 } from "lucide-react";
 import { GeneratedQuestionReview } from "@/components/admin/generated-question-review";
 import { GenerationConsole } from "@/components/admin/generation-console";
+import { ContentAudit } from "@/components/admin/content-audit";
 import { GlossaryEditor } from "@/components/admin/glossary-editor";
 import {
   Table,
@@ -1843,6 +1844,9 @@ export default function AdminPage() {
                   an operator works in. */}
               <GenerationConsole />
               <GeneratedQuestionReview />
+              {/* The audit sits with the other content tools: what is already
+                  in the bank is the same problem as what is going into it. */}
+              <ContentAudit />
             </TabsContent>
 
             <TabsContent value="glossary" className="space-y-4">

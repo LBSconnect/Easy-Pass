@@ -11,6 +11,8 @@ import {
   blockingEnvVar,
   MASTER_ENV,
   CAPABILITY_ENV,
+  resolveTargetedPractice,
+  TARGETED_PRACTICE_ENV,
   type AssistantFlagState,
 } from "@shared/alexiFlags";
 
@@ -63,5 +65,22 @@ describe("blockingEnvVar", () => {
       expect(CAPABILITY_ENV[capability as keyof typeof CAPABILITY_ENV]).toMatch(/^ALEXI_/);
     }
     expect(Object.keys(CAPABILITY_ENV)).toHaveLength(capabilities.length);
+  });
+});
+
+describe("resolveTargetedPractice", () => {
+  it("is off unless deliberately turned on", () => {
+    for (const raw of [undefined, "", "false", "0", "yes", "TRUE", "on"]) {
+      expect(resolveTargetedPractice(raw)).toBe(false);
+    }
+  });
+
+  it("accepts the two values the rest of the flag surface accepts", () => {
+    expect(resolveTargetedPractice("true")).toBe(true);
+    expect(resolveTargetedPractice("1")).toBe(true);
+  });
+
+  it("uses the mock-exam switch operators already have", () => {
+    expect(TARGETED_PRACTICE_ENV).toBe("ALEXI_MOCK_EXAM_ENABLED");
   });
 });

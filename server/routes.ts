@@ -29,6 +29,13 @@ import { glossaryCandidates } from "./alexi/glossaryCandidates";
 import { pool } from "./db";
 import { buildNotebook, filterNotebook, notebookCounts, type NotebookFilter } from "./missedQuestions";
 import { buildSimulatorPaper } from "./simulatorPaper";
+import { buildTargetedPaper } from "./alexi/targetedPaper";
+import { auditBank, findThinTopics } from "./alexi/bankAudit";
+import { topReminders } from "@shared/studyReminders";
+import { reminderCopy } from "@shared/reminderCopy";
+import { dispatchReminderEmails } from "./reminderDispatch";
+import { resolveTargetedPractice, TARGETED_PRACTICE_ENV } from "@shared/alexiFlags";
+import { EXAM_MODES, isRepresentativeSitting, questionCountFor, timeLimitFor } from "@shared/examMode";
 import { selectDueCards, scheduleNext, newCardState } from "./spacedRepetition";
 import { shuffleQuestionOptions } from "./shuffleQuestionOptions";
 import { studyAssistant } from "./alexi/studyAssistantService";
@@ -72,9 +79,39 @@ const sessionAnswerSchema = z.object({
   answerIndex: z.number().int().min(0).max(9),
 });
 
+/**
+ * What an unsubscribe link lands on.
+ *
+ * Deliberately a plain page rather than a redirect into the app: the person
+ * clicking is usually signed out, and bouncing them to a login screen after
+ * they asked to stop receiving email is the opposite of what they wanted.
+ * The same page is shown whether or not the token matched, so the endpoint
+ * cannot be used to check whether one exists.
+ */
+const UNSUBSCRIBE_PAGE = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reminders off - MyEasyPass</title></head>
+<body style="font-family: system-ui, sans-serif; max-width: 34rem; margin: 4rem auto; padding: 0 1.5rem; line-height: 1.6; color: #1f2937;">
+<h1 style="color: #2563eb; font-size: 1.5rem;">MyEasyPass</h1>
+<p>You will not receive any more study reminder emails.</p>
+<p style="color: #6b7280;">No se enviaran mas correos de recordatorio.</p>
+<p>You can turn them back on any time from your profile.</p>
+<p><a href="https://www.myeasypass.net" style="color: #2563eb;">myeasypass.net</a></p>
+</body></html>`;
+
+/** Findings returned by the content audit. The summary counts are unaffected. */
+const MAX_AUDIT_FINDINGS = 500;
+
+/** How far back a question counts as "recently seen" for targeted practice. */
+const RECENTLY_SEEN_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
+
 const startExamSchema = z.object({
   category: z.enum(examCategoryEnum.enumValues),
-  mode: z.enum(["practice", "full"]).default("practice"),
+  // "targeted" is practice weighted toward what this student keeps getting
+  // wrong. It is deliberately not called a mock exam anywhere - see
+  // server/alexi/targetedPaper.ts for why the two must stay distinct.
+  mode: z.enum(EXAM_MODES).default("practice"),
 });
 
 const submitExamSchema = z.object({
@@ -107,6 +144,9 @@ const profileUpdateSchema = z.object({
   hasPreviousAttempt: z.boolean().nullable().optional(),
   // The exam the student is actively studying for.
   preferredCategory: z.enum(examCategoryEnum.enumValues).nullable().optional(),
+  // Study reminder emails. Off unless explicitly turned on, and turning it
+  // off has to work as reliably as turning it on.
+  emailRemindersOptIn: z.boolean().nullable().optional(),
 });
 
 const VALID_PRICE_IDS = new Set<string>();
@@ -617,6 +657,7 @@ export async function registerRoutes(
         examDateSkipped,
         hasPreviousAttempt,
         preferredCategory,
+        emailRemindersOptIn,
       } = parsed.data;
       const sanitizedPhone = phone ? sanitizeHtml(phone) ?? phone : undefined;
 
@@ -633,6 +674,7 @@ export async function registerRoutes(
         ...examDatePatch({ examDate, examDateSkipped }),
         ...(hasPreviousAttempt !== undefined ? { hasPreviousAttempt } : {}),
         ...(preferredCategory !== undefined ? { preferredCategory } : {}),
+        ...(emailRemindersOptIn !== undefined ? { emailRemindersOptIn } : {}),
       });
 
       res.json(updated);
@@ -658,22 +700,52 @@ export async function registerRoutes(
         return res.status(403).json({ message: subscriptionCheck.message });
       }
       
+      if (mode === "targeted" && !resolveTargetedPractice(process.env[TARGETED_PRACTICE_ENV])) {
+        return res.status(403).json({ message: "Targeted practice is not available yet" });
+      }
+
       // Practice: 50 random questions, 90 min | Full Mock: 150 random questions, 120 min
-      const questionLimit = mode === "full" ? 150 : 50;
-      const timeLimit = mode === "full" ? 7200 : 5400; // 120 min or 90 min in seconds
+      // Targeted: 50 questions weighted to this student's weak topics, 90 min.
+      const questionLimit = questionCountFor(mode);
+      const timeLimit = timeLimitFor(mode);
       
       console.log(`[Exam Start] Category: ${category}, Mode: ${mode}, Limit: ${questionLimit}, Time: ${timeLimit}s`);
       // Full mock = exam-day simulator: the paper is weighted so topics appear
       // in proportion to the bank rather than by luck of a random draw.
       // Practice stays a straight random sample.
       let questions;
-      if (mode === "full") {
+      if (mode === "full" || mode === "targeted") {
         const activePool = await storage.getActiveQuestions(category);
-        const paper = buildSimulatorPaper({
-          pool: activePool.map((q) => ({ id: q.id, topic: q.topic })),
-          targetCount: questionLimit,
-          seed: Date.now(),
-        });
+        const pool = activePool.map((q) => ({ id: q.id, topic: q.topic }));
+        const seed = Date.now();
+
+        let paper;
+        if (mode === "targeted") {
+          const mastery = await storage.getTopicMastery(userId, category);
+          // Only topics the student has actually attempted carry an accuracy.
+          // The rest are left out so buildTargetedPaper treats them as
+          // unknown rather than as a score of zero, which would send the
+          // whole paper to topics they have simply never opened.
+          const topicAccuracy = mastery
+            .filter((m) => m.answered > 0 && m.topic)
+            .map((m) => ({ topic: m.topic, accuracy: m.accuracy }));
+
+          // A fortnight is long enough that a question is not fresh in mind
+          // and short enough that a regular student still has unseen ones.
+          const since = new Date(seed - RECENTLY_SEEN_WINDOW_MS);
+          const recent = await storage.getResponsesSince(userId, since);
+
+          paper = buildTargetedPaper({
+            pool,
+            targetCount: questionLimit,
+            topicAccuracy,
+            recentlySeenIds: recent.map((r) => r.questionId),
+            seed,
+          });
+        } else {
+          paper = buildSimulatorPaper({ pool, targetCount: questionLimit, seed });
+        }
+
         const byId = new Map(activePool.map((q) => [q.id, q]));
         questions = paper
           .map((p) => byId.get(p.id))
@@ -715,6 +787,9 @@ export async function registerRoutes(
         currentQuestionIndex: 0,
         timeLimit,
         isCompleted: false,
+        // Recorded so the result can say what kind of paper it was. A
+        // targeted paper's score is not comparable with a full mock's.
+        mode,
       });
 
       // Never send the per-session shuffled correct-answer mapping to the client
@@ -797,7 +872,11 @@ export async function registerRoutes(
             ...r,
             userId,
             category: session.category,
-            source: "exam" as const,
+            // A targeted paper is a drill, and the existing enum already has
+            // the word for it. Recorded honestly so the score can weigh these
+            // answers correctly rather than mistaking them for a sitting that
+            // sampled the whole syllabus.
+            source: session.mode === "targeted" ? ("drill" as const) : ("exam" as const),
             sessionId,
           })),
         );
@@ -819,8 +898,11 @@ export async function registerRoutes(
           storage.countActiveQuestions(session.category),
         ]);
 
+        // Targeted papers are excluded: their score is depressed by design,
+        // and letting it move the readiness figure would punish the student
+        // for practising their weak areas.
         const categoryResults = allResults
-          .filter((r) => r.category === session.category)
+          .filter((r) => r.category === session.category && isRepresentativeSitting(r.mode))
           .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
 
         const toScoreInput = (
@@ -832,6 +914,9 @@ export async function registerRoutes(
             topic: r.topic,
             isCorrect: r.isCorrect,
             answeredAt: new Date(r.answeredAt),
+            // Carried so the score can leave drill answers out of the
+            // recent-accuracy component. See server/easyPassScore.ts.
+            source: r.source,
           })),
           mockExamScores: mockScores,
           questionBankSize: bankSize,
@@ -892,6 +977,106 @@ export async function registerRoutes(
   // EasyPass Score for one category. Deliberately not gated on subscription:
   // a lapsed student should still be able to see where they stand, and the
   // response contains no question content.
+  /**
+   * What is worth telling this student right now.
+   *
+   * Every reminder is derived from something already stored - a date they
+   * gave us, an answer they recorded, a subscription period Stripe reported.
+   * Nothing here is generated, so it costs nothing and works with the model
+   * provider down.
+   */
+  app.get("/api/reminders", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [profile, missedIds, results, lastAnsweredAt] = await Promise.all([
+        storage.getProfile(userId),
+        storage.getMissedQuestionIds(userId),
+        storage.getExamResults(userId),
+        storage.getLastAnsweredAt(userId),
+      ]);
+
+      const language = profile?.preferredLanguage === "es" ? "es" : "en";
+      const reminders = topReminders({
+        now: new Date(),
+        examDate: profile?.examDate ? new Date(profile.examDate) : null,
+        subscriptionEndDate: profile?.subscriptionEndDate
+          ? new Date(profile.subscriptionEndDate)
+          : null,
+        hasActiveSubscription: profile?.subscriptionStatus === "active",
+        lastAnsweredAt,
+        missedQuestionCount: missedIds.length,
+        totalAttempts: results.length,
+      });
+
+      res.json({
+        reminders: reminders.map((r) => ({ ...r, copy: reminderCopy(r, language) })),
+        emailRemindersOptIn: profile?.emailRemindersOptIn === true,
+      });
+    } catch (error) {
+      console.error("Error building reminders:", error);
+      res.status(500).json({ message: "Failed to build reminders" });
+    }
+  });
+
+  /**
+   * One-click unsubscribe, no login required.
+   *
+   * Public by necessity: a student clicking a link in an email is often not
+   * signed in, and making them sign in to stop emails is how people mark
+   * messages as spam instead. The token can only turn reminders off - it
+   * reads nothing and grants nothing else - and an unknown token gets the
+   * same page as a valid one, so the endpoint cannot be used to test whether
+   * a token exists.
+   *
+   * Accepts POST as well, because the List-Unsubscribe-Post header tells mail
+   * clients they may unsubscribe with a POST and no user interaction.
+   */
+  const handleUnsubscribe = async (req: any, res: any) => {
+    try {
+      const token = String(req.query.token ?? "").trim();
+      if (token) await storage.unsubscribeByToken(token);
+      res
+        .status(200)
+        .type("html")
+        .send(UNSUBSCRIBE_PAGE);
+    } catch (error) {
+      console.error("Error unsubscribing:", error);
+      res.status(500).type("html").send(UNSUBSCRIBE_PAGE);
+    }
+  };
+  app.get("/api/reminders/unsubscribe", handleUnsubscribe);
+  app.post("/api/reminders/unsubscribe", handleUnsubscribe);
+
+  /**
+   * Send the reminder emails that are due.
+   *
+   * Guarded by a shared secret rather than a session, because the caller is a
+   * scheduler and not a person. With REMINDER_DISPATCH_SECRET unset the route
+   * refuses every request: an unauthenticated endpoint that sends mail to
+   * every opted-in student is not something to leave open by default.
+   */
+  app.post("/api/reminders/dispatch", async (req, res) => {
+    try {
+      const secret = process.env.REMINDER_DISPATCH_SECRET;
+      if (!secret) {
+        return res.status(503).json({ message: "Reminder dispatch is not configured" });
+      }
+      const provided = req.get("x-reminder-secret") ?? "";
+      // Length-independent comparison would be better still, but the secret
+      // is a long random string and this is not a per-request oracle.
+      if (provided !== secret) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const result = await dispatchReminderEmails();
+      console.log("[Reminders] dispatch:", JSON.stringify(result));
+      res.json(result);
+    } catch (error) {
+      console.error("Error dispatching reminders:", error);
+      res.status(500).json({ message: "Failed to dispatch reminders" });
+    }
+  });
+
   app.get("/api/readiness/:category", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -909,7 +1094,7 @@ export async function registerRoutes(
       ]);
 
       const mockExamScores = results
-        .filter((r) => r.category === examCategory)
+        .filter((r) => r.category === examCategory && isRepresentativeSitting(r.mode))
         .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
         .map((r) => r.score);
 
@@ -919,6 +1104,7 @@ export async function registerRoutes(
         topic: r.topic,
         isCorrect: r.isCorrect,
         answeredAt: new Date(r.answeredAt),
+        source: r.source,
       }));
 
       const readiness = calculateEasyPassScore({
@@ -3182,6 +3368,58 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching questions:", error);
       res.status(500).json({ message: "Failed to fetch questions" });
+    }
+  });
+
+  /**
+   * Quality audit of the live question bank.
+   *
+   * The validation pipeline only ever ran on generated candidates, so the
+   * hand-written bank students actually sit has never been checked against
+   * the same standard. This runs those checks over what is really stored.
+   *
+   * Read-only: it reports, it never edits or deactivates a question. What to
+   * do about a finding is a judgement call, and a bad one would delete
+   * material a paying student is studying from.
+   */
+  app.get("/api/admin/content-audit", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+
+      const categoryParam = req.query.category as string | undefined;
+      const category =
+        categoryParam && categoryParam !== "all" ? (categoryParam as ExamCategory) : undefined;
+      if (category && !examCategoryEnum.enumValues.includes(category)) {
+        return res.status(400).json({ message: "Unknown exam category" });
+      }
+
+      const bank = await storage.getQuestions(category);
+      const auditable = bank.map((q) => ({
+        id: q.id,
+        category: q.category,
+        topic: q.topic,
+        questionTextEn: q.questionTextEn,
+        questionTextEs: q.questionTextEs,
+        optionsEn: q.optionsEn,
+        optionsEs: q.optionsEs,
+        correctAnswer: q.correctAnswer,
+        explanationEn: q.explanationEn,
+        explanationEs: q.explanationEs,
+      }));
+
+      const report = auditBank(auditable);
+      res.json({
+        ...report,
+        // Capped: the summary counts are the point, and a bank with
+        // thousands of warnings would otherwise return a response no one can
+        // read and the browser struggles to render.
+        findings: report.findings.slice(0, MAX_AUDIT_FINDINGS),
+        findingsTruncated: report.findings.length > MAX_AUDIT_FINDINGS,
+        thinTopics: findThinTopics(auditable),
+      });
+    } catch (error) {
+      console.error("Error auditing content:", error);
+      res.status(500).json({ message: "Failed to audit content" });
     }
   });
 

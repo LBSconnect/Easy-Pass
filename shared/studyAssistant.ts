@@ -71,4 +71,11 @@ export interface StudyAssistantConfig {
   flags: StudyAssistantFlags;
   /** False when the deployment has no AI credentials - UI degrades quietly. */
   aiAvailable: boolean;
+  /**
+   * Targeted practice papers, which need no credentials at all - they are
+   * assembled from the approved question bank. Reported separately from
+   * `flags` for exactly that reason: everything in `flags` is off whenever
+   * `aiAvailable` is false, and this is not.
+   */
+  targetedPracticeAvailable: boolean;
 }

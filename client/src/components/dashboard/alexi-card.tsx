@@ -53,7 +53,7 @@ export function AlexiCard({ category, hasHistory }: Props) {
         <CardContent className="flex h-full flex-col p-5 md:p-6">
           <div className="flex items-center gap-3">
             <span className="hidden shrink-0 items-center justify-center rounded-full bg-background/70 p-1 sm:inline-flex">
-              <AlexiMascot size={56} waving={false} sparkles={false} />
+              <AlexiMascot size={56} waving={false} sparkles={false} animated />
             </span>
             <span className="text-base font-bold">{named}</span>
           </div>
@@ -106,7 +106,7 @@ export function AlexiCard({ category, hasHistory }: Props) {
           {/* Mascot sits on a pale disc so it reads as a portrait, not a spot
               illustration floating in the card. */}
           <span className="hidden shrink-0 items-center justify-center rounded-full bg-background/70 p-2 shadow-sm sm:inline-flex">
-            <AlexiMascot size={92} label={`${named}`} />
+            <AlexiMascot size={92} label={`${named}`} animated />
           </span>
 
           <div className="flex min-w-0 flex-1 flex-col">

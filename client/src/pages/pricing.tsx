@@ -1,46 +1,125 @@
-import { useState, useMemo } from "react";
+/**
+ * Pricing.
+ *
+ * WHAT WAS WRONG WITH THIS PAGE
+ *
+ * It was a pricing page that did not show a price. You had to tick a category
+ * before anything but "--" appeared, so someone arriving to answer "what does
+ * this cost?" had to commit to a choice first. The checkboxes made it worse by
+ * implying you could pick several, when picking a second silently replaced the
+ * first - one subscription covers one exam.
+ *
+ * It also only ever offered monthly. Stripe returns weekly prices too, and the
+ * page hard-coded `billingPeriod = 'monthly'`, so anything sold weekly was
+ * unreachable through the UI.
+ *
+ * So: every category shows its own real price up front, selection is a radio
+ * group because that is what it actually is, and the billing choice is built
+ * from whatever Stripe returns rather than assumed - if only monthly prices
+ * exist the toggle does not appear at all.
+ *
+ * Prices are never invented client-side. If Stripe has no active price for a
+ * category, that card says so and cannot be selected; showing a plausible
+ * number for something we cannot actually charge would be worse than showing
+ * nothing.
+ */
+
+import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useSearch } from "wouter";
+import { useSearch, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageShell, PageHeader, SectionHeading } from "@/components/page-shell";
+import { IconTile, type TileTone } from "@/components/icon-tile";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { trackEvent } from "@/lib/analytics";
 import { useSEO, buildUrl } from "@/hooks/use-seo";
-import { Check, Sparkles, AlertCircle } from "lucide-react";
-
-const VALID_CATEGORY_IDS = ["real_estate", "property_casualty", "life_insurance", "general_lines"];
+import {
+  Check,
+  Sparkles,
+  TriangleAlert,
+  Home,
+  Shield,
+  HeartPulse,
+  BookOpen,
+  type LucideIcon,
+} from "lucide-react";
 
 interface StripePrice {
   id: string;
   unit_amount: number;
   currency: string;
   recurring_interval: string;
-  subscription_type: 'single' | 'bundle';
+  subscription_type: "single" | "bundle";
   allowed_categories: string[];
   billing_period: string;
   product_name: string;
 }
 
-const EXAM_CATEGORIES = [
-  { id: 'real_estate', label: 'Real Estate', labelEs: 'Bienes Raíces' },
-  { id: 'property_casualty', label: 'Property & Casualty Insurance', labelEs: 'Seguro de Propiedad y Accidentes' },
-  { id: 'life_insurance', label: 'Life Insurance', labelEs: 'Seguro de Vida' },
-  { id: 'general_lines', label: 'General Lines Insurance', labelEs: 'Seguro de Líneas Generales' },
+type BillingPeriod = "weekly" | "monthly";
+
+const EXAM_CATEGORIES: {
+  id: string;
+  label: string;
+  labelEs: string;
+  icon: LucideIcon;
+  tone: TileTone;
+}[] = [
+  { id: "real_estate", label: "Real Estate", labelEs: "Bienes Raíces", icon: Home, tone: "blue" },
+  {
+    id: "property_casualty",
+    label: "Property & Casualty Insurance",
+    labelEs: "Seguro de Propiedad y Accidentes",
+    icon: Shield,
+    tone: "emerald",
+  },
+  {
+    id: "life_insurance",
+    label: "Life Insurance",
+    labelEs: "Seguro de Vida",
+    icon: HeartPulse,
+    tone: "rose",
+  },
+  {
+    id: "general_lines",
+    label: "General Lines Insurance",
+    labelEs: "Seguro de Líneas Generales",
+    icon: BookOpen,
+    tone: "violet",
+  },
 ];
+
+const VALID_CATEGORY_IDS = EXAM_CATEGORIES.map((c) => c.id);
+
+/** What every subscription includes, whichever exam it is for. */
+function includedItems(isSpanish: boolean) {
+  return isSpanish
+    ? [
+        "Banco completo de preguntas con explicaciones",
+        "Exámenes de práctica cronometrados y simulacros completos",
+        "Guía de estudio por tema y seguimiento de progreso",
+        "Todo en inglés y español",
+      ]
+    : [
+        "The full question bank, every question explained",
+        "Timed quick practice and full mock exams",
+        "Topic-by-topic study guide and progress tracking",
+        "Everything in both English and Spanish",
+      ];
+}
 
 export default function PricingPage() {
   const { t, i18n } = useTranslation();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
-  const isSpanish = i18n.language === 'es';
+  const isSpanish = i18n.language === "es";
   const search = useSearch();
+  const [, navigate] = useLocation();
 
   useSEO({
     title: `${t("pricing.title")} | MyEasyPass`,
@@ -53,243 +132,332 @@ export default function PricingPage() {
     ],
   });
 
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
-    const params = new URLSearchParams(search);
-    const preselect = params.get('category');
-    return preselect && VALID_CATEGORY_IDS.includes(preselect) ? [preselect] : [];
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(() => {
+    const preselect = new URLSearchParams(search).get("category");
+    return preselect && VALID_CATEGORY_IDS.includes(preselect) ? preselect : null;
   });
-  const billingPeriod = 'monthly' as const;
 
-  const { data: prices = [], isLoading: pricesLoading, error: pricesError } = useQuery<StripePrice[]>({
+  const {
+    data: prices,
+    isLoading: pricesLoading,
+    isError: pricesError,
+  } = useQuery<StripePrice[]>({
     queryKey: ["/api/stripe/prices"],
   });
 
+  // The endpoint returns an array, but a page that renders four cards off it
+  // should not take that on trust - one malformed response would otherwise
+  // take the whole page down rather than one card.
+  const singlePrices = useMemo(
+    () =>
+      (Array.isArray(prices) ? prices : []).filter(
+        (p) => p?.subscription_type === "single" && typeof p.unit_amount === "number",
+      ),
+    [prices],
+  );
+
+  /** Billing periods we can actually sell, in the order we offer them. */
+  const availablePeriods = useMemo<BillingPeriod[]>(
+    () =>
+      (["monthly", "weekly"] as const).filter((period) =>
+        singlePrices.some((p) => p.billing_period === period),
+      ),
+    [singlePrices],
+  );
+
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
+
+  // Prices arrive after first paint, so the default has to settle once they do.
+  // Monthly stays preferred when it exists; otherwise fall to whatever Stripe
+  // is actually selling rather than showing an empty page.
+  useEffect(() => {
+    if (availablePeriods.length > 0 && !availablePeriods.includes(billingPeriod)) {
+      setBillingPeriod(availablePeriods[0]);
+    }
+  }, [availablePeriods, billingPeriod]);
+
+  const priceFor = (categoryId: string, period: BillingPeriod) =>
+    singlePrices.find(
+      (p) => p.billing_period === period && p.allowed_categories?.includes(categoryId),
+    );
+
+  const applicablePrice = selectedCategory ? priceFor(selectedCategory, billingPeriod) : undefined;
+
   const checkoutMutation = useMutation({
     mutationFn: async (priceId: string) => {
-      trackEvent("checkout_start", { priceId, categories: selectedCategories });
+      trackEvent("checkout_start", { priceId, category: selectedCategory });
       const res = await apiRequest("POST", "/api/stripe/checkout", { priceId });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      if (data.url) {
-        window.location.href = data.url;
+      const data = await res.json();
+      // A 200 with no URL used to leave the button silently doing nothing.
+      // Failing here surfaces it as a toast instead of as a dead click.
+      if (!data?.url || typeof data.url !== "string") {
+        throw new Error(
+          isSpanish
+            ? "No pudimos abrir el pago. Inténtelo de nuevo."
+            : "We couldn't open checkout. Please try again.",
+        );
       }
+      return data.url as string;
+    },
+    onSuccess: (url) => {
+      // Stripe-hosted checkout, so this genuinely leaves the app.
+      window.location.href = url;
     },
     onError: (error: Error) => {
       toast({
-        title: isSpanish ? "Error" : "Error",
+        title: isSpanish ? "No se pudo continuar" : "Couldn't continue",
         description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  const selectionState = useMemo(() => {
-    const count = selectedCategories.length;
-    if (count === 0) {
-      return { type: 'none', message: null, canSubscribe: false };
-    }
-    return { type: 'single', message: null, canSubscribe: true };
-  }, [selectedCategories]);
-
-  const applicablePrice = useMemo(() => {
-    if (selectedCategories.length === 0) return null;
-    return prices.find(p =>
-      p.subscription_type === 'single' &&
-      p.allowed_categories.includes(selectedCategories[0]) &&
-      p.billing_period === billingPeriod
-    );
-  }, [selectedCategories, billingPeriod, prices]);
-
-  // One category per subscription now that the bundle is retired. Picking a
-  // category replaces the previous choice rather than adding to it - otherwise
-  // a multi-selection would silently check out only the first category.
-  const handleCategoryToggle = (categoryId: string) => {
-    setSelectedCategories(prev =>
-      prev.includes(categoryId) ? [] : [categoryId]
-    );
-  };
-
   const handleSubscribe = () => {
+    if (!selectedCategory || !applicablePrice) return;
+
     if (!isAuthenticated) {
-      window.location.href = "/login";
+      // Carry the choice through sign-in. Without this the student picks an
+      // exam, logs in, and lands on a dashboard that never heard about it.
+      const back = `/pricing?category=${encodeURIComponent(selectedCategory)}`;
+      navigate(`/login?next=${encodeURIComponent(back)}`);
       return;
     }
-    if (applicablePrice) {
-      checkoutMutation.mutate(applicablePrice.id);
-    }
+    checkoutMutation.mutate(applicablePrice.id);
   };
 
-  const formatPrice = (amount: number) => {
-    return `$${(amount / 100).toFixed(2)}`;
-  };
+  const formatPrice = (amount: number) => `$${(amount / 100).toFixed(2)}`;
+  const perPeriod = (period: BillingPeriod) =>
+    period === "weekly" ? (isSpanish ? "semana" : "week") : isSpanish ? "mes" : "month";
+
+  const selected = EXAM_CATEGORIES.find((c) => c.id === selectedCategory);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
+    <PageShell>
+      <PageHeader
+        title={t("pricing.title")}
+        subtitle={t("pricing.subtitle")}
+        action={
+          <Badge variant="secondary" className="gap-1">
+            <Sparkles className="h-3 w-3" aria-hidden="true" />
+            {isSpanish ? "Precios simples" : "Simple pricing"}
+          </Badge>
+        }
+      />
 
-      <main className="flex-1">
-        <section className="py-20">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <Badge className="mb-4" variant="secondary">
-                <Sparkles className="mr-1 h-3 w-3" />
-                {isSpanish ? 'Precios Simples' : 'Simple Pricing'}
-              </Badge>
-              <h1 className="text-4xl font-bold mb-4">{t("pricing.title")}</h1>
-              <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-                {t("pricing.subtitle")}
+      {pricesError && (
+        <Card className="mt-6 border-destructive/40" data-testid="card-prices-error">
+          <CardContent className="flex items-start gap-3 p-4">
+            <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="font-medium">
+                {isSpanish ? "No pudimos cargar los precios" : "We couldn't load pricing"}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {isSpanish
+                  ? "Actualice la página o inténtelo de nuevo en unos minutos."
+                  : "Refresh the page, or try again in a few minutes."}
               </p>
             </div>
+          </CardContent>
+        </Card>
+      )}
 
-            <div className="max-w-4xl mx-auto">
-              {pricesError && (
-                <div className="mb-8 p-4 bg-red-50 dark:bg-red-950/30 rounded-md border border-red-200 dark:border-red-800">
-                  <div className="flex items-center gap-3">
-                    <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-red-800 dark:text-red-200">
-                        {isSpanish ? 'Error al cargar los precios' : 'Failed to load pricing'}
-                      </p>
-                      <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-                        {isSpanish
-                          ? 'Por favor actualice la página o inténtelo de nuevo más tarde.'
-                          : 'Please refresh the page or try again later.'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+      {/* One price covers one exam, said plainly rather than left to be worked
+          out from the fact that the second click clears the first. */}
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <SectionHeading>
+          {isSpanish ? "Elija su examen" : "Choose your exam"}
+        </SectionHeading>
 
-              <Card className="mb-8" data-testid="card-category-selection">
-                <CardHeader>
-                  <CardTitle className="text-xl">
-                    {isSpanish ? '1. Seleccione sus Categorías de Examen' : '1. Select Your Exam Categories'}
-                  </CardTitle>
-                  <CardDescription>
-                    {isSpanish 
-                      ? 'Elija los exámenes para los que desea prepararse' 
-                      : 'Choose the exams you want to prepare for'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {EXAM_CATEGORIES.map((category) => (
-                      <label
-                        key={category.id}
-                        className={`flex items-center gap-3 p-4 rounded-md border cursor-pointer transition-colors ${
-                          selectedCategories.includes(category.id)
-                            ? 'border-primary bg-primary/5'
-                            : 'border-border hover-elevate'
-                        }`}
-                        data-testid={`checkbox-category-${category.id}`}
-                      >
-                        <Checkbox
-                          checked={selectedCategories.includes(category.id)}
-                          onCheckedChange={() => handleCategoryToggle(category.id)}
-                        />
-                        <span className="font-medium">
-                          {isSpanish ? category.labelEs : category.label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-
-                </CardContent>
-              </Card>
-
-
-              <Card className={`border-2 ${applicablePrice ? 'border-primary' : 'border-muted'}`} data-testid="card-subscription-summary">
-                <CardHeader>
-                  <CardTitle className="text-xl">
-                    {isSpanish ? '2. Resumen de Suscripción' : '2. Subscription Summary'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {selectedCategories.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p>{isSpanish ? 'Seleccione al menos una categoría de examen arriba' : 'Select at least one exam category above'}</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-6">
-                      <div>
-                        <h2 className="font-medium mb-2">
-                          {isSpanish ? 'Suscripción Individual' : 'Single Category Subscription'}
-                        </h2>
-                        <ul className="space-y-2">
-                          {EXAM_CATEGORIES.filter(c => selectedCategories.includes(c.id)).map(category => (
-                            <li key={category.id} className="flex items-center gap-2 text-sm">
-                              <Check className="h-4 w-4 text-green-500" />
-                              <span>{isSpanish ? category.labelEs : category.label}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-4 border-t">
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            {isSpanish ? 'Facturado mensualmente' : 'Billed monthly'}
-                          </p>
-                          <p className="text-3xl font-bold">
-                            {applicablePrice ? formatPrice(applicablePrice.unit_amount) : '--'}
-                            <span className="text-base font-normal text-muted-foreground">
-                              /{isSpanish ? 'mes' : 'month'}
-                            </span>
-                          </p>
-                        </div>
-                        <Button
-                          size="lg"
-                          onClick={handleSubscribe}
-                          disabled={!selectionState.canSubscribe || checkoutMutation.isPending || pricesLoading || !applicablePrice}
-                          data-testid="button-subscribe"
-                        >
-                          {checkoutMutation.isPending 
-                            ? (isSpanish ? 'Procesando...' : 'Processing...') 
-                            : (isSpanish ? 'Suscribirse Ahora' : 'Subscribe Now')}
-                        </Button>
-                      </div>
-
-                      <p className="text-center text-sm text-muted-foreground">
-                        {t("pricing.cancelAnytime")}
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-
-              <div className="mt-12 text-center">
-                <p className="text-muted-foreground mb-6">
-                  {isSpanish 
-                    ? 'Todos los planes incluyen acceso a nuestro banco de preguntas completo con explicaciones detalladas'
-                    : 'All plans include access to our complete question bank with detailed explanations'}
-                </p>
-                <div className="flex flex-wrap justify-center gap-8 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    {isSpanish ? 'Sin tarifas ocultas' : 'No hidden fees'}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    {isSpanish ? 'Cancelar en cualquier momento' : 'Cancel anytime'}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    {isSpanish ? 'Pagos seguros' : 'Secure payments'}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    {isSpanish ? 'Acceso instantáneo' : 'Instant access'}
-                  </div>
-                </div>
-              </div>
-            </div>
+        {availablePeriods.length > 1 && (
+          <div
+            className="inline-flex rounded-lg border p-1"
+            role="radiogroup"
+            aria-label={isSpanish ? "Periodo de facturación" : "Billing period"}
+            data-testid="toggle-billing-period"
+          >
+            {availablePeriods.map((period) => (
+              <button
+                key={period}
+                type="button"
+                role="radio"
+                aria-checked={billingPeriod === period}
+                onClick={() => setBillingPeriod(period)}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  billingPeriod === period
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                data-testid={`button-period-${period}`}
+              >
+                {period === "weekly"
+                  ? isSpanish
+                    ? "Semanal"
+                    : "Weekly"
+                  : isSpanish
+                    ? "Mensual"
+                    : "Monthly"}
+              </button>
+            ))}
           </div>
-        </section>
-      </main>
+        )}
+      </div>
 
-      <Footer />
-    </div>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {isSpanish
+          ? "Una suscripción cubre un examen. Puede cambiar o cancelar cuando quiera."
+          : "One subscription covers one exam. Change or cancel whenever you like."}
+      </p>
+
+      {pricesLoading ? (
+        <div className="mt-4 grid gap-4 sm:grid-cols-2" data-testid="loading-prices">
+          {EXAM_CATEGORIES.map((c) => (
+            <Skeleton key={c.id} className="h-[132px] w-full rounded-xl" />
+          ))}
+        </div>
+      ) : (
+        <div
+          className="mt-4 grid gap-4 sm:grid-cols-2"
+          role="radiogroup"
+          aria-label={isSpanish ? "Categoría de examen" : "Exam category"}
+          data-testid="list-categories"
+        >
+          {EXAM_CATEGORIES.map((category) => {
+            const price = priceFor(category.id, billingPeriod);
+            const isSelected = selectedCategory === category.id;
+            const unavailable = !price;
+
+            return (
+              <button
+                key={category.id}
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
+                disabled={unavailable}
+                onClick={() => setSelectedCategory(category.id)}
+                className={`rounded-xl border-2 p-5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                  isSelected
+                    ? "border-primary bg-primary/5"
+                    : unavailable
+                      ? "cursor-not-allowed border-border opacity-60"
+                      : "border-border hover-elevate"
+                }`}
+                data-testid={`button-category-${category.id}`}
+              >
+                <div className="flex items-start gap-3">
+                  <IconTile icon={category.icon} tone={category.tone} size="md" />
+                  <div className="min-w-0 flex-1">
+                    <span className="block font-semibold">
+                      {isSpanish ? category.labelEs : category.label}
+                    </span>
+                    {price ? (
+                      <span className="mt-1 block">
+                        <span className="text-2xl font-bold" data-testid={`text-price-${category.id}`}>
+                          {formatPrice(price.unit_amount)}
+                        </span>
+                        <span className="text-sm font-normal text-muted-foreground">
+                          {" / "}
+                          {perPeriod(billingPeriod)}
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="mt-1 block text-sm text-muted-foreground">
+                        {isSpanish
+                          ? "No disponible en este momento"
+                          : "Not available right now"}
+                      </span>
+                    )}
+                  </div>
+                  {isSelected && (
+                    <Check className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* What you get, and the one button that acts on it. */}
+      <Card
+        className={`mt-6 border-2 ${applicablePrice ? "border-primary" : "border-border"}`}
+        data-testid="card-subscription-summary"
+      >
+        <CardContent className="p-5">
+          <SectionHeading>
+            {isSpanish ? "Todas las suscripciones incluyen" : "Every subscription includes"}
+          </SectionHeading>
+
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {includedItems(isSpanish).map((item) => (
+              <li key={item} className="flex items-start gap-2 text-sm">
+                <Check
+                  className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400"
+                  aria-hidden="true"
+                />
+                <span className="min-w-0">{item}</span>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-5 flex flex-col gap-4 border-t pt-5 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0">
+              {selected && applicablePrice ? (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    {isSpanish ? selected.labelEs : selected.label}
+                  </p>
+                  <p className="text-3xl font-bold" data-testid="text-total-price">
+                    {formatPrice(applicablePrice.unit_amount)}
+                    <span className="text-base font-normal text-muted-foreground">
+                      {" / "}
+                      {perPeriod(billingPeriod)}
+                    </span>
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {isSpanish
+                    ? "Elija un examen arriba para continuar."
+                    : "Pick an exam above to continue."}
+                </p>
+              )}
+            </div>
+
+            <Button
+              size="lg"
+              onClick={handleSubscribe}
+              disabled={!applicablePrice || checkoutMutation.isPending}
+              data-testid="button-subscribe"
+            >
+              {checkoutMutation.isPending
+                ? isSpanish
+                  ? "Procesando..."
+                  : "Processing..."
+                : t("pricing.subscribe")}
+            </Button>
+          </div>
+
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            {t("pricing.cancelAnytime")}
+          </p>
+        </CardContent>
+      </Card>
+
+      <div className="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-3 text-sm text-muted-foreground">
+        {(isSpanish
+          ? ["Sin tarifas ocultas", "Cancele cuando quiera", "Pagos seguros", "Acceso inmediato"]
+          : ["No hidden fees", "Cancel anytime", "Secure payments", "Instant access"]
+        ).map((item) => (
+          <span key={item} className="flex items-center gap-2">
+            <Check
+              className="h-4 w-4 text-emerald-600 dark:text-emerald-400"
+              aria-hidden="true"
+            />
+            {item}
+          </span>
+        ))}
+      </div>
+    </PageShell>
   );
 }

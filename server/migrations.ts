@@ -183,6 +183,18 @@ const STEPS: Step[] = [
       ON generated_questions (category);`,
   },
 
+  // --- Readiness check retention ------------------------------------------
+  {
+    // The dashboard now asks "has this student already done their readiness
+    // check?" on every load, which is a lookup by user rather than by id.
+    // Without this it is a sequential scan of every attempt ever taken,
+    // including the anonymous ones from the marketing page.
+    name: "indexes diagnostic_attempts by user",
+    sql: `CREATE INDEX IF NOT EXISTS idx_diagnostic_attempts_user
+            ON diagnostic_attempts (user_id, completed_at DESC)
+            WHERE user_id IS NOT NULL;`,
+  },
+
   // --- Measured item difficulty -------------------------------------------
   {
     name: "questions difficulty columns",

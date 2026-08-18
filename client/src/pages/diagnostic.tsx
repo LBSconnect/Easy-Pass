@@ -1,34 +1,29 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { PageShell } from "@/components/page-shell";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getQueryFn, queryClient } from "@/lib/queryClient";
+import { EXAM_VISUALS } from "@/lib/examVisuals";
 import { trackEvent } from "@/lib/analytics";
 import { useSEO, buildUrl } from "@/hooks/use-seo";
-import { Home, Shield, Heart, FileText, ArrowRight, Loader2, RotateCcw, Lock } from "lucide-react";
+import { ArrowRight, Loader2, RotateCcw, Lock, Check } from "lucide-react";
 import type { ExamCategory } from "@shared/schema";
 
-const categoryIcons = {
-  real_estate: Home,
-  property_casualty: Shield,
-  life_insurance: Heart,
-  general_lines: FileText,
-};
-
-const categoryColors = {
-  real_estate: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
-  property_casualty: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-  life_insurance: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
-  general_lines: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-};
-
 const categories: ExamCategory[] = ["real_estate", "property_casualty", "life_insurance", "general_lines"];
+
+interface SavedDiagnostic {
+  category: string;
+  score: number | null;
+  correctAnswers: number | null;
+  totalQuestions: number;
+  completedAt: string | null;
+}
 
 interface DiagnosticQuestion {
   id: string;
@@ -56,6 +51,21 @@ export default function DiagnosticPage() {
       { lang: "x-default", url: buildUrl("/readiness-check") },
     ],
   });
+
+  /**
+   * A readiness check this student has already finished.
+   *
+   * Returns null for a signed-out visitor - the assessment is public, and the
+   * endpoint that remembers results is not. So a guest sees the picker exactly
+   * as before, and a signed-in student who has already done one is shown what
+   * they scored instead of being walked through it again.
+   */
+  const { data: saved } = useQuery<SavedDiagnostic | null>({
+    queryKey: ["/api/diagnostic/latest"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+  });
+  /** Set when they choose to redo it, so the saved result stops standing in. */
+  const [retaking, setRetaking] = useState(false);
 
   const [category, setCategory] = useState<ExamCategory | null>(null);
   const [attemptId, setAttemptId] = useState<string | null>(null);
@@ -109,6 +119,11 @@ export default function DiagnosticPage() {
     onSuccess: (data) => {
       setResult(data);
       setRevealScore(false);
+      // The dashboard reads this to decide whether to ask for a readiness
+      // check. Queries default to staleTime: Infinity, so without this the
+      // student walks back to the dashboard and is asked all over again -
+      // which is the whole bug this is here to prevent.
+      queryClient.invalidateQueries({ queryKey: ["/api/diagnostic/latest"] });
       trackEvent("diagnostic_cta_click", { category: category ?? undefined, step: "subscribe_prompt_shown" });
     },
   });
@@ -132,6 +147,7 @@ export default function DiagnosticPage() {
   };
 
   const handleRestart = () => {
+    setRetaking(false);
     setCategory(null);
     setAttemptId(null);
     setQuestions([]);
@@ -152,10 +168,67 @@ export default function DiagnosticPage() {
 
   const currentQuestion = questions[currentIndex];
 
+  /**
+   * Show the saved result rather than the picker.
+   *
+   * Only when they have not started a run this visit and have not asked to
+   * redo it - otherwise finishing a retake would bounce straight back to the
+   * old score.
+   */
+  const showSaved = Boolean(saved?.completedAt) && !category && !result && !retaking;
+
   return (
     <PageShell width="narrow">
       <div>
-          {!category && (
+          {showSaved && saved && (
+            <Card data-testid="card-diagnostic-saved">
+              <CardHeader>
+                <CardTitle as="h1" className="flex items-center gap-2">
+                  <Check className="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                  {isSpanish ? "Ya hiciste tu evaluación" : "You've already done your readiness check"}
+                </CardTitle>
+                <CardDescription>
+                  {isSpanish
+                    ? "Guardamos tu resultado, así que no necesitas repetirla."
+                    : "We saved your result, so there's no need to take it again."}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                {saved.score !== null && (
+                  <div className="text-center">
+                    <div className="text-5xl font-bold text-primary" data-testid="text-saved-score">
+                      {saved.score}%
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {isSpanish
+                        ? `Acertaste ${saved.correctAnswers ?? 0} de ${saved.totalQuestions} preguntas.`
+                        : `You answered ${saved.correctAnswers ?? 0} of ${saved.totalQuestions} questions correctly.`}
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+                  <Button asChild size="lg" data-testid="button-saved-subscribe">
+                    <Link href={`/pricing?category=${saved.category}`}>
+                      {isSpanish ? "Ver planes" : "See plans"}
+                      <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => setRetaking(true)}
+                    data-testid="button-saved-retake"
+                  >
+                    <RotateCcw className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                    {isSpanish ? "Volver a hacerla" : "Take it again"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {!category && !showSaved && (
             <>
               <div className="text-center mb-8">
                 <h1 className="text-2xl md:text-3xl font-bold mb-3">
@@ -169,17 +242,18 @@ export default function DiagnosticPage() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 {categories.map((cat) => {
-                  const Icon = categoryIcons[cat];
+                  const visual = EXAM_VISUALS[cat];
+                  const Icon = visual.icon;
                   return (
                     <button
                       key={cat}
                       onClick={() => handleSelectCategory(cat)}
                       disabled={startMutation.isPending}
-                      className={`text-left rounded-xl border-2 hover-elevate transition-all p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60 ${categoryColors[cat]}`}
+                      className={`text-left rounded-xl border-2 hover-elevate transition-all p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60 ${visual.tint} ${visual.border}`}
                       data-testid={`button-diagnostic-category-${cat}`}
                     >
                       <div className="flex items-center gap-4">
-                        <div className={`shrink-0 p-3 rounded-xl ${categoryColors[cat]}`}>
+                        <div className={`shrink-0 p-3 rounded-xl ${visual.tint}`}>
                           <Icon className="h-7 w-7" />
                         </div>
                         <div className="flex-1 min-w-0">

@@ -19,6 +19,7 @@ function input(over: Partial<DashboardInput> = {}): DashboardInput {
     hasPreviousAttempt: false,
     hasActiveSubscription: true,
     examsTaken: 3,
+    hasCompletedDiagnostic: false,
     ...over,
   };
 }
@@ -34,6 +35,67 @@ describe("deriveDashboardState", () => {
 
   it("treats a student with no attempts as new even with an exam selected", () => {
     expect(state({ totalAttempts: 0 })).toBe("new");
+  });
+
+  /**
+   * The repeating-readiness-check bug.
+   *
+   * A student finished their readiness check, was shown the subscribe prompt,
+   * declined, and returned to the dashboard - which asked them to take the
+   * readiness check again, because `totalAttempts` only counts questions
+   * answered inside a paid exam session and is therefore zero until they pay.
+   * They could go round that loop forever.
+   */
+  describe("a completed readiness check", () => {
+    it("keeps an unsubscribed student on the checklist, where step 4 is subscribe", () => {
+      // Still "new" - but the onboarding it drives now shows the readiness
+      // step ticked off, so this is a student with one job left, not one who
+      // is sent round the diagnostic again.
+      expect(
+        state({ totalAttempts: 0, hasCompletedDiagnostic: true, hasActiveSubscription: false }),
+      ).toBe("new");
+    });
+
+    it("releases a subscribed student from onboarding before they answer anything", () => {
+      // They have paid and they have a readiness result. There is nothing left
+      // to onboard; keeping them here is the dead end.
+      expect(
+        state({ totalAttempts: 0, hasCompletedDiagnostic: true, hasActiveSubscription: true }),
+      ).not.toBe("new");
+    });
+
+    it("still respects an imminent exam once they are through onboarding", () => {
+      expect(
+        state({
+          totalAttempts: 0,
+          hasCompletedDiagnostic: true,
+          hasActiveSubscription: true,
+          daysUntilExam: 3,
+        }),
+      ).toBe("exam_approaching");
+    });
+
+    it("does not release a student who has not done one", () => {
+      expect(
+        state({ totalAttempts: 0, hasCompletedDiagnostic: false, hasActiveSubscription: true }),
+      ).toBe("new");
+    });
+
+    it("does not override a missing exam choice", () => {
+      // Nothing to personalise to, whatever else they have done.
+      expect(
+        state({
+          hasSelectedExam: false,
+          hasCompletedDiagnostic: true,
+          hasActiveSubscription: true,
+        }),
+      ).toBe("new");
+    });
+
+    it("changes nothing for a student who is already studying", () => {
+      expect(state({ totalAttempts: 120, hasCompletedDiagnostic: true })).toBe("active");
+      expect(state({ totalAttempts: 120, hasCompletedDiagnostic: false })).toBe("active");
+    });
   });
 
   it("recognises an ordinary active student", () => {

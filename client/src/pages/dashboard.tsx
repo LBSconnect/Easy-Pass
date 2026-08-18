@@ -30,7 +30,10 @@ import { deriveDashboardState, sectionsFor, type DashboardSection } from "@share
 import { useStudyAssistantConfig } from "@/lib/studyAssistant";
 import { CardErrorBoundary } from "@/components/error-boundary";
 import { WelcomeCard } from "@/components/dashboard/welcome-card";
-import { DashboardOnboarding } from "@/components/dashboard/onboarding";
+import {
+  DashboardOnboarding,
+  type DiagnosticSummary,
+} from "@/components/dashboard/onboarding";
 import { AlexiCard } from "@/components/dashboard/alexi-card";
 import { ScoreCard } from "@/components/dashboard/score-card";
 import { TodaysPlanCard } from "@/components/dashboard/todays-plan";
@@ -77,6 +80,15 @@ export default function DashboardPage() {
     queryKey: ["/api/results"],
   });
   const { data: assistantConfig } = useStudyAssistantConfig();
+
+  // The readiness check the student has already completed, if any. Without
+  // this the dashboard's only evidence of activity is questions answered
+  // inside a paid exam session, so an unsubscribed student who finished their
+  // readiness check looked brand new and was asked to take it again on every
+  // visit.
+  const { data: diagnostic, isLoading: diagnosticLoading } = useQuery<DiagnosticSummary | null>({
+    queryKey: ["/api/diagnostic/latest"],
+  });
 
   // Preserved from the previous dashboard: students returning from Stripe
   // checkout need their subscription synced before the page means anything.
@@ -132,7 +144,7 @@ export default function DashboardPage() {
 
   // Loading is not the same as empty: showing a zeroed dashboard while data is
   // still in flight is the exact thing this redesign removes.
-  if (profileLoading || resultsLoading) {
+  if (profileLoading || resultsLoading || diagnosticLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
@@ -176,6 +188,7 @@ export default function DashboardPage() {
     hasPreviousAttempt: profile?.hasPreviousAttempt ?? null,
     hasActiveSubscription,
     examsTaken: results?.length ?? 0,
+    hasCompletedDiagnostic: Boolean(diagnostic?.completedAt),
   };
 
   const state = deriveDashboardState(input);
@@ -243,6 +256,8 @@ export default function DashboardPage() {
               <DashboardOnboarding
                 selectedExam={(profile?.preferredCategory as ExamCategory | null) ?? null}
                 hasExamDate={Boolean(examDate)}
+                diagnostic={diagnostic ?? null}
+                hasActiveSubscription={hasActiveSubscription}
               />
               <StudyResourcesCard />
             </div>
@@ -254,13 +269,21 @@ export default function DashboardPage() {
                 <div className="grid gap-6 lg:grid-cols-2">
                   {alexiFirst ? (
                     <>
-                      <CardErrorBoundary label="alexi"><AlexiCard category={category} hasHistory={totalAttempts > 0} /></CardErrorBoundary>
+                      <CardErrorBoundary label="alexi"><AlexiCard
+                          category={category}
+                          hasHistory={totalAttempts > 0}
+                          hasDiagnostic={Boolean(diagnostic?.completedAt)}
+                        /></CardErrorBoundary>
                       <CardErrorBoundary label="score"><ScoreCard category={category} /></CardErrorBoundary>
                     </>
                   ) : (
                     <>
                       <CardErrorBoundary label="score"><ScoreCard category={category} /></CardErrorBoundary>
-                      <CardErrorBoundary label="alexi"><AlexiCard category={category} hasHistory={totalAttempts > 0} /></CardErrorBoundary>
+                      <CardErrorBoundary label="alexi"><AlexiCard
+                          category={category}
+                          hasHistory={totalAttempts > 0}
+                          hasDiagnostic={Boolean(diagnostic?.completedAt)}
+                        /></CardErrorBoundary>
                     </>
                   )}
                 </div>

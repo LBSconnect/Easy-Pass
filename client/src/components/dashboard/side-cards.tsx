@@ -109,7 +109,9 @@ export function QuickActionsCard({
 
   if (showAskAlexi) {
     actions.push({
-      href: "/study-assistant",
+      // Anchored at the ask section rather than the top of the page: the
+      // button says "Ask Alexi", so it should land on the part that asks.
+      href: "/study-assistant#ask",
       icon: Target,
       tone: "slate",
       mascot: true,

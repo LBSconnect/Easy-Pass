@@ -7,8 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
+import { PageShell, PageHeader } from "@/components/page-shell";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
@@ -634,6 +633,26 @@ export default function StudyGuidePage() {
 
   const isLoading = topicsLoading || progressLoading || (!!user && profileLoading);
 
+  /**
+   * The student's own exam first.
+   *
+   * Four categories in a fixed order means three quarters of this page is
+   * material a given student cannot open, sitting above the one they can. The
+   * exam they are actually studying for leads, then anything else they have
+   * access to, then the rest.
+   */
+  const orderedTopics = (() => {
+    if (!topics) return topics;
+    const allowed = new Set((profile?.allowedCategories as string[] | null) ?? []);
+    const preferred = profile?.preferredCategory ?? null;
+    const rank = (category: string): number => {
+      if (category === preferred) return 0;
+      if (allowed.has(category)) return 1;
+      return 2;
+    };
+    return [...topics].sort((a, b) => rank(a.category) - rank(b.category));
+  })();
+
   const isCategoryLocked = (category: ExamCategory) => {
     if (!profile) return false; // don't flash "locked" before we know
     if (profile.role === "admin") return false;
@@ -642,41 +661,29 @@ export default function StudyGuidePage() {
 
   if (selectedTopic) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <main className="pt-20 pb-24">
-          <QuizView topicId={selectedTopic} onBack={() => setSelectedTopic(null)} />
-        </main>
-        <Footer />
-      </div>
+      <PageShell width="content">
+        <QuizView topicId={selectedTopic} onBack={() => setSelectedTopic(null)} />
+      </PageShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      
-      <main className="pt-20 pb-24 safe-area-inset">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3">
-                <GraduationCap className="h-8 w-8 text-primary" />
-                {t("study.title", "Study Guide")}
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                {t("study.subtitle", "Learn at your own pace with topic-based quizzes")}
-              </p>
-            </div>
-            
-            <Button asChild variant="outline" className="min-h-[44px]">
-              <Link href="/dashboard" data-testid="link-back-dashboard">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                {t("common.dashboard", "Dashboard")}
-              </Link>
-            </Button>
-          </div>
+    <PageShell width="wide">
+      <PageHeader
+        title={t("study.title", "Study Guide")}
+        subtitle={t("study.subtitle", "Learn at your own pace with topic-based quizzes")}
+        icon={GraduationCap}
+        action={
+          <Button asChild variant="outline" className="min-h-11">
+            <Link href="/dashboard" data-testid="link-back-dashboard">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {t("common.dashboard", "Dashboard")}
+            </Link>
+          </Button>
+        }
+      />
 
+      <div className="mt-6 space-y-8">
           {isLoading ? (
             <div className="space-y-8">
               {[1, 2, 3, 4].map((i) => (
@@ -690,9 +697,9 @@ export default function StudyGuidePage() {
                 </div>
               ))}
             </div>
-          ) : topics && topics.length > 0 ? (
+          ) : orderedTopics && orderedTopics.length > 0 ? (
             <div className="space-y-8">
-              {topics.map((categoryData) => (
+              {orderedTopics.map((categoryData) => (
                 <CategorySection
                   key={categoryData.category}
                   categoryData={categoryData}
@@ -716,10 +723,7 @@ export default function StudyGuidePage() {
               </CardContent>
             </Card>
           )}
-        </div>
-      </main>
-
-      <Footer />
-    </div>
+      </div>
+    </PageShell>
   );
 }

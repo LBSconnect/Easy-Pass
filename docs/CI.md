@@ -128,6 +128,42 @@ To configure it: **Settings → Secrets and variables → Actions → Secrets �
 New repository secret**, name `NOTIFY_WEBHOOK_URL`, value = your
 webhook endpoint (Slack incoming webhook, generic HTTP endpoint, etc.).
 
+## Study reminder emails — nothing sends until you schedule it
+
+`POST /api/reminders/dispatch` sends the reminder emails that are due. **The
+app has no scheduler of its own**, so with nothing configured to call this
+route, no reminder email is ever sent. That is the default state, and it is
+deliberate — sending mail to every opted-in student is not something to
+switch on by accident.
+
+To turn it on, two things are needed:
+
+1. **`REMINDER_DISPATCH_SECRET`** set in the Render environment. Without it,
+   the route returns 503 for every request. With it, a request must carry the
+   same value in an `x-reminder-secret` header or it gets a 401. A session
+   cookie does not work — the caller is a scheduler, not a person.
+2. **Something calling it on a schedule.** A Render cron job is the simplest:
+
+   ```
+   curl -fsS -X POST https://www.myeasypass.net/api/reminders/dispatch \
+     -H "x-reminder-secret: $REMINDER_DISPATCH_SECRET"
+   ```
+
+   Daily is a sensible cadence. It is safe to run more often — a student can
+   only receive one reminder every seven days, and that limit is enforced by a
+   timestamp in the database rather than by how often the job runs. Running it
+   twice in a row sends nothing the second time.
+
+`RESEND_API_KEY` must also be set, or the route returns
+`{"emailUnavailable": true}` and sends nothing.
+
+The response says exactly what happened — `considered`, `sent`, `skipped`
+(nothing worth emailing about, so they stay eligible), `failed` — and the same
+line is written to the server log.
+
+Students are opted out unless they turn reminders on in their profile, and
+every message carries an unsubscribe link that works without signing in.
+
 ## Deployment
 
 Render auto-deploys from `main` (its standard behavior for this project).

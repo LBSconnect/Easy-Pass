@@ -271,6 +271,20 @@ const STEPS: Step[] = [
     name: "exam_sessions mode",
     sql: `ALTER TABLE exam_sessions ADD COLUMN IF NOT EXISTS mode varchar(20) DEFAULT 'practice' NOT NULL;`,
   },
+
+  // --- Study reminder emails ----------------------------------------------
+  // Nullable and undefaulted on purpose: an existing student has not consented
+  // to anything, and a column defaulting to true would opt in every one of
+  // them at once. Only an explicit true is consent.
+  {
+    name: "user_profiles reminder emails",
+    sql: `ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS email_reminders_opt_in boolean;
+          ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS last_reminder_email_at timestamp;
+          ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS unsubscribe_token varchar;
+          CREATE UNIQUE INDEX IF NOT EXISTS uq_user_profiles_unsubscribe_token
+            ON user_profiles (unsubscribe_token)
+            WHERE unsubscribe_token IS NOT NULL;`,
+  },
 ];
 
 export interface MigrationResult {
@@ -341,6 +355,8 @@ export async function checkSchemaHealth(): Promise<{
     ["questions", "p_value_basis_points"],
     ["questions", "difficulty_calibrated_at"],
     ["exam_sessions", "mode"],
+    ["user_profiles", "email_reminders_opt_in"],
+    ["user_profiles", "unsubscribe_token"],
   ];
 
   const tables = await pool.query(

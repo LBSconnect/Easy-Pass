@@ -72,7 +72,19 @@ import { db, pool } from "./db";
  * trends scores has to be able to tell them apart.
  */
 export type ExamResultWithMode = ExamResult & { mode: ExamMode };
-import { eq, and, or, desc, sql, gte, inArray, isNotNull, isNull } from "drizzle-orm";
+
+/** A student who has opted in to reminder emails, with what the rules need. */
+export interface ReminderRecipient {
+  userId: string;
+  email: string;
+  firstName: string | null;
+  preferredLanguage: "en" | "es";
+  examDate: Date | null;
+  subscriptionEndDate: Date | null;
+  hasActiveSubscription: boolean;
+  unsubscribeToken: string | null;
+}
+import { eq, and, or, desc, sql, gte, lt, inArray, isNotNull, isNull } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -173,6 +185,11 @@ export interface IStorage {
   getFlashcardReviews(userId: string, category: ExamCategory): Promise<FlashcardReview[]>;
   upsertFlashcardReview(userId: string, questionId: string, category: ExamCategory, state: { streak: number; intervalDays: number; ease: number; dueAt: Date }): Promise<void>;
   countActiveQuestions(category: ExamCategory): Promise<number>;
+  getLastAnsweredAt(userId: string): Promise<Date | null>;
+  getReminderRecipients(notEmailedSince: Date): Promise<ReminderRecipient[]>;
+  markReminderEmailSent(userId: string, at: Date): Promise<void>;
+  setUnsubscribeToken(userId: string, token: string): Promise<void>;
+  unsubscribeByToken(token: string): Promise<boolean>;
   getItemResponseStats(): Promise<Array<{ questionId: string; respondents: number; correct: number }>>;
   applyItemDifficulty(items: Array<{ questionId: string; difficulty: string; pValue: number }>): Promise<number>;
   
@@ -897,6 +914,92 @@ export class DatabaseStorage implements IStorage {
 
   // Oldest-first: the score's recovery component reads answer sequences in
   // chronological order.
+  async getLastAnsweredAt(userId: string): Promise<Date | null> {
+    const [row] = await db
+      .select({ answeredAt: questionResponses.answeredAt })
+      .from(questionResponses)
+      .where(eq(questionResponses.userId, userId))
+      .orderBy(desc(questionResponses.answeredAt))
+      .limit(1);
+    return row?.answeredAt ?? null;
+  }
+
+  /**
+   * Students who could be sent a reminder email.
+   *
+   * Three conditions, all of them hard: they opted in explicitly, they have
+   * an email address, and they have not been emailed since the cutoff. The
+   * last one is what makes the dispatcher safe to run more than once - a
+   * retry, an overlapping cron, a manual trigger while the schedule fires -
+   * without a student receiving the same reminder twice.
+   */
+  async getReminderRecipients(notEmailedSince: Date): Promise<ReminderRecipient[]> {
+    const rows = await db
+      .select({
+        userId: userProfiles.userId,
+        email: users.email,
+        firstName: users.firstName,
+        preferredLanguage: userProfiles.preferredLanguage,
+        examDate: userProfiles.examDate,
+        subscriptionEndDate: userProfiles.subscriptionEndDate,
+        subscriptionStatus: userProfiles.subscriptionStatus,
+        unsubscribeToken: userProfiles.unsubscribeToken,
+      })
+      .from(userProfiles)
+      .innerJoin(users, eq(users.id, userProfiles.userId))
+      .where(
+        and(
+          eq(userProfiles.emailRemindersOptIn, true),
+          isNotNull(users.email),
+          or(
+            isNull(userProfiles.lastReminderEmailAt),
+            lt(userProfiles.lastReminderEmailAt, notEmailedSince),
+          ),
+        ),
+      );
+
+    return rows.map((r) => ({
+      userId: r.userId,
+      email: r.email ?? "",
+      firstName: r.firstName ?? null,
+      preferredLanguage: r.preferredLanguage === "es" ? "es" : "en",
+      examDate: r.examDate ?? null,
+      subscriptionEndDate: r.subscriptionEndDate ?? null,
+      hasActiveSubscription: r.subscriptionStatus === "active",
+      unsubscribeToken: r.unsubscribeToken ?? null,
+    }));
+  }
+
+  async markReminderEmailSent(userId: string, at: Date): Promise<void> {
+    await db
+      .update(userProfiles)
+      .set({ lastReminderEmailAt: at, updatedAt: new Date() })
+      .where(eq(userProfiles.userId, userId));
+  }
+
+  async setUnsubscribeToken(userId: string, token: string): Promise<void> {
+    await db
+      .update(userProfiles)
+      .set({ unsubscribeToken: token, updatedAt: new Date() })
+      .where(eq(userProfiles.userId, userId));
+  }
+
+  /**
+   * Turn reminders off for whoever holds this token.
+   *
+   * The token is not cleared: keeping it means a link in an email a student
+   * kept still works, and clicking it twice is a no-op rather than a
+   * confusing failure. It can only ever set the flag to false.
+   */
+  async unsubscribeByToken(token: string): Promise<boolean> {
+    const updated = await db
+      .update(userProfiles)
+      .set({ emailRemindersOptIn: false, updatedAt: new Date() })
+      .where(eq(userProfiles.unsubscribeToken, token))
+      .returning({ userId: userProfiles.userId });
+    return updated.length > 0;
+  }
+
   async getResponsesForCategory(userId: string, category: ExamCategory): Promise<QuestionResponse[]> {
     return db
       .select()

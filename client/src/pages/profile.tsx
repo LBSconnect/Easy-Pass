@@ -39,6 +39,7 @@ import {
 import { PageShell, PageHeader } from "@/components/page-shell";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { ReminderPreferences } from "@/components/profile/reminder-preferences";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   User, 
@@ -279,6 +280,8 @@ export default function ProfilePage() {
                   )}
                 </CardContent>
               </Card>
+
+              <ReminderPreferences />
 
               <Card>
                 <CardHeader>

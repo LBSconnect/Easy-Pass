@@ -30,6 +30,7 @@ import { deriveDashboardState, sectionsFor, type DashboardSection } from "@share
 import { useStudyAssistantConfig } from "@/lib/studyAssistant";
 import { CardErrorBoundary } from "@/components/error-boundary";
 import { WelcomeCard } from "@/components/dashboard/welcome-card";
+import { ReminderStrip } from "@/components/dashboard/reminder-strip";
 import {
   DashboardOnboarding,
   type DiagnosticSummary,
@@ -264,6 +265,11 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-6">
+              {/* Above the fold and above the cards: a reminder is only worth
+                  having if it is seen before the student decides what to do.
+                  It renders nothing when there is nothing to say. */}
+              <CardErrorBoundary label="reminders"><ReminderStrip /></CardErrorBoundary>
+
               {render("welcome")}
 
               {showLeadRow && category && (

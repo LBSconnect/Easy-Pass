@@ -31,6 +31,9 @@ import { buildNotebook, filterNotebook, notebookCounts, type NotebookFilter } fr
 import { buildSimulatorPaper } from "./simulatorPaper";
 import { buildTargetedPaper } from "./alexi/targetedPaper";
 import { auditBank, findThinTopics } from "./alexi/bankAudit";
+import { topReminders } from "@shared/studyReminders";
+import { reminderCopy } from "@shared/reminderCopy";
+import { dispatchReminderEmails } from "./reminderDispatch";
 import { resolveTargetedPractice, TARGETED_PRACTICE_ENV } from "@shared/alexiFlags";
 import { EXAM_MODES, isRepresentativeSitting, questionCountFor, timeLimitFor } from "@shared/examMode";
 import { selectDueCards, scheduleNext, newCardState } from "./spacedRepetition";
@@ -76,6 +79,27 @@ const sessionAnswerSchema = z.object({
   answerIndex: z.number().int().min(0).max(9),
 });
 
+/**
+ * What an unsubscribe link lands on.
+ *
+ * Deliberately a plain page rather than a redirect into the app: the person
+ * clicking is usually signed out, and bouncing them to a login screen after
+ * they asked to stop receiving email is the opposite of what they wanted.
+ * The same page is shown whether or not the token matched, so the endpoint
+ * cannot be used to check whether one exists.
+ */
+const UNSUBSCRIBE_PAGE = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reminders off - MyEasyPass</title></head>
+<body style="font-family: system-ui, sans-serif; max-width: 34rem; margin: 4rem auto; padding: 0 1.5rem; line-height: 1.6; color: #1f2937;">
+<h1 style="color: #2563eb; font-size: 1.5rem;">MyEasyPass</h1>
+<p>You will not receive any more study reminder emails.</p>
+<p style="color: #6b7280;">No se enviaran mas correos de recordatorio.</p>
+<p>You can turn them back on any time from your profile.</p>
+<p><a href="https://www.myeasypass.net" style="color: #2563eb;">myeasypass.net</a></p>
+</body></html>`;
+
 /** Findings returned by the content audit. The summary counts are unaffected. */
 const MAX_AUDIT_FINDINGS = 500;
 
@@ -120,6 +144,9 @@ const profileUpdateSchema = z.object({
   hasPreviousAttempt: z.boolean().nullable().optional(),
   // The exam the student is actively studying for.
   preferredCategory: z.enum(examCategoryEnum.enumValues).nullable().optional(),
+  // Study reminder emails. Off unless explicitly turned on, and turning it
+  // off has to work as reliably as turning it on.
+  emailRemindersOptIn: z.boolean().nullable().optional(),
 });
 
 const VALID_PRICE_IDS = new Set<string>();
@@ -630,6 +657,7 @@ export async function registerRoutes(
         examDateSkipped,
         hasPreviousAttempt,
         preferredCategory,
+        emailRemindersOptIn,
       } = parsed.data;
       const sanitizedPhone = phone ? sanitizeHtml(phone) ?? phone : undefined;
 
@@ -646,6 +674,7 @@ export async function registerRoutes(
         ...examDatePatch({ examDate, examDateSkipped }),
         ...(hasPreviousAttempt !== undefined ? { hasPreviousAttempt } : {}),
         ...(preferredCategory !== undefined ? { preferredCategory } : {}),
+        ...(emailRemindersOptIn !== undefined ? { emailRemindersOptIn } : {}),
       });
 
       res.json(updated);
@@ -948,6 +977,106 @@ export async function registerRoutes(
   // EasyPass Score for one category. Deliberately not gated on subscription:
   // a lapsed student should still be able to see where they stand, and the
   // response contains no question content.
+  /**
+   * What is worth telling this student right now.
+   *
+   * Every reminder is derived from something already stored - a date they
+   * gave us, an answer they recorded, a subscription period Stripe reported.
+   * Nothing here is generated, so it costs nothing and works with the model
+   * provider down.
+   */
+  app.get("/api/reminders", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [profile, missedIds, results, lastAnsweredAt] = await Promise.all([
+        storage.getProfile(userId),
+        storage.getMissedQuestionIds(userId),
+        storage.getExamResults(userId),
+        storage.getLastAnsweredAt(userId),
+      ]);
+
+      const language = profile?.preferredLanguage === "es" ? "es" : "en";
+      const reminders = topReminders({
+        now: new Date(),
+        examDate: profile?.examDate ? new Date(profile.examDate) : null,
+        subscriptionEndDate: profile?.subscriptionEndDate
+          ? new Date(profile.subscriptionEndDate)
+          : null,
+        hasActiveSubscription: profile?.subscriptionStatus === "active",
+        lastAnsweredAt,
+        missedQuestionCount: missedIds.length,
+        totalAttempts: results.length,
+      });
+
+      res.json({
+        reminders: reminders.map((r) => ({ ...r, copy: reminderCopy(r, language) })),
+        emailRemindersOptIn: profile?.emailRemindersOptIn === true,
+      });
+    } catch (error) {
+      console.error("Error building reminders:", error);
+      res.status(500).json({ message: "Failed to build reminders" });
+    }
+  });
+
+  /**
+   * One-click unsubscribe, no login required.
+   *
+   * Public by necessity: a student clicking a link in an email is often not
+   * signed in, and making them sign in to stop emails is how people mark
+   * messages as spam instead. The token can only turn reminders off - it
+   * reads nothing and grants nothing else - and an unknown token gets the
+   * same page as a valid one, so the endpoint cannot be used to test whether
+   * a token exists.
+   *
+   * Accepts POST as well, because the List-Unsubscribe-Post header tells mail
+   * clients they may unsubscribe with a POST and no user interaction.
+   */
+  const handleUnsubscribe = async (req: any, res: any) => {
+    try {
+      const token = String(req.query.token ?? "").trim();
+      if (token) await storage.unsubscribeByToken(token);
+      res
+        .status(200)
+        .type("html")
+        .send(UNSUBSCRIBE_PAGE);
+    } catch (error) {
+      console.error("Error unsubscribing:", error);
+      res.status(500).type("html").send(UNSUBSCRIBE_PAGE);
+    }
+  };
+  app.get("/api/reminders/unsubscribe", handleUnsubscribe);
+  app.post("/api/reminders/unsubscribe", handleUnsubscribe);
+
+  /**
+   * Send the reminder emails that are due.
+   *
+   * Guarded by a shared secret rather than a session, because the caller is a
+   * scheduler and not a person. With REMINDER_DISPATCH_SECRET unset the route
+   * refuses every request: an unauthenticated endpoint that sends mail to
+   * every opted-in student is not something to leave open by default.
+   */
+  app.post("/api/reminders/dispatch", async (req, res) => {
+    try {
+      const secret = process.env.REMINDER_DISPATCH_SECRET;
+      if (!secret) {
+        return res.status(503).json({ message: "Reminder dispatch is not configured" });
+      }
+      const provided = req.get("x-reminder-secret") ?? "";
+      // Length-independent comparison would be better still, but the secret
+      // is a long random string and this is not a per-request oracle.
+      if (provided !== secret) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const result = await dispatchReminderEmails();
+      console.log("[Reminders] dispatch:", JSON.stringify(result));
+      res.json(result);
+    } catch (error) {
+      console.error("Error dispatching reminders:", error);
+      res.status(500).json({ message: "Failed to dispatch reminders" });
+    }
+  });
+
   app.get("/api/readiness/:category", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

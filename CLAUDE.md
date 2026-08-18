@@ -199,7 +199,9 @@ app.post("/api/endpoint", isAuthenticated, async (req: any, res) => {
 | `PORT` | No | Server port (default: 5000) |
 | `NODE_ENV` | No | development/production |
 | `STRIPE_SECRET_KEY` | Stripe | Payment processing |
-| `RESEND_API_KEY` | Email | Password reset emails |
+| `RESEND_API_KEY` | Email | Password reset and study reminder emails |
+| `REMINDER_DISPATCH_SECRET` | Reminders | Guards `POST /api/reminders/dispatch`. Unset = the route refuses everything and no reminder emails are sent. See [`docs/CI.md`](docs/CI.md). |
+| `ALEXI_MOCK_EXAM_ENABLED` | Targeted practice | `true` enables targeted practice papers. Resolved on its own, without AI credentials — the papers are assembled from the approved bank and call no model. |
 
 ## Key Files to Know
 

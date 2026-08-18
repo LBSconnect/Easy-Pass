@@ -195,7 +195,9 @@ export default function StudyAssistantPage() {
         </div>
       )}
 
-      {isError && (
+      {/* Unusable body is the same outcome as a failed request, as far as the
+          student is concerned - say so rather than rendering an empty gap. */}
+      {(isError || (!isLoading && !data)) && (
         <Card className="mt-6" data-testid="card-assistant-error">
           <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
             <p className="text-sm text-muted-foreground">

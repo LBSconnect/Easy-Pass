@@ -169,9 +169,9 @@ export default function CertificatePage() {
               <div className="h-16 w-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <FileText className="h-8 w-8 text-destructive" />
               </div>
-              <h2 className="text-xl font-semibold mb-2">
+              <h1 className="text-xl font-semibold mb-2">
                 {language === "es" ? "Certificado no encontrado" : "Certificate Not Found"}
-              </h2>
+              </h1>
               <p className="text-muted-foreground mb-6">
                 {language === "es" 
                   ? "Este certificado no existe o ha sido revocado."

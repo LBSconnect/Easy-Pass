@@ -69,7 +69,7 @@ function LoginForm({ onSwitchToSignup }: { onSwitchToSignup: () => void }) {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold">
+        <CardTitle as="h1" className="text-2xl font-bold">
           {t("auth.loginTitle", "Welcome Back")}
         </CardTitle>
         <CardDescription>
@@ -213,7 +213,7 @@ function SignupForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold">
+        <CardTitle as="h1" className="text-2xl font-bold">
           {t("auth.signupTitle", "Create Account")}
         </CardTitle>
         <CardDescription>

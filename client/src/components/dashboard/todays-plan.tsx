@@ -124,7 +124,12 @@ export function TodaysPlanCard({ category }: { category: ExamCategory }) {
     );
   }
 
-  if (data.tasks.length === 0) {
+  // `data.tasks` is typed as an array but arrives over the network. A body
+  // missing the field reached `.length` here and threw before the empty-state
+  // check could catch it.
+  const tasks = Array.isArray(data.tasks) ? data.tasks : [];
+
+  if (tasks.length === 0) {
     return (
       <Card data-testid="card-plan-empty">
         <CardContent className="py-10 text-center">
@@ -138,7 +143,7 @@ export function TodaysPlanCard({ category }: { category: ExamCategory }) {
     );
   }
 
-  const first = data.tasks[0];
+  const first = tasks[0];
   const firstHref = TASK_META[first.kind]?.href ?? "/exams";
 
   return (
@@ -167,7 +172,7 @@ export function TodaysPlanCard({ category }: { category: ExamCategory }) {
         )}
 
         <ol className="mt-4 space-y-2" data-testid="list-plan-tasks">
-          {data.tasks.map((task, i) => {
+          {tasks.map((task, i) => {
             const meta = TASK_META[task.kind] ?? TASK_META.broad_practice;
             const copy = taskCopy(task, es);
             return (

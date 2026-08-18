@@ -30,6 +30,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sparkles } from "lucide-react";
+import { GeneratedQuestionReview } from "@/components/admin/generated-question-review";
 import {
   Table,
   TableBody,
@@ -249,6 +251,13 @@ export default function AdminPage() {
     enabled: isAdmin,
   });
   const feedback = Array.isArray(feedbackData) ? feedbackData : [];
+
+  // Count only, for the tab badge. The queue itself fetches its own data.
+  const { data: draftsData } = useQuery<unknown[]>({
+    queryKey: ["/api/admin/generated-questions?status=pending"],
+    enabled: isAdmin,
+  });
+  const draftCount = Array.isArray(draftsData) ? draftsData.length : 0;
 
   const [selectedFeedback, setSelectedFeedback] = useState<QuestionFeedback | null>(null);
   const [feedbackAdminNotes, setFeedbackAdminNotes] = useState("");
@@ -870,6 +879,15 @@ export default function AdminPage() {
               <TabsTrigger value="stripe" className="gap-2">
                 <CreditCard className="h-4 w-4" />
                 Stripe Setup
+              </TabsTrigger>
+              <TabsTrigger value="drafts" className="gap-2">
+                <Sparkles className="h-4 w-4" />
+                Review Queue
+                {draftCount > 0 && (
+                  <Badge variant="destructive" className="ml-1 h-5 min-w-[20px] px-1.5">
+                    {draftCount}
+                  </Badge>
+                )}
               </TabsTrigger>
               <TabsTrigger value="feedback" className="gap-2">
                 <Flag className="h-4 w-4" />
@@ -1823,6 +1841,10 @@ export default function AdminPage() {
                   </CardContent>
                 </Card>
               )}
+            </TabsContent>
+
+            <TabsContent value="drafts" className="space-y-4">
+              <GeneratedQuestionReview />
             </TabsContent>
 
             <TabsContent value="feedback" className="space-y-4">

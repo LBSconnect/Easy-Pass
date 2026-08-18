@@ -112,10 +112,18 @@ describe("sectionsFor - ordering", () => {
     expect(list.indexOf("alexi")).toBeLessThan(list.indexOf("score"));
   });
 
-  it("leads an approaching exam with readiness", () => {
+  it("leads an approaching exam with Alexi, not the score", () => {
+    // Every state leads with the recommendation. With days left, what to do
+    // about the gap matters more than the number describing it.
     const list = sections({ daysUntilExam: 3 });
 
-    expect(list.indexOf("score")).toBeLessThan(list.indexOf("alexi"));
+    expect(list.indexOf("alexi")).toBeLessThan(list.indexOf("score"));
+  });
+
+  it("leads with Alexi at high readiness too", () => {
+    const list = sections({ easyPassScore: 92 });
+
+    expect(list.indexOf("alexi")).toBeLessThan(list.indexOf("score"));
   });
 
   it("raises quick actions above the daily plan at high readiness", () => {

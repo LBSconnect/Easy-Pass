@@ -18,6 +18,7 @@ import { PageShell, PageHeader, SectionHeading } from "@/components/page-shell";
 import { AlexiMark } from "@/components/alexi-mark";
 import { ReadinessRing } from "@/components/readiness-ring";
 import { CardErrorBoundary } from "@/components/error-boundary";
+import { AskAlexi } from "@/components/alexi/ask-alexi";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import {
   Clock, Play, ArrowRight, LifeBuoy, RotateCcw, Layers, Target, BookOpen, ChevronDown,
+  MessageCircleQuestion,
 } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 import {
@@ -35,11 +37,27 @@ import type { ExamCategory, UserProfile } from "@shared/schema";
 /** Session lengths a student can realistically commit to. */
 const DURATIONS = [10, 15, 30, 60];
 
+/** How many past questions the picker offers before it becomes a list to read
+ *  rather than a control to use. */
+const ASKABLE_LIMIT = 8;
+
+interface AskableEntry {
+  questionId: string;
+  topic: string;
+  timesWrong: number;
+  question: { questionTextEn: string; questionTextEs: string };
+}
+
+interface AskableResponse {
+  entries: AskableEntry[];
+}
+
 export default function StudyAssistantPage() {
   const { i18n } = useTranslation();
   const es = i18n.language === "es";
   const [minutes, setMinutes] = useState(15);
   const [showWhy, setShowWhy] = useState(false);
+  const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(null);
 
   const { data: config } = useStudyAssistantConfig();
   const { data: profile } = useQuery<UserProfile>({ queryKey: ["/api/profile"] });
@@ -56,6 +74,7 @@ export default function StudyAssistantPage() {
     trackEvent("alexi_opened", { exam_type: category });
   }, [category]);
 
+
   useEffect(() => {
     if (data) {
       trackEvent("alexi_recommendation_viewed", {
@@ -67,6 +86,22 @@ export default function StudyAssistantPage() {
 
   const rec = data?.recommendation;
   const student = data?.profile;
+
+  // Questions this student has answered - the only ones the tutor will discuss.
+  const { data: notebook } = useQuery<AskableResponse>({
+    queryKey: [`/api/missed-questions/${category}?filter=all`],
+  });
+  const askable = (Array.isArray(notebook?.entries) ? notebook.entries : []).slice(0, ASKABLE_LIMIT);
+  const selected = askable.find((e) => e.questionId === selectedQuestionId) ?? askable[0] ?? null;
+
+  // Client-side navigation does not honour a hash the way a full page load
+  // does, so "Ask Alexi" would land at the top of the page with the ask
+  // section off-screen. Scroll to it once the section has rendered.
+  useEffect(() => {
+    if (window.location.hash !== "#ask") return;
+    const target = document.getElementById("ask");
+    if (target) target.scrollIntoView({ block: "start" });
+  }, [askable.length]);
 
   const secondary = [
     { href: "/missed-questions", icon: RotateCcw, en: "Review my mistakes", esLabel: "Repasar mis errores" },
@@ -352,6 +387,82 @@ export default function StudyAssistantPage() {
           </div>
         </div>
       )}
+
+      {/* Ask Alexi.
+          The tutor answers about one question the student has already
+          answered, grounded in that question's approved material - so the
+          entry point is choosing which question, not an empty chat box that
+          would invite the assistant to state regulation from memory. */}
+      <section id="ask" className="mt-8 scroll-mt-24">
+        <div className="flex items-center gap-2.5">
+          <MessageCircleQuestion className="h-5 w-5 text-primary" aria-hidden="true" />
+          <SectionHeading>{es ? `Pregúntale a ${named}` : `Ask ${named}`}</SectionHeading>
+        </div>
+
+        {askable.length === 0 ? (
+          <Card className="mt-3" data-testid="card-ask-empty">
+            <CardContent className="p-5">
+              <p className="text-sm text-muted-foreground">
+                {es
+                  ? `${named} explica preguntas que ya has respondido, usando el material aprobado de esa pregunta. Responde algunas preguntas de práctica y aparecerán aquí.`
+                  : `${named} explains questions you've already answered, using that question's approved material. Answer some practice questions and they'll appear here.`}
+              </p>
+              <Button asChild className="mt-4" data-testid="button-ask-practice">
+                <Link href={`/exams/${category}`}>
+                  {es ? "Practicar ahora" : "Practise now"}
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="mt-3" data-testid="card-ask">
+            <CardContent className="p-5">
+              <p className="text-sm text-muted-foreground">
+                {es
+                  ? "Elige una pregunta que hayas respondido y pregunta lo que quieras sobre ella."
+                  : "Pick a question you've answered, then ask whatever you like about it."}
+              </p>
+
+              <div
+                className="mt-3 flex flex-col gap-2"
+                role="radiogroup"
+                aria-label={es ? "Elegir pregunta" : "Choose a question"}
+              >
+                {askable.map((e) => {
+                  const active = selected?.questionId === e.questionId;
+                  return (
+                    <button
+                      key={e.questionId}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => setSelectedQuestionId(e.questionId)}
+                      className={`flex min-h-11 items-start gap-2.5 rounded-md border p-3 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                        active ? "border-primary bg-primary/[0.06]" : "hover:bg-muted/60"
+                      }`}
+                      data-testid={`button-askable-${e.questionId}`}
+                    >
+                      <Badge variant="secondary" className="shrink-0 text-xs">{e.topic}</Badge>
+                      <span className="min-w-0 line-clamp-2">
+                        {es ? e.question.questionTextEs : e.question.questionTextEn}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {selected && (
+                <AskAlexi
+                  key={selected.questionId}
+                  questionId={selected.questionId}
+                  answeredIncorrectly={selected.timesWrong > 0}
+                  topic={selected.topic}
+                />
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </section>
 
       <p className="mt-6 text-xs text-muted-foreground">
         {es

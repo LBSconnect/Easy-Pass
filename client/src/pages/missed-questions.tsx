@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiRequest } from "@/lib/queryClient";
+import { AskAlexi } from "@/components/alexi/ask-alexi";
 import { Bookmark, BookmarkCheck, CircleCheck, CircleX, RotateCcw } from "lucide-react";
 import type { ExamCategory, UserProfile } from "@shared/schema";
 
@@ -229,6 +230,14 @@ export default function MissedQuestionsPage() {
                     ? `Fallada ${entry.timesWrong} de ${entry.timesSeen} intentos`
                     : `Missed ${entry.timesWrong} of ${entry.timesSeen} attempts`}
                 </p>
+
+                {/* Every entry here is a question this student has answered,
+                    which is exactly the tutor's precondition. */}
+                <AskAlexi
+                  questionId={entry.questionId}
+                  answeredIncorrectly={entry.timesWrong > 0}
+                  topic={entry.topic}
+                />
               </CardContent>
             </Card>
           );

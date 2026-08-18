@@ -15,6 +15,8 @@ import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ChartColumn } from "lucide-react";
+import { IconTile } from "@/components/icon-tile";
 import { trackEvent } from "@/lib/analytics";
 import type { ExamCategory } from "@shared/schema";
 
@@ -86,7 +88,10 @@ export function MasteryCard({ category }: { category: ExamCategory }) {
   return (
     <Card className="h-full" data-testid="card-mastery">
       <CardContent className="p-5">
-        <h2 className="text-base font-semibold">{es ? "Tu dominio" : "Your Mastery"}</h2>
+        <div className="flex items-center gap-2.5">
+          <IconTile icon={ChartColumn} tone="violet" />
+          <h2 className="text-base font-semibold">{es ? "Tu dominio" : "Your Mastery"}</h2>
+        </div>
 
         <ul className="mt-4 space-y-3">
           {topics.map((t) => {

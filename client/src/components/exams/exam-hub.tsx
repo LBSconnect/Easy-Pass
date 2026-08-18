@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ReadinessRing } from "@/components/readiness-ring";
 import { AlexiMark } from "@/components/alexi-mark";
+import { AlexiMascot } from "@/components/alexi-mascot";
 import {
   Home, Shield, Heart, FileText, Zap, ClipboardCheck, ArrowRight, CalendarDays,
   BookOpen, ChevronRight, TrendingUp, TriangleAlert,
@@ -292,9 +293,15 @@ export function ExamHub() {
           {recommendation && current && (
             <Card className="mt-6 border-primary/25 bg-primary/[0.04]" data-testid="card-exams-alexi">
               <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between md:p-6">
-                <div className="min-w-0">
+                {/* The concept leads this banner with the mascot, at a size
+                    that reads as a character rather than an icon. */}
+                <span className="hidden shrink-0 items-center justify-center rounded-full bg-background/70 p-2 shadow-sm md:inline-flex">
+                  <AlexiMascot size={96} label={named} />
+                </span>
+
+                <div className="min-w-0 md:flex-1">
                   <div className="flex items-center gap-2">
-                    <AlexiMark size={22} className="text-primary" />
+                    <AlexiMark size={22} className="text-primary md:hidden" />
                     <span className="text-sm font-semibold text-primary">
                       {alexiOn ? (es ? `${named} recomienda` : `${named} recommends`) : es ? "Recomendado" : "Recommended"}
                     </span>

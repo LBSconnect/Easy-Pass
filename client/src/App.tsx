@@ -1,10 +1,12 @@
-import { Switch, Route } from "wouter";
-import { Suspense, lazy } from "react";
+import { Switch, Route, useLocation } from "wouter";
+import { Suspense, lazy, useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import { ThemeProvider } from "@/components/theme-provider";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import "./lib/i18n";
 
@@ -50,11 +52,30 @@ import ExamDisclaimerPage from "@/pages/exam-disclaimer";
 import ElectronicCommunicationsPage from "@/pages/electronic-communications";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isError, retry } = useAuth();
+  const [, navigate] = useLocation();
+  const { i18n } = useTranslation();
+  const es = i18n.language === "es";
+
+  /**
+   * Client-side navigation, from an effect.
+   *
+   * This was `window.location.href = "/login"` executed during render, which
+   * is wrong twice over. Assigning during render is a render-phase side
+   * effect React may run more than once, and a full document load is the wrong
+   * tool anyway - /login is a route in this same app, so tearing down the
+   * document throws away the loaded bundle and query cache to reach a page
+   * already one render away. `replace` keeps Back from bouncing off the
+   * protected route the student just left.
+   */
+  const mustSignIn = !isLoading && !isError && !isAuthenticated;
+  useEffect(() => {
+    if (mustSignIn) navigate("/login", { replace: true });
+  }, [mustSignIn, navigate]);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-background" data-testid="loading-auth-gate">
         <div className="text-center space-y-4">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
           <p className="text-muted-foreground">Loading...</p>
@@ -63,15 +84,63 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
     );
   }
 
+  // Could not determine auth state. Not the same as "signed out": redirecting
+  // here would log out a student with a valid session over a transient 500,
+  // and during an outage they could not sign back in either.
+  if (isError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="max-w-md text-center space-y-4">
+          <h1 className="text-2xl font-bold">
+            {es
+              ? "No podemos conectar con MyEasyPass ahora mismo"
+              : "We can't reach MyEasyPass right now"}
+          </h1>
+          <p className="text-muted-foreground">
+            {es
+              ? "Tu cuenta está bien, solo no pudimos cargarla. Suele durar poco."
+              : "Your account is fine - we just couldn't load it. This is usually brief."}
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Button onClick={() => retry()} data-testid="button-auth-retry">
+              {es ? "Reintentar" : "Try again"}
+            </Button>
+            <Button variant="outline" asChild>
+              <a href="/">{es ? "Ir al inicio" : "Go to home page"}</a>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
-    window.location.href = "/login";
-    return null;
+    // Says what is happening rather than showing a blank page while the
+    // browser navigates.
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center bg-background px-4"
+        data-testid="redirect-signin"
+      >
+        <div className="text-center space-y-4">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
+          <h1 className="text-lg font-medium">
+            {es ? "Te llevamos a iniciar sesión…" : "Taking you to sign in…"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            <a href="/login" className="text-primary underline-offset-2 hover:underline">
+              {es ? "Continuar a iniciar sesión" : "Continue to sign in"}
+            </a>
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="min-h-screen flex items-center justify-center bg-background" data-testid="loading-suspense">
           <div className="text-center space-y-4">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
             <p className="text-muted-foreground">Loading...</p>
@@ -85,11 +154,15 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 }
 
 function HomePage() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isError } = useAuth();
 
-  if (isLoading) {
+  // The home page is public marketing and is the first thing a new visitor
+  // sees. Only a confirmed session diverts to the dashboard; a failed auth
+  // check must still show the page. Before this, a 500 on /api/auth/user left
+  // the spinner up forever and the site looked dead to everyone arriving.
+  if (isLoading && !isError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-background" data-testid="loading-home">
         <div className="text-center space-y-4">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
           <p className="text-muted-foreground">Loading...</p>

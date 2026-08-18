@@ -58,7 +58,7 @@ export default function ForgotPasswordPage() {
           <Card className="w-full max-w-md">
             <CardHeader className="text-center">
               <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <CardTitle className="text-2xl font-bold">
+              <CardTitle as="h1" className="text-2xl font-bold">
                 {isSpanish ? 'Revisa tu Correo' : 'Check Your Email'}
               </CardTitle>
               <CardDescription>
@@ -94,7 +94,7 @@ export default function ForgotPasswordPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <Mail className="h-12 w-12 text-primary mx-auto mb-4" />
-            <CardTitle className="text-2xl font-bold">
+            <CardTitle as="h1" className="text-2xl font-bold">
               {isSpanish ? 'Restablecer Contraseña' : 'Reset Password'}
             </CardTitle>
             <CardDescription>

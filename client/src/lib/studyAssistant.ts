@@ -76,11 +76,25 @@ export function useStudyAssistantConfig() {
   });
 }
 
+/**
+ * The recommendation, validated once.
+ *
+ * Three separate screens read this payload, and each guarded with `if (data)`.
+ * An object is truthy even when it is missing `recommendation`, so a 200 with
+ * a partial body sailed past all three guards and threw on
+ * `data.recommendation.mode` mid-render. Validating in the hook means every
+ * consumer's existing guard actually holds, instead of each one having to
+ * re-check the same fields and one of them forgetting.
+ */
 export function useRecommendation(category: string | null, minutes?: number) {
   const query = minutes ? `?minutes=${minutes}` : "";
-  return useQuery<RecommendationResult>({
+  return useQuery<RecommendationResult, Error, RecommendationResult | undefined>({
     queryKey: [`/api/alexi/recommendation/${category}${query}`],
     enabled: Boolean(category),
+    select: (body) =>
+      body?.recommendation && Array.isArray(body.recommendation.blocks) && body.profile
+        ? body
+        : undefined,
   });
 }
 

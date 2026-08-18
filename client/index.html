@@ -79,12 +79,38 @@
     <link rel="apple-touch-icon" href="/favicon.png" />
 
     <!-- ============================================================
-         PERFORMANCE: Font preconnect — load ONLY what is used
-         (was loading 30+ font families — stripped to 2)
+         PERFORMANCE: web fonts, loaded without blocking first paint
+
+         This stylesheet used to be render-blocking, which put first paint at
+         the mercy of a third party: on a network that cannot reach Google
+         Fonts - plenty of workplaces and test centres, and whole countries -
+         the browser waits out the connection before drawing anything, and the
+         student sits in front of a white page. Measured at ~13.6s to first
+         paint with the request blocked.
+
+         `media="print"` makes it non-blocking; the onload handler promotes it
+         once it arrives. Text paints immediately in the fallback (system-ui,
+         see --font-sans) and swaps when Inter loads, which is what
+         `display=swap` in the URL is for. The noscript copy keeps the font for
+         browsers that would otherwise never run the promotion.
+
+         Only Inter is requested. DM Sans was being downloaded and is not
+         referenced anywhere in the stylesheet or the Tailwind config.
     ============================================================ -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..700;1,14..32,400..600&family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..600&display=swap" rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..700;1,14..32,400..600&display=swap"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..700;1,14..32,400..600&display=swap"
+      />
+    </noscript>
 
     <!-- ============================================================
          JSON-LD STRUCTURED DATA

@@ -129,6 +129,17 @@ interface AdminAnalytics {
   topEvents: Array<{ event: string; count: number }>;
 }
 
+/**
+ * Treat a value as an array or as empty.
+ *
+ * Response types describe what the API is supposed to send, not what arrives.
+ * An error envelope, a proxy's HTML, or a field dropped in a shape change all
+ * reach the component typed as an array and are not one.
+ */
+function asArray<T>(value: T[] | undefined | null): T[] {
+  return Array.isArray(value) ? value : [];
+}
+
 const EVENT_LABELS: Record<string, string> = {
   diagnostic_cta_click: "Readiness Assessment Started",
   pricing_cta_click: "Pricing CTA Click",
@@ -194,25 +205,50 @@ export default function AdminPage() {
     enabled: isAdmin,
   });
 
-  const { data: analytics, isLoading: analyticsLoading } = useQuery<AdminAnalytics>({
+  const { data: analyticsData, isLoading: analyticsLoading } = useQuery<AdminAnalytics>({
     queryKey: ["/api/admin/analytics"],
     enabled: isAdmin,
   });
 
-  const { data: users, isLoading: usersLoading } = useQuery<AdminUser[]>({
+  // Checking `analytics` alone is not enough: an object missing its array
+  // fields is still truthy, so the guard passed and `.map` threw on undefined.
+  // Every series is normalised here so a partial body renders empty charts
+  // instead of taking the panel down.
+  const analytics: AdminAnalytics | null = analyticsData
+    ? {
+        examsByCategory: asArray(analyticsData.examsByCategory),
+        resultsOverTime: asArray(analyticsData.resultsOverTime),
+        userGrowth: asArray(analyticsData.userGrowth),
+        revenueOverTime: asArray(analyticsData.revenueOverTime),
+        subscriptionsByType: asArray(analyticsData.subscriptionsByType),
+        subscriptionsByCategory: asArray(analyticsData.subscriptionsByCategory),
+        topEvents: asArray(analyticsData.topEvents),
+      }
+    : null;
+
+  // These three are typed as arrays, but the type is a promise about the
+  // network rather than a guarantee from it. A body that is not an array -
+  // an error envelope, a proxy's HTML, a shape change - used to reach
+  // `.filter` and take the whole admin panel down with
+  // "cs?.filter is not a function". Normalise once, here, so no call site
+  // downstream has to remember.
+  const { data: usersData, isLoading: usersLoading } = useQuery<AdminUser[]>({
     queryKey: ["/api/admin/users"],
     enabled: isAdmin,
   });
+  const users = Array.isArray(usersData) ? usersData : [];
 
-  const { data: questions, isLoading: questionsLoading } = useQuery<Question[]>({
+  const { data: questionsData, isLoading: questionsLoading } = useQuery<Question[]>({
     queryKey: ["/api/admin/questions"],
     enabled: isAdmin,
   });
+  const questions = Array.isArray(questionsData) ? questionsData : [];
 
-  const { data: feedback, isLoading: feedbackLoading } = useQuery<QuestionFeedback[]>({
+  const { data: feedbackData, isLoading: feedbackLoading } = useQuery<QuestionFeedback[]>({
     queryKey: ["/api/admin/question-feedback"],
     enabled: isAdmin,
   });
+  const feedback = Array.isArray(feedbackData) ? feedbackData : [];
 
   const [selectedFeedback, setSelectedFeedback] = useState<QuestionFeedback | null>(null);
   const [feedbackAdminNotes, setFeedbackAdminNotes] = useState("");

@@ -358,7 +358,7 @@ function ExamSession() {
                       <Icon className="h-10 w-10" />
                     </div>
                   </div>
-                  <CardTitle className="text-2xl">
+                  <CardTitle as="h1" className="text-2xl">
                     {i18n.language === "es" ? "Suscripción Requerida" : "Subscription Required"}
                   </CardTitle>
                   <CardDescription>
@@ -480,7 +480,7 @@ function ExamSession() {
                       </div>
                     )}
                   </div>
-                  <CardTitle className="text-2xl">
+                  <CardTitle as="h1" className="text-2xl">
                     {result.passed
                       ? t("exam.results.passed")
                       : t("exam.results.failed")}
@@ -557,7 +557,7 @@ function ExamSession() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">
+                  <CardTitle as="h2" className="text-lg">
                     {i18n.language === "es" ? "Resultados por Tema" : "Results by Topic"}
                   </CardTitle>
                   <CardDescription>
@@ -650,15 +650,28 @@ function ExamSession() {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center space-y-4">
-            <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
-            <p className="text-muted-foreground">No questions available</p>
+        <main className="flex-1 flex items-center justify-center px-4 py-12">
+          <div className="max-w-md text-center space-y-4">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" aria-hidden="true" />
+            {/* This state had no heading and no translation: a Spanish-speaking
+                student hit a dead end written in English with nothing for a
+                screen reader to announce on arrival. */}
+            <h1 className="text-2xl font-bold">
+              {i18n.language === "es" ? "No hay preguntas disponibles" : "No questions available"}
+            </h1>
+            <p className="text-muted-foreground">
+              {i18n.language === "es"
+                ? "No pudimos preparar este examen ahora mismo. Inténtalo de nuevo en unos minutos."
+                : "We couldn't prepare this exam just now. Please try again in a few minutes."}
+            </p>
             <Button asChild>
-              <Link href="/exams">Go Back</Link>
+              <Link href="/exams">
+                {i18n.language === "es" ? "Volver a exámenes" : "Back to exams"}
+              </Link>
             </Button>
           </div>
         </main>
+        <Footer />
       </div>
     );
   }
@@ -677,9 +690,13 @@ function ExamSession() {
             <div className={`p-2 rounded-lg ${categoryColors[category]}`}>
               <Icon className="h-4 w-4" />
             </div>
-            <span className="font-medium text-sm hidden sm:inline">
+            {/* The exam runner had no heading at all - nothing announced on
+                arrival, nothing to navigate by. The exam's name is the page's
+                subject, so it is the h1. It is visually hidden below sm where
+                the header has no room, but never hidden from assistive tech. */}
+            <h1 className="font-medium text-sm max-sm:sr-only">
               {t(`categories.${category}`)}
-            </span>
+            </h1>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
@@ -757,7 +774,7 @@ function ExamSession() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                <p className="text-lg font-medium leading-relaxed">{questionText}</p>
+                <h2 className="text-lg font-medium leading-relaxed">{questionText}</h2>
 
                 <RadioGroup
                   value={answers[currentQuestion.id]?.toString() || ""}
@@ -1154,17 +1171,31 @@ function GuestPracticePreview({ category }: { category: ExamCategory }) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center space-y-4">
-            <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
+        <main className="flex-1 flex items-center justify-center px-4 py-12">
+          <div className="max-w-md text-center space-y-4">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" aria-hidden="true" />
+            {/* The raw thrown message used to be printed here, so a student on
+                a bad day read `500: {"message":"..."}`. Server text is for the
+                logs; this is the screen a person reads. */}
+            <h1 className="text-2xl font-bold">
+              {isSpanish ? "No pudimos abrir la práctica" : "We couldn't start your practice"}
+            </h1>
             <p className="text-muted-foreground">
-              {startMutation.error instanceof Error ? startMutation.error.message : "No questions available"}
+              {isSpanish
+                ? "Inténtalo de nuevo en unos minutos. Si continúa, elige otro examen."
+                : "Please try again in a few minutes. If it keeps happening, pick another exam."}
             </p>
-            <Button asChild>
-              <Link href="/exams">{isSpanish ? "Volver" : "Go Back"}</Link>
-            </Button>
+            <div className="flex flex-wrap justify-center gap-3">
+              <Button onClick={() => startMutation.mutate()} data-testid="button-retry-practice">
+                {isSpanish ? "Reintentar" : "Try again"}
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/exams">{isSpanish ? "Volver a exámenes" : "Back to exams"}</Link>
+              </Button>
+            </div>
           </div>
         </main>
+        <Footer />
       </div>
     );
   }
@@ -1179,9 +1210,13 @@ function GuestPracticePreview({ category }: { category: ExamCategory }) {
             <div className={`p-2 rounded-lg ${categoryColors[category]}`}>
               <Icon className="h-4 w-4" />
             </div>
-            <span className="font-medium text-sm hidden sm:inline">
+            {/* The exam runner had no heading at all - nothing announced on
+                arrival, nothing to navigate by. The exam's name is the page's
+                subject, so it is the h1. It is visually hidden below sm where
+                the header has no room, but never hidden from assistive tech. */}
+            <h1 className="font-medium text-sm max-sm:sr-only">
               {t(`categories.${category}`)}
-            </span>
+            </h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             <Badge variant="outline">
@@ -1205,7 +1240,7 @@ function GuestPracticePreview({ category }: { category: ExamCategory }) {
                 </Badge>
               </CardHeader>
               <CardContent className="space-y-6">
-                <p className="text-lg font-medium leading-relaxed">{questionText}</p>
+                <h2 className="text-lg font-medium leading-relaxed">{questionText}</h2>
                 <RadioGroup
                   value={answers[currentQuestion.id]?.toString() || ""}
                   onValueChange={handleAnswer}
@@ -1312,7 +1347,7 @@ function GuestSignupRequired({ category }: { category: ExamCategory }) {
                     <Icon className="h-10 w-10" />
                   </div>
                 </div>
-                <CardTitle className="text-2xl">
+                <CardTitle as="h1" className="text-2xl">
                   {isSpanish ? "Crea una cuenta gratis" : "Create a free account"}
                 </CardTitle>
                 <CardDescription>

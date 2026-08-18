@@ -113,7 +113,7 @@ export default function EmployerInquiryPage() {
           <Card className="w-full max-w-md">
             <CardHeader className="text-center">
               <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <CardTitle className="text-2xl font-bold">
+              <CardTitle as="h1" className="text-2xl font-bold">
                 {isSpanish ? "Solicitud Recibida" : "Inquiry Received"}
               </CardTitle>
               <CardDescription>
@@ -144,7 +144,7 @@ export default function EmployerInquiryPage() {
         <Card className="w-full max-w-xl mx-auto">
           <CardHeader className="text-center">
             <Building2 className="h-12 w-12 text-primary mx-auto mb-4" />
-            <CardTitle className="text-2xl font-bold">
+            <CardTitle as="h1" className="text-2xl font-bold">
               {isSpanish ? "Preparación de Licencias para Equipos" : "Team Licensing Prep"}
             </CardTitle>
             <CardDescription>

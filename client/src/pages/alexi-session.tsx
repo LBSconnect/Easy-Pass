@@ -121,7 +121,14 @@ export default function AlexiSessionPage() {
       const q = Number.isFinite(minutes) ? `?minutes=${minutes}` : "";
       const res = await apiRequest("POST", `/api/alexi/session/${category}${q}`);
       if (!res.ok) throw new Error(String(res.status));
-      return res.json();
+      const body = await res.json();
+      // Validate at the boundary rather than at each consumer. A 200 whose
+      // body is missing `blocks` used to reach `.length` and throw mid-render;
+      // failing here routes it to the "couldn't prepare your session" screen.
+      if (!body?.sessionId || !Array.isArray(body.blocks)) {
+        throw new Error("malformed");
+      }
+      return body as SessionPayload;
     },
     onSuccess: (data) => {
       setSession(data);

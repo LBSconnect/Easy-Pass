@@ -106,7 +106,7 @@ export default function ResetPasswordPage() {
           <Card className="w-full max-w-md mx-4">
             <CardHeader className="text-center">
               <XCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-              <CardTitle>Invalid Link</CardTitle>
+              <CardTitle as="h1">Invalid Link</CardTitle>
               <CardDescription>
                 This password reset link is invalid. Please request a new one.
               </CardDescription>
@@ -148,7 +148,7 @@ export default function ResetPasswordPage() {
           <Card className="w-full max-w-md mx-4">
             <CardHeader className="text-center">
               <XCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-              <CardTitle>Link Expired</CardTitle>
+              <CardTitle as="h1">Link Expired</CardTitle>
               <CardDescription>
                 {tokenCheck?.message || "This password reset link has expired or is invalid."}
               </CardDescription>
@@ -173,7 +173,7 @@ export default function ResetPasswordPage() {
           <Card className="w-full max-w-md mx-4">
             <CardHeader className="text-center">
               <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <CardTitle>Password Reset Successfully</CardTitle>
+              <CardTitle as="h1">Password Reset Successfully</CardTitle>
               <CardDescription>
                 Your password has been updated. You can now log in with your new password.
               </CardDescription>
@@ -197,7 +197,7 @@ export default function ResetPasswordPage() {
         <Card className="w-full max-w-md mx-4">
           <CardHeader className="text-center">
             <Lock className="h-12 w-12 text-primary mx-auto mb-4" />
-            <CardTitle>Reset Your Password</CardTitle>
+            <CardTitle as="h1">Reset Your Password</CardTitle>
             <CardDescription>
               Enter a new password for your account
             </CardDescription>

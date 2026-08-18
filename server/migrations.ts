@@ -183,6 +183,12 @@ const STEPS: Step[] = [
       ON generated_questions (category);`,
   },
 
+  // --- Remembering that the exam is not scheduled --------------------------
+  {
+    name: "user_profiles.exam_date_skipped",
+    sql: `ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS exam_date_skipped boolean;`,
+  },
+
   // --- Readiness check retention ------------------------------------------
   {
     // The dashboard now asks "has this student already done their readiness
@@ -263,6 +269,7 @@ export async function checkSchemaHealth(): Promise<{
   ];
   const expectedColumns: Array<[string, string]> = [
     ["user_profiles", "exam_date"],
+    ["user_profiles", "exam_date_skipped"],
     ["user_profiles", "has_previous_attempt"],
     ["user_profiles", "preferred_category"],
     ["questions", "difficulty"],

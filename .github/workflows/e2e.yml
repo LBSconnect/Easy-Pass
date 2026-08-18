@@ -48,12 +48,23 @@ jobs:
           --health-retries 10
 
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/easypass_test
+      # sslmode=disable matters: the SSL decision follows the connection
+      # string, and without it a production build against this plain Postgres
+      # fails every migration step - quietly, because the runner logs each
+      # failure and carries on. The suite would still pass, against a schema
+      # drizzle-kit push had created, hiding any migration bug from the one
+      # job meant to catch it.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/easypass_test?sslmode=disable
       # Test-only value. The app refuses to start without one, and nothing
       # here is a real session.
       SESSION_SECRET: e2e-ci-session-secret-not-a-real-one
       NODE_ENV: production
       PORT: "5000"
+      # express-session declines to set a Secure cookie over plain HTTP, so a
+      # production build here would issue no session cookie at all and every
+      # authenticated flow would silently fail to establish. Local HTTP only;
+      # nothing sets this in a deployed environment.
+      SESSION_COOKIE_SECURE: "false"
       TEST_BASE_URL: http://localhost:5000
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.pw-browsers
 
@@ -105,6 +116,18 @@ jobs:
           echo "server did not come up; log follows:"
           cat /tmp/server.log
           exit 1
+
+      # Migration failures are logged and survived by design, so the server
+      # comes up either way. Without this the job would go green on a broken
+      # migration.
+      - name: Check migrations applied
+        run: |
+          if grep -q "\[migrate\] .*FAILED" /tmp/server.log; then
+            echo "Migrations failed on boot:"
+            grep "\[migrate\]" /tmp/server.log
+            exit 1
+          fi
+          grep "\[migrate\]" /tmp/server.log || true
 
       - name: Run end-to-end tests
         # The config only uses the dev container's hard-coded Chromium when

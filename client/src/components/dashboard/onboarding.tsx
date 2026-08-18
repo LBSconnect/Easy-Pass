@@ -54,6 +54,8 @@ interface Props {
   /** Exam already on the profile, if any. */
   selectedExam: ExamCategory | null;
   hasExamDate: boolean;
+  /** They have said "not scheduled yet", and we remembered. */
+  examDateSkipped: boolean;
   /** Retained readiness check. Null when they have not done one. */
   diagnostic: DiagnosticSummary | null;
   hasActiveSubscription: boolean;
@@ -62,6 +64,7 @@ interface Props {
 export function DashboardOnboarding({
   selectedExam,
   hasExamDate,
+  examDateSkipped,
   diagnostic,
   hasActiveSubscription,
 }: Props) {
@@ -69,7 +72,10 @@ export function DashboardOnboarding({
   const es = i18n.language === "es";
   const [chosen, setChosen] = useState<ExamCategory | null>(selectedExam);
   const [dateValue, setDateValue] = useState("");
-  const [dateAnswered, setDateAnswered] = useState(hasExamDate);
+  // Both a booked date and a remembered "not yet" count as answered. Before
+  // the skip was persisted, only the first did - so the question came back on
+  // every visit.
+  const [dateAnswered, setDateAnswered] = useState(hasExamDate || examDateSkipped);
 
   const saveProfile = useMutation({
     mutationFn: async (patch: Record<string, unknown>) => {
@@ -85,14 +91,11 @@ export function DashboardOnboarding({
   /**
    * Whether the steps below the date question are shown.
    *
-   * "I haven't scheduled it yet" is a click, not a saved answer - nothing about
-   * it survives a page load. So gating the rest of the checklist on it meant a
-   * returning student was re-asked for a date they had already declined to
-   * give, with everything below it hidden: they could never reach the
-   * subscribe step. A student who has finished their readiness check is
-   * plainly past this question, so it stops blocking them. It still leads for
-   * someone genuinely new, which is what the one-thing-at-a-time design is
-   * for.
+   * The skip is persisted now, so a returning student who said "not yet" is
+   * past this question and stays past it. The readiness check still unlocks
+   * the rest independently: someone who has completed one is plainly beyond
+   * the date question whatever they answered, and a student who reached the
+   * subscribe step should not lose it to an unrelated field.
    */
   const pastDateStep = dateAnswered || diagnosticDone;
 
@@ -197,7 +200,11 @@ export function DashboardOnboarding({
               <Button
                 variant="ghost"
                 className="h-11"
-                onClick={() => setDateAnswered(true)}
+                onClick={() => {
+                  // Remembered, so the question does not come back next visit.
+                  saveProfile.mutate({ examDateSkipped: true });
+                  setDateAnswered(true);
+                }}
                 data-testid="button-onboarding-no-date"
               >
                 {es ? "Aún no la he programado" : "I haven't scheduled it yet"}

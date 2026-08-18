@@ -21,18 +21,35 @@ const CATEGORY = 'property_casualty';
 interface StubState {
   subscribed: boolean;
   latest: Record<string, unknown> | null;
+  /** What the profile route has been told about the exam date. */
+  examDateSkipped: boolean;
 }
 
 function buildStub(state: StubState) {
   return (app: Express) => {
-    signedInUser(app, {
-      get allowedCategories() {
-        return state.subscribed ? [CATEGORY] : [];
-      },
-      get subscriptionStatus() {
-        return state.subscribed ? 'active' : null;
-      },
+    // Registered first so it wins over signedInUser's fixed profile: express
+    // answers with the first matching route.
+    app.get('/api/profile', (_req, res) =>
+      res.json({
+        userId: 'u1',
+        preferredLanguage: 'en',
+        allowedCategories: state.subscribed ? [CATEGORY] : [],
+        subscriptionStatus: state.subscribed ? 'active' : null,
+        preferredCategory: CATEGORY,
+        role: 'user',
+        examDate: null,
+        examDateSkipped: state.examDateSkipped,
+        hasPreviousAttempt: false,
+      }),
+    );
+    app.patch('/api/profile', (req, res) => {
+      // Persisted, the way the real route persists it.
+      if (typeof req.body?.examDateSkipped === 'boolean') {
+        state.examDateSkipped = req.body.examDateSkipped;
+      }
+      res.json({ ok: true });
     });
+    signedInUser(app);
 
     // The endpoint the whole fix rests on.
     app.get('/api/diagnostic/latest', (_req, res) => res.json(state.latest));
@@ -91,7 +108,7 @@ test.describe('readiness check retention', () => {
   let state: StubState;
 
   test.beforeEach(async () => {
-    state = { subscribed: false, latest: null };
+    state = { subscribed: false, latest: null, examDateSkipped: false };
     stub = await startStubServer(buildStub(state));
   });
 
@@ -166,6 +183,18 @@ test.describe('readiness check retention', () => {
     // machine exists to avoid.
     await expect(page.getByTestId('card-onboarding-exam')).toBeHidden();
     await expect(page.getByTestId('card-onboarding-subscribe')).toBeHidden();
+  });
+
+  test('"not scheduled yet" is remembered across visits', async ({ page }) => {
+    await page.goto(`${stub.baseURL}/dashboard`, { waitUntil: 'networkidle' });
+    await page.getByTestId('button-onboarding-no-date').click();
+    await expect.poll(() => state.examDateSkipped).toBe(true);
+
+    // Come back. The question must not be asked again, and the steps below it
+    // must not be hidden behind it - which is what stranded a returning
+    // student one step short of subscribing.
+    await page.goto(`${stub.baseURL}/dashboard`, { waitUntil: 'networkidle' });
+    await expect(page.getByTestId('button-onboarding-diagnostic')).toBeVisible();
   });
 
   test('a guest who has done nothing is still asked', async ({ page }) => {

@@ -39,6 +39,16 @@ export const userProfiles = pgTable("user_profiles", {
   // Null means "not scheduled yet", which is an explicit, supported answer -
   // those students get an untimed plan rather than being nagged for a date.
   examDate: timestamp("exam_date"),
+  // "I haven't scheduled it yet", remembered.
+  //
+  // Null and false both mean "has not answered". Without this the answer was
+  // a click that died on reload, so a returning student was asked for a date
+  // they had already declined to give - every visit, with the rest of the
+  // checklist hidden behind the unanswered question.
+  //
+  // Setting an actual exam date clears this: they have now scheduled it, and
+  // leaving both set would make "skipped" outlive the fact it described.
+  examDateSkipped: boolean("exam_date_skipped"),
   // Retaker Rescue: a student who has sat the exam before gets a plan that
   // leans harder on weak areas. Null means they have not told us yet.
   hasPreviousAttempt: boolean("has_previous_attempt"),

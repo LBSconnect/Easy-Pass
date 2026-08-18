@@ -256,6 +256,7 @@ export default function DashboardPage() {
               <DashboardOnboarding
                 selectedExam={(profile?.preferredCategory as ExamCategory | null) ?? null}
                 hasExamDate={Boolean(examDate)}
+                examDateSkipped={profile?.examDateSkipped === true}
                 diagnostic={diagnostic ?? null}
                 hasActiveSubscription={hasActiveSubscription}
               />

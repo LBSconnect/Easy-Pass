@@ -29,6 +29,17 @@ interface Props {
   sparkles?: boolean;
   /** Accessible name. Omit to keep the illustration decorative. */
   label?: string;
+  /**
+   * Bring the character to life: a slow float, a wave, blinking eyes and a
+   * pulsing chest light.
+   *
+   * Off by default. Motion belongs on a marketing page where the mascot is the
+   * subject, not beside a heading a student is trying to read - and never on
+   * the exam runner. Every animation here is disabled under
+   * prefers-reduced-motion, which is not a nicety: for some people this kind of
+   * movement causes real nausea and headaches.
+   */
+  animated?: boolean;
   className?: string;
 }
 
@@ -37,6 +48,7 @@ export function AlexiMascot({
   waving = true,
   sparkles = true,
   label,
+  animated = false,
   className,
 }: Props) {
   const uid = useId().replace(/:/g, "");
@@ -82,11 +94,31 @@ export function AlexiMascot({
         </linearGradient>
       </defs>
 
+      {animated && (
+        // Scoped to this instance so two mascots on a page cannot fight over
+        // the same animation names. The reduced-motion block is the important
+        // half: it stops every one of these dead.
+        <style>{`
+          @keyframes ${id("float")} { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+          @keyframes ${id("wave")}  { 0%,60%,100% { transform: rotate(0deg); } 70% { transform: rotate(-16deg); } 85% { transform: rotate(6deg); } }
+          @keyframes ${id("blink")} { 0%,92%,100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
+          @keyframes ${id("pulse")} { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+          .${id("body")}  { animation: ${id("float")} 4s ease-in-out infinite; }
+          .${id("arm")}   { animation: ${id("wave")} 3.2s ease-in-out infinite; transform-origin: 104px 97px; }
+          .${id("eyes")}  { animation: ${id("blink")} 5.5s ease-in-out infinite; transform-origin: center 57px; }
+          .${id("chest")} { animation: ${id("pulse")} 2.6s ease-in-out infinite; }
+          @media (prefers-reduced-motion: reduce) {
+            .${id("body")}, .${id("arm")}, .${id("eyes")}, .${id("chest")} { animation: none; }
+          }
+        `}</style>
+      )}
+
       {sparkles && <circle cx="80" cy="76" r="72" fill={`url(#${id("halo")})`} />}
 
       {/* Ground shadow, keeping the character from floating without weight. */}
       <ellipse cx="80" cy="137" rx="31" ry="6.5" fill="#1E3A6B" opacity="0.13" />
 
+      <g className={animated ? id("body") : undefined}>
       {/* --- body ---------------------------------------------------------- */}
       <path
         d="M80 92c15.6 0 27 9.4 29.4 23.2 1 5.6-3.3 10.8-9 10.8H59.6c-5.7 0-10-5.2-9-10.8C53 101.4 64.4 92 80 92Z"
@@ -96,7 +128,11 @@ export function AlexiMascot({
       />
       {/* Chest light - the "thinking" indicator. */}
       <circle cx="80" cy="111" r="6.4" fill="#BBDCF7" />
-      <circle cx="80" cy="111" r="3.4" fill={`url(#${id("eye")})`} />
+      <circle
+        cx="80" cy="111" r="3.4"
+        fill={`url(#${id("eye")})`}
+        className={animated ? id("chest") : undefined}
+      />
 
       {/* --- arms ---------------------------------------------------------- */}
       {/* Resting arm. */}
@@ -109,7 +145,7 @@ export function AlexiMascot({
       <circle cx="42.6" cy="114.6" r="6.6" fill={`url(#${id("shell")})`} stroke="#C3D4EA" strokeWidth="1.6" />
 
       {waving ? (
-        <>
+        <g className={animated ? id("arm") : undefined}>
           {/* Raised waving arm. */}
           <path
             d="M104 97c8.4-1.6 15.2-6.8 19.2-15.2"
@@ -127,7 +163,7 @@ export function AlexiMascot({
               strokeLinecap="round"
             />
           </g>
-        </>
+        </g>
       ) : (
         <>
           <path
@@ -170,14 +206,17 @@ export function AlexiMascot({
       />
 
       {/* Eyes. */}
-      <ellipse cx="70" cy="57.5" rx="5.6" ry="7" fill={`url(#${id("eye")})`} />
-      <ellipse cx="90" cy="57.5" rx="5.6" ry="7" fill={`url(#${id("eye")})`} />
-      <circle cx="71.8" cy="54.4" r="1.9" fill="#FFFFFF" opacity="0.85" />
-      <circle cx="91.8" cy="54.4" r="1.9" fill="#FFFFFF" opacity="0.85" />
+      <g className={animated ? id("eyes") : undefined}>
+        <ellipse cx="70" cy="57.5" rx="5.6" ry="7" fill={`url(#${id("eye")})`} />
+        <ellipse cx="90" cy="57.5" rx="5.6" ry="7" fill={`url(#${id("eye")})`} />
+        <circle cx="71.8" cy="54.4" r="1.9" fill="#FFFFFF" opacity="0.85" />
+        <circle cx="91.8" cy="54.4" r="1.9" fill="#FFFFFF" opacity="0.85" />
+      </g>
 
       {/* Cheeks - the difference between friendly and clinical. */}
       <ellipse cx="58.5" cy="70" rx="4.6" ry="3" fill="#7FC4F5" opacity="0.4" />
       <ellipse cx="101.5" cy="70" rx="4.6" ry="3" fill="#7FC4F5" opacity="0.4" />
+      </g>
 
       {sparkles && (
         <g fill="#F5B740">

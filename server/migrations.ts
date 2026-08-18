@@ -155,6 +155,34 @@ const STEPS: Step[] = [
             ADD COLUMN IF NOT EXISTS preferred_category exam_category;`,
   },
 
+  // --- Draft questions awaiting human review ------------------------------
+  {
+    name: "table generated_questions",
+    sql: `CREATE TABLE IF NOT EXISTS generated_questions (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      category exam_category NOT NULL,
+      topic varchar,
+      question_text_en text NOT NULL,
+      options_en jsonb NOT NULL,
+      correct_answer integer NOT NULL,
+      explanation_en text,
+      source_question_ids jsonb NOT NULL,
+      status varchar(20) NOT NULL DEFAULT 'pending',
+      validation_notes jsonb,
+      validator_confidence_basis_points integer,
+      prompt_ref varchar(80),
+      reviewed_by varchar,
+      reviewed_at timestamp,
+      review_note text,
+      published_question_id varchar,
+      created_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_generated_questions_status
+      ON generated_questions (status);
+    CREATE INDEX IF NOT EXISTS idx_generated_questions_category
+      ON generated_questions (category);`,
+  },
+
   // --- Measured item difficulty -------------------------------------------
   {
     name: "questions difficulty columns",
@@ -219,6 +247,7 @@ export async function checkSchemaHealth(): Promise<{
     "question_bookmarks",
     "flashcard_reviews",
     "ai_usage_events",
+    "generated_questions",
   ];
   const expectedColumns: Array<[string, string]> = [
     ["user_profiles", "exam_date"],

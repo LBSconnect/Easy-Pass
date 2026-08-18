@@ -1,6 +1,7 @@
 import {
   userProfiles,
   questions,
+  generatedQuestions,
   examSessions,
   examResults,
   paymentHistory,
@@ -18,6 +19,8 @@ import {
   type UserProfile,
   type InsertUserProfile,
   type Question,
+  type GeneratedQuestionRow,
+  type InsertGeneratedQuestion,
   type InsertQuestion,
   type ExamSession,
   type InsertExamSession,
@@ -130,6 +133,19 @@ export interface IStorage {
   getQuestionsByTopic(category: ExamCategory, topicId: string, limit?: number): Promise<Question[]>;
   getActiveQuestions(category: ExamCategory): Promise<Question[]>;
   getActiveQuestionCounts(): Promise<Record<string, number>>;
+
+  // Draft questions. Nothing here is ever served to a student; approval copies
+  // a row into `questions`, and that copy is the only path across.
+  createGeneratedQuestions(drafts: InsertGeneratedQuestion[]): Promise<number>;
+  listGeneratedQuestions(status?: string): Promise<GeneratedQuestionRow[]>;
+  getGeneratedQuestion(id: string): Promise<GeneratedQuestionRow | undefined>;
+  approveGeneratedQuestion(
+    id: string,
+    reviewerId: string,
+    edits: { questionTextEn: string; questionTextEs: string; optionsEn: string[]; optionsEs: string[]; correctAnswer: number; explanationEn: string | null; explanationEs: string | null; topic: string | null },
+    note?: string,
+  ): Promise<{ questionId: string } | null>;
+  rejectGeneratedQuestion(id: string, reviewerId: string, note?: string): Promise<boolean>;
 
   recordQuestionResponses(responses: InsertQuestionResponse[]): Promise<number>;
   getTopicMastery(userId: string, category?: ExamCategory): Promise<TopicMastery[]>;
@@ -683,6 +699,90 @@ export class DatabaseStorage implements IStorage {
       .groupBy(questions.category);
 
     return Object.fromEntries(rows.map((r) => [r.category, Number(r.count)]));
+  }
+
+  async createGeneratedQuestions(drafts: InsertGeneratedQuestion[]): Promise<number> {
+    if (drafts.length === 0) return 0;
+    const rows = await db.insert(generatedQuestions).values(drafts).returning({ id: generatedQuestions.id });
+    return rows.length;
+  }
+
+  async listGeneratedQuestions(status = "pending"): Promise<GeneratedQuestionRow[]> {
+    return db
+      .select()
+      .from(generatedQuestions)
+      .where(eq(generatedQuestions.status, status))
+      .orderBy(desc(generatedQuestions.createdAt));
+  }
+
+  async getGeneratedQuestion(id: string): Promise<GeneratedQuestionRow | undefined> {
+    const [row] = await db.select().from(generatedQuestions).where(eq(generatedQuestions.id, id));
+    return row;
+  }
+
+  /**
+   * Publish a draft as a real question.
+   *
+   * The reviewer's edits are what gets written, not the draft - a reviewer who
+   * corrected the wording expects the correction published, and taking the
+   * original instead would silently discard their work.
+   *
+   * Guarded on `status = 'pending'` inside the update so a double-click, or two
+   * admins acting at once, cannot publish the same draft twice.
+   */
+  async approveGeneratedQuestion(
+    id: string,
+    reviewerId: string,
+    edits: {
+      questionTextEn: string; questionTextEs: string;
+      optionsEn: string[]; optionsEs: string[];
+      correctAnswer: number;
+      explanationEn: string | null; explanationEs: string | null;
+      topic: string | null;
+    },
+    note?: string,
+  ): Promise<{ questionId: string } | null> {
+    const draft = await this.getGeneratedQuestion(id);
+    if (!draft || draft.status !== "pending") return null;
+
+    const [claimed] = await db
+      .update(generatedQuestions)
+      .set({ status: "approved", reviewedBy: reviewerId, reviewedAt: new Date(), reviewNote: note ?? null })
+      .where(and(eq(generatedQuestions.id, id), eq(generatedQuestions.status, "pending")))
+      .returning({ id: generatedQuestions.id });
+    if (!claimed) return null;
+
+    const [created] = await db
+      .insert(questions)
+      .values({
+        category: draft.category,
+        topic: edits.topic,
+        questionTextEn: edits.questionTextEn,
+        questionTextEs: edits.questionTextEs,
+        optionsEn: edits.optionsEn,
+        optionsEs: edits.optionsEs,
+        correctAnswer: edits.correctAnswer,
+        explanationEn: edits.explanationEn,
+        explanationEs: edits.explanationEs,
+        isActive: true,
+      })
+      .returning({ id: questions.id });
+
+    await db
+      .update(generatedQuestions)
+      .set({ publishedQuestionId: created.id })
+      .where(eq(generatedQuestions.id, id));
+
+    return { questionId: created.id };
+  }
+
+  async rejectGeneratedQuestion(id: string, reviewerId: string, note?: string): Promise<boolean> {
+    const [row] = await db
+      .update(generatedQuestions)
+      .set({ status: "rejected", reviewedBy: reviewerId, reviewedAt: new Date(), reviewNote: note ?? null })
+      .where(and(eq(generatedQuestions.id, id), eq(generatedQuestions.status, "pending")))
+      .returning({ id: generatedQuestions.id });
+    return Boolean(row);
   }
 
   async getActiveQuestions(category: ExamCategory): Promise<Question[]> {

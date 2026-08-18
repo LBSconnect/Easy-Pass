@@ -221,7 +221,14 @@ function ExamSession() {
       const res = await apiRequest("POST", `/api/exams/${session?.id}/submit`, {
         answers,
       });
-      return res.json();
+      const data = await res.json();
+      // Same boundary check the start mutation does. A 200 whose body has no
+      // `result` used to call setResult(undefined), which leaves the student
+      // on the question list with no error and no results - they finished the
+      // exam, it was recorded, and nothing on screen said so. Failing here
+      // routes it to the error toast instead.
+      if (!data?.result) throw new Error(t("exam.submitFailed"));
+      return data;
     },
     onSuccess: (data) => {
       setResult(data.result);

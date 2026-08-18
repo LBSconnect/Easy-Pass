@@ -7,8 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
+import { PageShell } from "@/components/page-shell";
 import { apiRequest } from "@/lib/queryClient";
 import { trackEvent } from "@/lib/analytics";
 import { useSEO, buildUrl } from "@/hooks/use-seo";
@@ -73,7 +72,14 @@ export default function DiagnosticPage() {
   const startMutation = useMutation({
     mutationFn: async (cat: ExamCategory) => {
       const res = await apiRequest("POST", "/api/diagnostic/start", { category: cat });
-      return res.json();
+      const data = await res.json();
+      // Validate at the boundary. A 200 whose body has no `questions` used to
+      // set the array to undefined, and the next render read index 0 of it and
+      // took the page down. Failing here routes it to the error state instead.
+      if (!data?.attemptId || !Array.isArray(data.questions) || data.questions.length === 0) {
+        throw new Error("no-questions");
+      }
+      return data;
     },
     onSuccess: (data) => {
       setAttemptId(data.attemptId);
@@ -83,12 +89,22 @@ export default function DiagnosticPage() {
       setResult(null);
       setRevealScore(false);
     },
+    onError: () => {
+      // The category is set before the request, so a failure otherwise strands
+      // the student in a state with no questions and no picker - and the retry
+      // message lives on the picker. Send them back to it.
+      setCategory(null);
+    },
   });
 
   const submitMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", `/api/diagnostic/${attemptId}/submit`, { answers });
-      return res.json();
+      const data = await res.json();
+      if (typeof data?.correctAnswers !== "number" || typeof data?.totalQuestions !== "number") {
+        throw new Error("no-result");
+      }
+      return data;
     },
     onSuccess: (data) => {
       setResult(data);
@@ -137,10 +153,8 @@ export default function DiagnosticPage() {
   const currentQuestion = questions[currentIndex];
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
-      <main className="flex-1 py-10 px-4">
-        <div className="container mx-auto max-w-2xl">
+    <PageShell width="narrow">
+      <div>
           {!category && (
             <>
               <div className="text-center mb-8">
@@ -193,18 +207,18 @@ export default function DiagnosticPage() {
             <Card>
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-muted-foreground">
+                  <h1 className="text-sm font-medium text-muted-foreground">
                     {isSpanish
                       ? `Pregunta ${currentIndex + 1} de ${questions.length}`
                       : `Question ${currentIndex + 1} of ${questions.length}`}
-                  </span>
+                  </h1>
                 </div>
                 <Progress value={((currentIndex + 1) / questions.length) * 100} className="h-1.5" />
               </CardHeader>
               <CardContent className="space-y-6">
-                <p className="text-lg font-medium" data-testid="text-diagnostic-question">
+                <h2 className="text-lg font-medium" data-testid="text-diagnostic-question">
                   {isSpanish ? currentQuestion.questionTextEs : currentQuestion.questionTextEn}
-                </p>
+                </h2>
                 <RadioGroup
                   value={answers[currentQuestion.id]?.toString() ?? ""}
                   onValueChange={(val) => handleSelectAnswer(currentQuestion.id, parseInt(val, 10))}
@@ -247,7 +261,7 @@ export default function DiagnosticPage() {
                 <div className="mx-auto mb-2 p-3 rounded-full bg-primary/10 w-fit">
                   <Lock className="h-8 w-8 text-primary" />
                 </div>
-                <CardTitle className="text-2xl">
+                <CardTitle as="h1" className="text-2xl">
                   {isSpanish ? "¡Evaluación completa!" : "Assessment complete!"}
                 </CardTitle>
                 <CardDescription>
@@ -291,7 +305,7 @@ export default function DiagnosticPage() {
           {result && revealScore && (
             <Card>
               <CardHeader className="text-center">
-                <CardTitle className="text-2xl">
+                <CardTitle as="h1" className="text-2xl">
                   {isSpanish ? "Tus Resultados" : "Your Results"}
                 </CardTitle>
                 <CardDescription>
@@ -336,9 +350,7 @@ export default function DiagnosticPage() {
               </CardContent>
             </Card>
           )}
-        </div>
-      </main>
-      <Footer />
-    </div>
+      </div>
+    </PageShell>
   );
 }

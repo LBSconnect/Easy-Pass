@@ -65,8 +65,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
+import { PageShell } from "@/components/page-shell";
 import { Link } from "wouter";
 import { AiUsagePanel } from "@/components/admin/ai-usage-panel";
 import { useToast } from "@/hooks/use-toast";
@@ -752,21 +751,15 @@ export default function AdminPage() {
   // Placed after every hook so hook order stays stable across renders.
   if (viewerLoading) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <main className="flex-1 flex items-center justify-center p-4">
+      <PageShell width="narrow" centered>
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        </main>
-        <Footer />
-      </div>
+      </PageShell>
     );
   }
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <main className="flex-1 flex items-center justify-center p-4">
+      <PageShell width="narrow" centered>
           <div className="max-w-md text-center" data-testid="admin-access-denied">
             <h1 className="text-xl font-bold">Admin access required</h1>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -776,18 +769,12 @@ export default function AdminPage() {
               <Link href="/dashboard">Go to dashboard</Link>
             </Button>
           </div>
-        </main>
-        <Footer />
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
-
-      <main className="flex-1">
-        <div className="container mx-auto px-4 py-8">
+    <PageShell width="wide">
           <div className="mb-8">
             <h1 className="text-3xl font-bold">{t("admin.title")}</h1>
             <p className="text-muted-foreground mt-1">
@@ -2206,10 +2193,6 @@ export default function AdminPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-        </div>
-      </main>
-
-      <Footer />
-    </div>
+    </PageShell>
   );
 }

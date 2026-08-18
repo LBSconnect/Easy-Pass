@@ -1,3 +1,10 @@
+/**
+ * Deliberately not on PageShell.
+ *
+ * The gradient hero is full-bleed, and PageShell's single max-width container
+ * would crop it to the text column. Marketing-shaped page, marketing-shaped
+ * layout - the same call as the landing page and schedule-exam.
+ */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";

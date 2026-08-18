@@ -1,3 +1,11 @@
+/**
+ * Deliberately not on PageShell.
+ *
+ * The gradient background is the certificate presentation, not decoration:
+ * this page is meant to be looked at and printed as a certificate. Swapping
+ * it for the app's flat background would make the page look like every other
+ * screen, which is the opposite of the point.
+ */
 import { useTranslation } from "react-i18next";
 import { useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";

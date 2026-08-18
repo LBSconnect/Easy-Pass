@@ -1,3 +1,12 @@
+/**
+ * Deliberately not on PageShell.
+ *
+ * This page is built from full-bleed bands - a tinted hero, bordered
+ * sections - that run the whole width of the viewport, with each band holding
+ * its own centred container. PageShell puts one max-width container around
+ * everything, which would cut those bands down to the text column and lose
+ * the banding entirely. Same family as the landing page, and the same reason.
+ */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";

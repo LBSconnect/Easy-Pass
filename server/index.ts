@@ -1,6 +1,8 @@
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import cors from 'cors';
+import { buildAllowedOrigins } from '@shared/corsOrigins';
+import { resolveApiRateLimit } from '@shared/rateLimitConfig';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
@@ -57,22 +59,30 @@ app.use(helmet({
 // ==========================================
 // SECURITY: CORS Configuration
 // ==========================================
-const allowedOrigins = [
-  'https://www.myeasypass.net',
-  'https://myeasypass.net',
-  'https://easy-pass-ht1x.onrender.com',
-  process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : null,
-].filter(Boolean);
+const allowedOrigins = buildAllowedOrigins({
+  nodeEnv: process.env.NODE_ENV,
+  extra: process.env.CORS_ALLOWED_ORIGINS,
+});
 
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    
+
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.warn(`[CORS] Blocked request from origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      // Refuse by omitting the CORS headers, not by throwing.
+      //
+      // Throwing produced a 500 for the request itself, which is both wrong
+      // and dangerous: a request from an unlisted origin is not a server
+      // fault, and returning an error body meant a page served from a
+      // hostname missing from the list could not even load its own
+      // stylesheet. Without Access-Control-Allow-Origin the browser refuses
+      // to expose the response to a cross-origin reader, which is the actual
+      // protection - and a same-origin request, which needs no CORS headers
+      // at all, is unaffected.
+      console.warn(`[CORS] Not allowing cross-origin read from: ${origin}`);
+      callback(null, false);
     }
   },
   credentials: true,
@@ -85,7 +95,11 @@ app.use(cors({
 // ==========================================
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  // Configurable so an end-to-end run, where every request comes from one IP,
+  // is not cut off partway through by a guard meant for real traffic. The
+  // auth and password-reset limiters below are deliberately NOT configurable:
+  // specs assert they return 429, and they are testing a real control.
+  max: resolveApiRateLimit(process.env.API_RATE_LIMIT_MAX),
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,

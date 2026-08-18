@@ -23,6 +23,7 @@ import { selectAdaptiveQuestions, buildHistory } from "./adaptiveSelection";
 import { difficultyFor } from "./alexi/nextBestAction";
 import { assessRisk, quarantineReason, type FeedbackType } from "./contentRisk";
 import { checkSchemaHealth } from "./migrations";
+import { examDatePatch } from "@shared/examDatePatch";
 import { pool } from "./db";
 import { buildNotebook, filterNotebook, notebookCounts, type NotebookFilter } from "./missedQuestions";
 import { buildSimulatorPaper } from "./simulatorPaper";
@@ -88,6 +89,9 @@ const profileUpdateSchema = z.object({
   // null is meaningful: it clears a previously set exam date back to
   // "not scheduled yet", which is a supported answer rather than a gap.
   examDate: z.string().datetime().nullable().optional(),
+  // "Not scheduled yet" as a remembered answer rather than a click that
+  // evaporates on reload.
+  examDateSkipped: z.boolean().nullable().optional(),
   hasPreviousAttempt: z.boolean().nullable().optional(),
   // The exam the student is actively studying for.
   preferredCategory: z.enum(examCategoryEnum.enumValues).nullable().optional(),
@@ -154,6 +158,25 @@ async function isValidCheckoutPriceId(stripe: Awaited<ReturnType<typeof getCache
     console.error("Error validating price ID:", error);
     return false;
   }
+}
+
+/**
+ * The student's profile row, creating it if this is the first time we need it.
+ *
+ * Rows are created lazily rather than at registration, so any route that
+ * writes to a profile has to cope with there not being one yet. GET did;
+ * PATCH did not, and its UPDATE simply matched zero rows - returning a 200
+ * with an empty body while saving nothing.
+ *
+ * In practice the dashboard fetches the profile before it renders anything
+ * that can write to it, which is why this went unnoticed. That is an ordering
+ * accident, not a guarantee, and the first client to write before reading
+ * would have lost the write silently.
+ */
+async function ensureProfile(userId: string) {
+  const existing = await storage.getProfile(userId);
+  if (existing) return existing;
+  return storage.createProfile({ userId, preferredLanguage: "en", role: "user" });
 }
 
 async function ensureSubscriptionActive(userId: string, category?: ExamCategory): Promise<{ active: boolean; message?: string }> {
@@ -400,17 +423,7 @@ export async function registerRoutes(
   app.get("/api/profile", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      let profile = await storage.getProfile(userId);
-      
-      if (!profile) {
-        profile = await storage.createProfile({
-          userId,
-          preferredLanguage: "en",
-          role: "user",
-        });
-      }
-      
-      res.json(profile);
+      res.json(await ensureProfile(userId));
     } catch (error) {
       console.error("Error fetching profile:", error);
       res.status(500).json({ message: "Failed to fetch profile" });
@@ -426,15 +439,27 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid profile data", errors: parsed.error.errors });
       }
 
-      const { phone, preferredLanguage, examDate, hasPreviousAttempt, preferredCategory } =
-        parsed.data;
+      const {
+        phone,
+        preferredLanguage,
+        examDate,
+        examDateSkipped,
+        hasPreviousAttempt,
+        preferredCategory,
+      } = parsed.data;
       const sanitizedPhone = phone ? sanitizeHtml(phone) ?? phone : undefined;
+
+      // Without this the UPDATE matches nothing for a student who has never
+      // had a profile row, and the write is lost with a 200.
+      await ensureProfile(userId);
 
       const updated = await storage.updateProfile(userId, {
         phone: sanitizedPhone,
         preferredLanguage,
-        // undefined leaves the field alone; null clears it.
-        ...(examDate !== undefined ? { examDate: examDate ? new Date(examDate) : null } : {}),
+        // undefined leaves the field alone; null clears it. The two date
+        // fields can contradict each other, so they are reconciled in one
+        // place rather than by the order of two spreads here.
+        ...examDatePatch({ examDate, examDateSkipped }),
         ...(hasPreviousAttempt !== undefined ? { hasPreviousAttempt } : {}),
         ...(preferredCategory !== undefined ? { preferredCategory } : {}),
       });

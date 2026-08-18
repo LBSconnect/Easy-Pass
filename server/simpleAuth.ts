@@ -7,6 +7,7 @@ import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { sanitizeHtml } from "./sanitize";
 import { rateLimit } from "./rateLimit";
+import { resolveSecureCookie } from "@shared/sessionCookie";
 
 export function getSession() {
   if (!process.env.SESSION_SECRET) {
@@ -17,7 +18,16 @@ export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   const pgStore = connectPg(session);
   const isProduction = process.env.NODE_ENV === "production";
-  console.log(`[Session] Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}, secure cookies: ${isProduction}`);
+  // Secure stays on in production unless someone deliberately turns it off.
+  // express-session declines to set a Secure cookie at all over plain HTTP,
+  // so a production build behind HTTP issues no session cookie and every
+  // authenticated flow silently fails to establish - which is precisely the
+  // shape of a CI end-to-end job.
+  const secureCookie = resolveSecureCookie({
+    nodeEnv: process.env.NODE_ENV,
+    override: process.env.SESSION_COOKIE_SECURE,
+  });
+  console.log(`[Session] Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}, secure cookies: ${secureCookie}`);
 
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
@@ -37,7 +47,7 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: isProduction,
+      secure: secureCookie,
       sameSite: "lax",
       maxAge: sessionTtl,
     },

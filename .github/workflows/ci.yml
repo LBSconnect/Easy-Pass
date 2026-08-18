@@ -46,6 +46,12 @@ jobs:
       - name: Type check
         run: npm run check
 
+      # Test files are excluded from the main tsconfig, so nothing checked
+      # them until this existed - a required field was added to a shared type
+      # and a test helper silently kept compiling without it.
+      - name: Type check tests
+        run: npm run check:tests
+
       - name: Run unit tests
         run: npm test
 

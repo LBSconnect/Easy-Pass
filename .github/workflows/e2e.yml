@@ -1,0 +1,158 @@
+name: End-to-end
+
+# The Playwright suite existed for months and never ran anywhere: no workflow
+# invoked it, so six spec files sat as documentation. This runs them.
+#
+# It runs against a throwaway Postgres and a locally built server, never
+# against a deployed environment. That matters because several specs POST to
+# /api/register — see tests/helpers/target.ts, which refuses to run them
+# against a non-local target.
+#
+# No repository secrets. Stripe and the model provider are absent by design:
+# the suite covers auth guards, public endpoints and page rendering, all of
+# which must work without them.
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: End-to-end tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: easypass_test
+        ports:
+          - 5432:5432
+        # Without this the job races the container and the schema push fails
+        # on a database that is not accepting connections yet.
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # sslmode=disable matters: the SSL decision follows the connection
+      # string, and without it a production build against this plain Postgres
+      # fails every migration step - quietly, because the runner logs each
+      # failure and carries on. The suite would still pass, against a schema
+      # drizzle-kit push had created, hiding any migration bug from the one
+      # job meant to catch it.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/easypass_test?sslmode=disable
+      # Test-only value. The app refuses to start without one, and nothing
+      # here is a real session.
+      SESSION_SECRET: e2e-ci-session-secret-not-a-real-one
+      PORT: "5000"
+      # express-session declines to set a Secure cookie over plain HTTP, so a
+      # production build here would issue no session cookie at all and every
+      # authenticated flow would silently fail to establish. Local HTTP only;
+      # nothing sets this in a deployed environment.
+      SESSION_COOKIE_SECURE: "false"
+      TEST_BASE_URL: http://localhost:5000
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.pw-browsers
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ${{ github.workspace }}/.pw-browsers
+          key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      # Base tables come from the Drizzle schema; the additive steps in
+      # server/migrations.ts run on server start.
+      - name: Push schema
+        run: npm run db:push
+
+      - name: Build
+        env:
+          NODE_ENV: production
+        run: npm run build
+
+      - name: Start server
+        # NODE_ENV belongs to the server process only. Setting it at the job
+        # level made `npm ci` skip devDependencies, so drizzle-kit was not
+        # installed and the schema push died with "drizzle-kit: not found".
+        env:
+          NODE_ENV: production
+        run: |
+          node dist/index.cjs > /tmp/server.log 2>&1 &
+          echo $! > /tmp/server.pid
+          # Poll rather than sleep a fixed amount: the first boot also runs
+          # migrations, and how long that takes is not ours to guess.
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:5000/api/study-guide/topics > /dev/null; then
+              echo "server up after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "server did not come up; log follows:"
+          cat /tmp/server.log
+          exit 1
+
+      # Migration failures are logged and survived by design, so the server
+      # comes up either way. Without this the job would go green on a broken
+      # migration.
+      - name: Check migrations applied
+        run: |
+          if grep -q "\[migrate\] .*FAILED" /tmp/server.log; then
+            echo "Migrations failed on boot:"
+            grep "\[migrate\]" /tmp/server.log
+            exit 1
+          fi
+          grep "\[migrate\]" /tmp/server.log || true
+
+      - name: Run end-to-end tests
+        # The config only uses the dev container's hard-coded Chromium when
+        # that file exists, so here Playwright resolves the one it installed.
+        run: npx playwright test
+
+      - name: Server log
+        if: failure()
+        run: cat /tmp/server.log || true
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Stop server
+        if: always()
+        run: kill "$(cat /tmp/server.pid)" 2>/dev/null || true

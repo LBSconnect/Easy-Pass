@@ -129,6 +129,7 @@ export interface IStorage {
   upsertStudyProgress(userId: string, category: ExamCategory, topicId: string, correct: boolean): Promise<StudyProgress>;
   getQuestionsByTopic(category: ExamCategory, topicId: string, limit?: number): Promise<Question[]>;
   getActiveQuestions(category: ExamCategory): Promise<Question[]>;
+  getActiveQuestionCounts(): Promise<Record<string, number>>;
 
   recordQuestionResponses(responses: InsertQuestionResponse[]): Promise<number>;
   getTopicMastery(userId: string, category?: ExamCategory): Promise<TopicMastery[]>;
@@ -668,6 +669,22 @@ export class DatabaseStorage implements IStorage {
 
   // Full active bank for a category, used as the candidate pool for adaptive
   // selection. Unordered: the selector decides the ordering, not the database.
+  // How many questions each category actually offers. Counted in the database
+  // rather than by loading every row: the exams page shows this on four cards
+  // at once and does not need a single question body to do it.
+  async getActiveQuestionCounts(): Promise<Record<string, number>> {
+    const rows = await db
+      .select({
+        category: questions.category,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(questions)
+      .where(eq(questions.isActive, true))
+      .groupBy(questions.category);
+
+    return Object.fromEntries(rows.map((r) => [r.category, Number(r.count)]));
+  }
+
   async getActiveQuestions(category: ExamCategory): Promise<Question[]> {
     return db
       .select()

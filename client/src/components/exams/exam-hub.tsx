@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ReadinessRing } from "@/components/readiness-ring";
+import { Sparkline } from "@/components/sparkline";
 import { AlexiMark } from "@/components/alexi-mark";
 import { AlexiMascot } from "@/components/alexi-mascot";
 import {
@@ -34,17 +35,51 @@ import type { ExamCategory, UserProfile, ExamResult } from "@shared/schema";
 
 type PracticeMode = "quick" | "full";
 
+/**
+ * Each exam carries its own accent, as the approved concept has it. The colour
+ * identifies the exam; it never carries readiness - the ring's digits and the
+ * button's words do that - so four differently coloured cards side by side
+ * read as four exams rather than a traffic light.
+ */
 const EXAMS: Array<{
   id: ExamCategory;
   icon: typeof Home;
   en: string;
   es: string;
   tint: string;
+  /** Ring stroke and number. */
+  accent: string;
+  /** Solid Full Mock Exam button. */
+  solid: string;
 }> = [
-  { id: "real_estate", icon: Home, en: "Texas Real Estate Salespersons", es: "Bienes Raíces de Texas", tint: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
-  { id: "property_casualty", icon: Shield, en: "Texas Property and Casualty Insurance", es: "Propiedad y Casualidad de Texas", tint: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
-  { id: "life_insurance", icon: Heart, en: "Texas Life Insurance", es: "Seguro de Vida de Texas", tint: "bg-rose-500/10 text-rose-600 dark:text-rose-400" },
-  { id: "general_lines", icon: FileText, en: "Texas General Lines Insurance", es: "Líneas Generales de Texas", tint: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
+  {
+    id: "real_estate", icon: Home,
+    en: "Texas Real Estate Salespersons", es: "Bienes Raíces de Texas",
+    tint: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+    accent: "text-blue-600 dark:text-blue-400",
+    solid: "bg-blue-600 text-white hover:bg-blue-700",
+  },
+  {
+    id: "property_casualty", icon: Shield,
+    en: "Texas Property and Casualty Insurance", es: "Propiedad y Casualidad de Texas",
+    tint: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+    accent: "text-orange-600 dark:text-orange-400",
+    solid: "bg-orange-600 text-white hover:bg-orange-700",
+  },
+  {
+    id: "life_insurance", icon: Heart,
+    en: "Texas Life Insurance", es: "Seguro de Vida de Texas",
+    tint: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+    accent: "text-rose-600 dark:text-rose-400",
+    solid: "bg-rose-600 text-white hover:bg-rose-700",
+  },
+  {
+    id: "general_lines", icon: FileText,
+    en: "Texas General Lines Insurance", es: "Líneas Generales de Texas",
+    tint: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    accent: "text-emerald-600 dark:text-emerald-400",
+    solid: "bg-emerald-600 text-white hover:bg-emerald-700",
+  },
 ];
 
 interface Readiness {
@@ -60,11 +95,14 @@ function ExamCard({
   exam,
   isCurrent,
   mode,
+  questionCount,
   es,
 }: {
   exam: (typeof EXAMS)[number];
   isCurrent: boolean;
   mode: PracticeMode;
+  /** Real count from the bank. Undefined until loaded; never guessed. */
+  questionCount: number | undefined;
   es: boolean;
 }) {
   const { data: readiness } = useQuery<Readiness>({
@@ -85,6 +123,11 @@ function ExamCard({
 
           <div className="min-w-0 flex-1">
             <h3 className="text-base font-semibold leading-snug">{es ? exam.es : exam.en}</h3>
+            {typeof questionCount === "number" && questionCount > 0 && (
+              <p className="mt-0.5 text-sm text-muted-foreground" data-testid={`text-count-${exam.id}`}>
+                {questionCount} {es ? "preguntas disponibles" : "available questions"}
+              </p>
+            )}
             {isCurrent && (
               <Badge variant="secondary" className="mt-1.5 text-xs">
                 {es ? "Activo" : "Active"}
@@ -95,6 +138,7 @@ function ExamCard({
           <ReadinessRing
             value={score}
             size={64}
+            tone={score !== null ? exam.accent : undefined}
             caption={score !== null ? (es ? "Listo" : "Ready") : undefined}
             label={es ? `Preparación: ${exam.es}` : `Readiness: ${exam.en}`}
           />
@@ -123,7 +167,7 @@ function ExamCard({
           <Button
             variant={mode === "full" ? "default" : "outline"}
             asChild
-            className={`min-h-11 ${mode === "full" ? "sm:order-first" : ""}`}
+            className={`min-h-11 ${mode === "full" ? `sm:order-first ${exam.solid}` : ""}`}
             data-testid={`button-mock-${exam.id}`}
           >
             <Link
@@ -156,6 +200,13 @@ export function ExamHub() {
   const { i18n } = useTranslation();
   const es = i18n.language === "es";
   const [mode, setMode] = useState<PracticeMode>("quick");
+
+  // How much material each exam actually holds. Real counts, never a rounded
+  // marketing number - the card says nothing until the figure arrives.
+  const { data: questionCounts } = useQuery<Record<string, number>>({
+    queryKey: ["/api/questions/counts"],
+    staleTime: 10 * 60 * 1000,
+  });
 
   const { data: profile } = useQuery<UserProfile>({ queryKey: ["/api/profile"] });
   const { data: results } = useQuery<ExamResult[]>({ queryKey: ["/api/results"] });
@@ -207,10 +258,19 @@ export function ExamHub() {
   const lastMock = mostRecent ?? null;
   const hasRecentData = Boolean(lastMock) || questionsThisWeek > 0;
 
+  // Score trend for the sparkline, oldest first. Real results only - the line
+  // renders nothing below two points rather than drawing a flat "steady".
+  const scoreTrend = (results ?? [])
+    .slice()
+    .sort((a, b) => new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime())
+    .slice(-8)
+    .map((r) => r.score);
+
   const steps = [
     {
       n: 1,
       icon: Zap,
+      tone: "border-blue-500/25 bg-blue-500/[0.07] text-blue-600 dark:text-blue-400",
       title: es ? "Empieza con práctica rápida" : "Start with Quick Practice",
       sub: es
         ? "Gana impulso con sesiones cortas y enfocadas."
@@ -219,6 +279,7 @@ export function ExamHub() {
     {
       n: 2,
       icon: TrendingUp,
+      tone: "border-violet-500/25 bg-violet-500/[0.07] text-violet-600 dark:text-violet-400",
       title: es ? "Repasa tus temas débiles" : "Review Weak Topics",
       sub: es
         ? "Usa tus resultados para reforzar tus áreas más bajas."
@@ -227,6 +288,7 @@ export function ExamHub() {
     {
       n: 3,
       icon: ClipboardCheck,
+      tone: "border-emerald-500/25 bg-emerald-500/[0.07] text-emerald-600 dark:text-emerald-400",
       title: es ? "Haz un examen simulado" : "Take a Full Mock Exam",
       sub: es
         ? "Simula el examen real y mide tu preparación."
@@ -378,6 +440,7 @@ export function ExamHub() {
                 exam={exam}
                 isCurrent={exam.id === current}
                 mode={mode}
+                questionCount={questionCounts?.[exam.id]}
                 es={es}
               />
             ))}
@@ -390,16 +453,19 @@ export function ExamHub() {
                 <h2 className="text-base font-semibold">
                   {es ? "Antes de empezar" : "Before You Start"}
                 </h2>
-                <ol className="mt-3 space-y-3">
+                <ol className="mt-4 grid gap-3 sm:grid-cols-3">
                   {steps.map((s) => (
-                    <li key={s.n} className="flex items-start gap-3">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                        {s.n}
+                    <li key={s.n} className={`min-w-0 rounded-xl border p-3.5 ${s.tone}`}>
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-background text-xs font-bold">
+                          {s.n}
+                        </span>
+                        <s.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      </div>
+                      <span className="mt-2.5 block text-sm font-semibold text-foreground">
+                        {s.title}
                       </span>
-                      <span className="min-w-0">
-                        <span className="block text-sm font-medium">{s.title}</span>
-                        <span className="block text-xs text-muted-foreground">{s.sub}</span>
-                      </span>
+                      <span className="mt-1 block text-xs text-muted-foreground">{s.sub}</span>
                     </li>
                   ))}
                 </ol>
@@ -436,9 +502,19 @@ export function ExamHub() {
                         <p className="text-xs text-muted-foreground">
                           {es ? "Último resultado" : "Last Score"}
                         </p>
-                        <p className="mt-1 text-xl font-bold" data-testid="stat-last-score">
-                          {lastMock.score}%
-                        </p>
+                        <div className="mt-1 flex items-end justify-between gap-2">
+                          <p className="text-xl font-bold" data-testid="stat-last-score">
+                            {lastMock.score}%
+                          </p>
+                          <Sparkline
+                            values={scoreTrend}
+                            label={
+                              es
+                                ? `Tendencia de tus últimos ${scoreTrend.length} resultados`
+                                : `Trend across your last ${scoreTrend.length} results`
+                            }
+                          />
+                        </div>
                         <p className="text-xs text-muted-foreground">
                           {new Date(lastMock.completedAt).toLocaleDateString(es ? "es-US" : "en-US", {
                             month: "short",

@@ -3,46 +3,16 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Star,
-  Home,
-  Shield,
-  Heart,
-  FileText,
-  ArrowRight,
-  ExternalLink,
-  BookOpen,
-  Target,
-  Award,
-  UserCheck,
-  ClipboardCheck,
-  PlayCircle,
-  CheckCircle2,
-  GraduationCap,
-  Users,
-} from "lucide-react";
+import { Star, ArrowRight, ExternalLink, BookOpen, Target, Award, UserCheck, ClipboardCheck, PlayCircle, CheckCircle2, GraduationCap, Users } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AlexiMascot } from "@/components/alexi-mascot";
+import { EXAM_VISUALS, examSurface } from "@/lib/examVisuals";
 import { STUDY_ASSISTANT } from "@/lib/studyAssistant";
 import { Footer } from "@/components/footer";
 import { trackEvent } from "@/lib/analytics";
 
 // Confirmed by owner: LBS4 bootcamp services listing.
 const BOOTCAMP_HREF = "https://www.lbs4.com/services?filter=bootcamp";
-
-const categoryIcons = {
-  real_estate: Home,
-  property_casualty: Shield,
-  life_insurance: Heart,
-  general_lines: FileText,
-};
-
-const categoryColors = {
-  real_estate: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
-  property_casualty: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-  life_insurance: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
-  general_lines: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-};
 
 export default function LandingPage() {
   const { t, i18n } = useTranslation();
@@ -236,11 +206,11 @@ export default function LandingPage() {
                 <div className="rounded-2xl border bg-card p-6 shadow-lg">
                   <div className="grid grid-cols-2 gap-4">
                     {categories.map((category) => {
-                      const Icon = categoryIcons[category.id];
+                      const Icon = EXAM_VISUALS[category.id].icon;
                       return (
                         <div
                           key={category.id}
-                          className={`rounded-xl border p-4 ${categoryColors[category.id]}`}
+                          className={`rounded-xl border p-4 ${examSurface(category.id)}`}
                         >
                           <Icon className="h-7 w-7 mb-3" />
                           <div className="text-sm font-semibold text-foreground">
@@ -280,17 +250,17 @@ export default function LandingPage() {
 
             <div className="grid gap-4 sm:grid-cols-2 max-w-4xl mx-auto">
               {categories.map((category) => {
-                const Icon = categoryIcons[category.id];
+                const Icon = EXAM_VISUALS[category.id].icon;
                 return (
                   <Link
                     key={category.id}
                     href="/signup"
-                    className={`group block rounded-xl border-2 hover-elevate transition-all p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${categoryColors[category.id]}`}
+                    className={`group block rounded-xl border-2 hover-elevate transition-all p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${examSurface(category.id)}`}
                     data-testid={`card-category-${category.id}`}
                     data-analytics={`category-cta-${category.id}`}
                   >
                     <div className="flex items-center gap-3 sm:gap-4">
-                      <div className={`shrink-0 p-3 sm:p-4 rounded-xl ${categoryColors[category.id]}`}>
+                      <div className={`shrink-0 p-3 sm:p-4 rounded-xl ${examSurface(category.id)}`}>
                         <Icon className="h-7 w-7 sm:h-8 sm:w-8" />
                       </div>
                       <div className="flex-1 min-w-0">

@@ -7,51 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { examVisual } from "@/lib/examVisuals";
 import { PageShell, PageHeader } from "@/components/page-shell";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import {
-  BookOpen,
-  CheckCircle2,
-  XCircle,
-  ArrowRight,
-  ArrowLeft,
-  Home,
-  Shield,
-  Heart,
-  FileText,
-  GraduationCap,
-  Target,
-  Clock,
-  Sparkles,
-  ChevronRight,
-  RotateCcw,
-  Trophy,
-  Lock,
-} from "lucide-react";
+import { BookOpen, CheckCircle2, XCircle, ArrowRight, ArrowLeft, GraduationCap, Target, Clock, Sparkles, ChevronRight, RotateCcw, Trophy, Lock } from "lucide-react";
 import type { StudyProgress, UserProfile, ExamCategory } from "@shared/schema";
 import type { CategoryTopics, StudyTopic } from "@shared/studyTopics";
-
-const categoryIcons = {
-  real_estate: Home,
-  property_casualty: Shield,
-  life_insurance: Heart,
-  general_lines: FileText,
-};
-
-const categoryColors = {
-  real_estate: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
-  property_casualty: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-  life_insurance: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
-  general_lines: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-};
-
-const categoryBgColors = {
-  real_estate: "from-blue-500/20 to-blue-600/5",
-  property_casualty: "from-amber-500/20 to-amber-600/5",
-  life_insurance: "from-rose-500/20 to-rose-600/5",
-  general_lines: "from-emerald-500/20 to-emerald-600/5",
-};
 
 interface QuizQuestion {
   id: string;
@@ -91,8 +53,9 @@ function TopicCard({
   onStartQuiz: () => void;
 }) {
   const { t } = useTranslation();
-  const Icon = categoryIcons[category.category] || BookOpen;
-  const colorClass = categoryColors[category.category] || "bg-muted";
+  const visual = examVisual(category.category);
+  const Icon = visual.icon;
+  const colorClass = visual.tint;
 
   const accuracy = progress && progress.questionsAnswered > 0
     ? Math.round((progress.correctAnswers / progress.questionsAnswered) * 100)
@@ -191,9 +154,10 @@ function CategorySection({
 }) {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
-  const Icon = categoryIcons[categoryData.category] || BookOpen;
-  const colorClass = categoryColors[categoryData.category] || "bg-muted";
-  const bgGradient = categoryBgColors[categoryData.category] || "from-muted/20 to-muted/5";
+  const visual = examVisual(categoryData.category);
+  const Icon = visual.icon;
+  const colorClass = visual.tint;
+  const bgGradient = visual.softGradient;
 
   const categoryProgress = progress.filter(p => p.category === categoryData.category);
   const totalQuestions = categoryData.topics.reduce((sum, t) => sum + t.questionCount, 0);
@@ -439,8 +403,9 @@ function QuizView({
   const isLastQuestion = currentIndex === quizData.questions.length - 1;
   const quizComplete = answeredCount === quizData.questions.length && isLastQuestion && answerResult;
 
-  const Icon = categoryIcons[quizData.category.category as keyof typeof categoryIcons] || BookOpen;
-  const colorClass = categoryColors[quizData.category.category as keyof typeof categoryColors] || "bg-muted";
+  const quizVisual = examVisual(quizData.category.category);
+  const Icon = quizVisual.icon;
+  const colorClass = quizVisual.tint;
 
   if (quizComplete) {
     const accuracy = Math.round((correctCount / answeredCount) * 100);

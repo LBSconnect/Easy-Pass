@@ -25,10 +25,8 @@ import { ReadinessRing } from "@/components/readiness-ring";
 import { Sparkline } from "@/components/sparkline";
 import { AlexiMark } from "@/components/alexi-mark";
 import { AlexiMascot } from "@/components/alexi-mascot";
-import {
-  Home, Shield, Heart, FileText, Zap, ClipboardCheck, ArrowRight, CalendarDays,
-  BookOpen, ChevronRight, TrendingUp, TriangleAlert,
-} from "lucide-react";
+import { EXAM_VISUALS } from "@/lib/examVisuals";
+import { Zap, ClipboardCheck, ArrowRight, CalendarDays, BookOpen, ChevronRight, TrendingUp, TriangleAlert } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 import { useStudyAssistantConfig, useRecommendation, STUDY_ASSISTANT } from "@/lib/studyAssistant";
 import type { ExamCategory, UserProfile, ExamResult } from "@shared/schema";
@@ -43,42 +41,24 @@ type PracticeMode = "quick" | "full";
  */
 const EXAMS: Array<{
   id: ExamCategory;
-  icon: typeof Home;
   en: string;
   es: string;
-  tint: string;
-  /** Ring stroke and number. */
-  accent: string;
-  /** Solid Full Mock Exam button. */
-  solid: string;
 }> = [
   {
-    id: "real_estate", icon: Home,
+    id: "real_estate",
     en: "Texas Real Estate Salespersons", es: "Bienes Raíces de Texas",
-    tint: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-    accent: "text-blue-600 dark:text-blue-400",
-    solid: "bg-blue-600 text-white hover:bg-blue-700",
   },
   {
-    id: "property_casualty", icon: Shield,
+    id: "property_casualty",
     en: "Texas Property and Casualty Insurance", es: "Propiedad y Casualidad de Texas",
-    tint: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-    accent: "text-orange-600 dark:text-orange-400",
-    solid: "bg-orange-600 text-white hover:bg-orange-700",
   },
   {
-    id: "life_insurance", icon: Heart,
+    id: "life_insurance",
     en: "Texas Life Insurance", es: "Seguro de Vida de Texas",
-    tint: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
-    accent: "text-rose-600 dark:text-rose-400",
-    solid: "bg-rose-600 text-white hover:bg-rose-700",
   },
   {
-    id: "general_lines", icon: FileText,
+    id: "general_lines",
     en: "Texas General Lines Insurance", es: "Líneas Generales de Texas",
-    tint: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-    accent: "text-emerald-600 dark:text-emerald-400",
-    solid: "bg-emerald-600 text-white hover:bg-emerald-700",
   },
 ];
 
@@ -113,12 +93,14 @@ function ExamCard({
   // and rendering it as a percentage would overstate what we know.
   const score = readiness && !readiness.provisional ? readiness.score : null;
 
+  const visual = EXAM_VISUALS[exam.id];
+
   return (
     <Card data-testid={`card-exam-${exam.id}`}>
       <CardContent className="p-5">
         <div className="flex items-start gap-4">
-          <span className={`rounded-lg p-3 ${exam.tint}`}>
-            <exam.icon className="h-6 w-6" aria-hidden="true" />
+          <span className={`rounded-lg p-3 ${visual.tint}`}>
+            <visual.icon className="h-6 w-6" aria-hidden="true" />
           </span>
 
           <div className="min-w-0 flex-1">
@@ -138,7 +120,7 @@ function ExamCard({
           <ReadinessRing
             value={score}
             size={64}
-            tone={score !== null ? exam.accent : undefined}
+            tone={score !== null ? visual.accent : undefined}
             caption={score !== null ? (es ? "Listo" : "Ready") : undefined}
             label={es ? `Preparación: ${exam.es}` : `Readiness: ${exam.en}`}
           />
@@ -167,7 +149,7 @@ function ExamCard({
           <Button
             variant={mode === "full" ? "default" : "outline"}
             asChild
-            className={`min-h-11 ${mode === "full" ? `sm:order-first ${exam.solid}` : ""}`}
+            className={`min-h-11 ${mode === "full" ? `sm:order-first ${visual.solid}` : ""}`}
             data-testid={`button-mock-${exam.id}`}
           >
             <Link

@@ -8,21 +8,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import {
-  Award,
-  Share2,
-  Copy,
-  CheckCircle,
-  Home,
-  Shield,
-  Heart,
-  FileText,
-  ExternalLink,
-} from "lucide-react";
+import { Award, Share2, Copy, CheckCircle, Home, FileText, ExternalLink } from "lucide-react";
 import { SiLinkedin, SiX, SiFacebook } from "react-icons/si";
 import { format } from "date-fns";
 import { parseDate } from "@shared/safeDate";
 import { Link } from "wouter";
+import { examVisual } from "@/lib/examVisuals";
 import { useSEO, buildUrl } from "@/hooks/use-seo";
 
 interface CertificateData {
@@ -33,20 +24,6 @@ interface CertificateData {
   completedAt: string;
   slug: string;
 }
-
-const categoryIcons = {
-  real_estate: Home,
-  property_casualty: Shield,
-  life_insurance: Heart,
-  general_lines: FileText,
-};
-
-const categoryColors = {
-  real_estate: "from-blue-600 to-blue-800",
-  property_casualty: "from-amber-600 to-amber-800",
-  life_insurance: "from-rose-600 to-rose-800",
-  general_lines: "from-emerald-600 to-emerald-800",
-};
 
 export default function CertificatePage() {
   const { t, i18n } = useTranslation();
@@ -190,9 +167,10 @@ export default function CertificatePage() {
     );
   }
 
-  const CategoryIcon = categoryIcons[certificate.category as keyof typeof categoryIcons] || FileText;
+  const certVisual = examVisual(certificate.category);
+  const CategoryIcon = certVisual.icon;
   const categoryName = t(`categories.${certificate.category}`, certificate.category);
-  const categoryGradient = categoryColors[certificate.category as keyof typeof categoryColors] || "from-slate-600 to-slate-800";
+  const categoryGradient = certVisual.gradient;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex flex-col">

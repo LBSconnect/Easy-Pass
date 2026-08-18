@@ -56,7 +56,7 @@ import {
 } from "@shared/schema";
 import { users, type User } from "@shared/models/auth";
 import { db, pool } from "./db";
-import { eq, and, desc, sql, gte, inArray } from "drizzle-orm";
+import { eq, and, desc, sql, gte, inArray, isNotNull } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -181,6 +181,8 @@ export interface IStorage {
 
   createDiagnosticAttempt(attempt: InsertDiagnosticAttempt): Promise<DiagnosticAttempt>;
   getDiagnosticAttempt(id: string): Promise<DiagnosticAttempt | undefined>;
+  /** Most recent COMPLETED attempt for a user, newest first. */
+  getLatestDiagnosticAttempt(userId: string): Promise<DiagnosticAttempt | undefined>;
   completeDiagnosticAttempt(id: string, data: { score: number; correctAnswers: number }): Promise<DiagnosticAttempt | undefined>;
 }
 
@@ -1161,6 +1163,23 @@ export class DatabaseStorage implements IStorage {
 
   async getDiagnosticAttempt(id: string): Promise<DiagnosticAttempt | undefined> {
     const [attempt] = await db.select().from(diagnosticAttempts).where(eq(diagnosticAttempts.id, id));
+    return attempt;
+  }
+
+  /**
+   * The student's most recent finished readiness check.
+   *
+   * Only completed attempts count. An abandoned attempt - started, never
+   * submitted - has no score, and treating one as "done" would tick the
+   * onboarding step off without the student ever seeing a result.
+   */
+  async getLatestDiagnosticAttempt(userId: string): Promise<DiagnosticAttempt | undefined> {
+    const [attempt] = await db
+      .select()
+      .from(diagnosticAttempts)
+      .where(and(eq(diagnosticAttempts.userId, userId), isNotNull(diagnosticAttempts.completedAt)))
+      .orderBy(desc(diagnosticAttempts.completedAt))
+      .limit(1);
     return attempt;
   }
 

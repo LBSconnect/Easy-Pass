@@ -33,9 +33,17 @@ interface Props {
   category: ExamCategory;
   /** False when the student has no meaningful history - shows the empty state. */
   hasHistory: boolean;
+  /**
+   * Has the readiness check already been done?
+   *
+   * The empty state used to send everyone to the readiness check regardless.
+   * For a student who had already taken it that was a loop back to a step they
+   * had finished; they need practice questions, not another diagnostic.
+   */
+  hasDiagnostic?: boolean;
 }
 
-export function AlexiCard({ category, hasHistory }: Props) {
+export function AlexiCard({ category, hasHistory, hasDiagnostic = false }: Props) {
   const { i18n } = useTranslation();
   const es = i18n.language === "es";
   const [showWhy, setShowWhy] = useState(false);
@@ -58,18 +66,30 @@ export function AlexiCard({ category, hasHistory }: Props) {
             <span className="text-base font-bold">{named}</span>
           </div>
           <p className="mt-3 text-sm text-muted-foreground">
-            {es
-              ? `Haz tu diagnóstico de preparación para que ${named} pueda identificar qué debes estudiar primero.`
-              : `Take your readiness diagnostic so ${named} can identify what you should study first.`}
+            {hasDiagnostic
+              ? es
+                ? `Ya tenemos tu prueba de preparación. Responde algunas preguntas de práctica y ${named} te dirá exactamente qué estudiar.`
+                : `We have your readiness check. Answer a few practice questions and ${named} will tell you exactly what to study.`
+              : es
+                ? `Haz tu diagnóstico de preparación para que ${named} pueda identificar qué debes estudiar primero.`
+                : `Take your readiness diagnostic so ${named} can identify what you should study first.`}
           </p>
-          <Button asChild className="mt-auto w-full sm:w-auto" data-testid="button-alexi-diagnostic">
-            <Link
-              href="/readiness-check"
-              onClick={() => trackEvent("diagnostic_cta_click", { exam_type: category })}
-            >
-              {es ? "Comenzar diagnóstico" : "Start Readiness Test"}
-            </Link>
-          </Button>
+          {hasDiagnostic ? (
+            <Button asChild className="mt-auto w-full sm:w-auto" data-testid="button-alexi-practice">
+              <Link href={`/exams/${category}`}>
+                {es ? "Empezar a practicar" : "Start practising"}
+              </Link>
+            </Button>
+          ) : (
+            <Button asChild className="mt-auto w-full sm:w-auto" data-testid="button-alexi-diagnostic">
+              <Link
+                href="/readiness-check"
+                onClick={() => trackEvent("diagnostic_cta_click", { exam_type: category })}
+              >
+                {es ? "Comenzar diagnóstico" : "Start Readiness Test"}
+              </Link>
+            </Button>
+          )}
         </CardContent>
       </Card>
     );

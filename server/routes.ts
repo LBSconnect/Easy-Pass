@@ -306,6 +306,45 @@ export async function registerRoutes(
     }
   });
 
+  /**
+   * The student's most recent completed readiness check.
+   *
+   * WHY THIS EXISTS
+   *
+   * The result was already being written to diagnostic_attempts, and nothing
+   * ever read it back. So a student would finish their readiness check, be
+   * shown the subscribe prompt, decide not to subscribe yet, return to the
+   * dashboard - and be asked to take the readiness check again, because the
+   * dashboard's only evidence of activity was questions answered inside a
+   * paid exam session, which is zero until they subscribe. They could repeat
+   * that loop forever.
+   *
+   * Returns null rather than 404 when there is nothing: "this student has not
+   * done one" is a normal answer, not an error, and a 404 makes every client
+   * treat an ordinary state as a failure.
+   */
+  app.get("/api/diagnostic/latest", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const attempt = await storage.getLatestDiagnosticAttempt(userId);
+      if (!attempt) return res.json(null);
+
+      // Deliberately not the questions, the answer order, or which items were
+      // missed - this answers "have you done one, and how did it go".
+      res.json({
+        id: attempt.id,
+        category: attempt.category,
+        score: attempt.score,
+        correctAnswers: attempt.correctAnswers,
+        totalQuestions: attempt.totalQuestions,
+        completedAt: attempt.completedAt,
+      });
+    } catch (error) {
+      console.error("Error fetching latest diagnostic attempt:", error);
+      res.status(500).json({ message: "Failed to fetch readiness check" });
+    }
+  });
+
   // Public guest preview of the real quick-practice exam: lets an
   // unauthenticated visitor try a handful of real questions from the bank
   // before hitting a sign-up wall. Deliberately does NOT create an

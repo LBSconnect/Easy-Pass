@@ -48,6 +48,16 @@ export interface DashboardInput {
   hasPreviousAttempt: boolean | null;
   hasActiveSubscription: boolean;
   examsTaken: number;
+  /**
+   * Has the student finished a readiness check?
+   *
+   * Separate from `totalAttempts` because the readiness check is free and
+   * ungated while `totalAttempts` only counts questions answered inside a paid
+   * exam session. Before this existed the two were conflated, so a student who
+   * had genuinely completed their readiness check still looked brand new, and
+   * the dashboard asked them to take it again every single visit.
+   */
+  hasCompletedDiagnostic: boolean;
 }
 
 /** Days out at which the dashboard switches to consolidation framing. */
@@ -65,9 +75,19 @@ export const HIGH_READINESS_SCORE = 85;
  * the same for both, and the countdown is the more urgent fact.
  */
 export function deriveDashboardState(input: DashboardInput): DashboardState {
-  // Nothing to personalise from. Showing zeroed analytics here is the specific
-  // failure the redesign exists to fix.
-  if (!input.hasSelectedExam || input.totalAttempts === 0) return "new";
+  // No exam chosen: there is nothing to personalise to.
+  if (!input.hasSelectedExam) return "new";
+
+  // Nothing done at all. Showing zeroed analytics here is the specific failure
+  // the redesign exists to fix.
+  if (input.totalAttempts === 0 && !input.hasCompletedDiagnostic) return "new";
+
+  // Readiness check done, but no subscription and no practice yet. They still
+  // have exactly one thing to do, so they stay on the onboarding checklist -
+  // which now shows the readiness step ticked off with their score, and adds
+  // the subscribe step. What must NOT happen is sending them round the
+  // readiness check again, which is what this branch used to do.
+  if (input.totalAttempts === 0 && !input.hasActiveSubscription) return "new";
 
   if (input.daysUntilExam !== null && input.daysUntilExam <= EXAM_APPROACHING_DAYS) {
     return "exam_approaching";
@@ -96,8 +116,8 @@ export function deriveDashboardState(input: DashboardInput): DashboardState {
  */
 export function sectionsFor(state: DashboardState, input: DashboardInput): DashboardSection[] {
   if (state === "new") {
-    // Deliberately sparse. A new student gets one job: pick an exam and find
-    // out where they stand.
+    // Deliberately sparse. A new student gets one job at a time: pick an exam,
+    // find out where they stand, then subscribe to act on it.
     return ["onboarding", "resources"];
   }
 

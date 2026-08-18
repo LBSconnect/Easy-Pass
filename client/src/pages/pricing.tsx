@@ -33,22 +33,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageShell, PageHeader, SectionHeading } from "@/components/page-shell";
-import { IconTile, type TileTone } from "@/components/icon-tile";
+import { EXAM_VISUALS } from "@/lib/examVisuals";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { trackEvent } from "@/lib/analytics";
 import { useSEO, buildUrl } from "@/hooks/use-seo";
-import {
-  Check,
-  Sparkles,
-  TriangleAlert,
-  Home,
-  Shield,
-  HeartPulse,
-  BookOpen,
-  type LucideIcon,
-} from "lucide-react";
+import type { ExamCategory } from "@shared/schema";
+import { Check, Sparkles, TriangleAlert } from "lucide-react";
 
 interface StripePrice {
   id: string;
@@ -63,38 +55,26 @@ interface StripePrice {
 
 type BillingPeriod = "weekly" | "monthly";
 
-const EXAM_CATEGORIES: {
-  id: string;
-  label: string;
-  labelEs: string;
-  icon: LucideIcon;
-  tone: TileTone;
-}[] = [
-  { id: "real_estate", label: "Real Estate", labelEs: "Bienes Raíces", icon: Home, tone: "blue" },
+// Icons and colours come from EXAM_VISUALS so this page teaches the same code
+// as the rest of the app. It previously invented its own - a violet General
+// Lines and an emerald Property & Casualty - which contradicted every other
+// screen a student had already seen.
+const EXAM_CATEGORIES: { id: ExamCategory; label: string; labelEs: string }[] = [
+  { id: "real_estate", label: "Real Estate", labelEs: "Bienes Raíces" },
   {
     id: "property_casualty",
     label: "Property & Casualty Insurance",
     labelEs: "Seguro de Propiedad y Accidentes",
-    icon: Shield,
-    tone: "emerald",
   },
-  {
-    id: "life_insurance",
-    label: "Life Insurance",
-    labelEs: "Seguro de Vida",
-    icon: HeartPulse,
-    tone: "rose",
-  },
+  { id: "life_insurance", label: "Life Insurance", labelEs: "Seguro de Vida" },
   {
     id: "general_lines",
     label: "General Lines Insurance",
     labelEs: "Seguro de Líneas Generales",
-    icon: BookOpen,
-    tone: "violet",
   },
 ];
 
-const VALID_CATEGORY_IDS = EXAM_CATEGORIES.map((c) => c.id);
+const VALID_CATEGORY_IDS: ExamCategory[] = EXAM_CATEGORIES.map((c) => c.id);
 
 /** What every subscription includes, whichever exam it is for. */
 function includedItems(isSpanish: boolean) {
@@ -132,9 +112,11 @@ export default function PricingPage() {
     ],
   });
 
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(() => {
+  const [selectedCategory, setSelectedCategory] = useState<ExamCategory | null>(() => {
     const preselect = new URLSearchParams(search).get("category");
-    return preselect && VALID_CATEGORY_IDS.includes(preselect) ? preselect : null;
+    return preselect && VALID_CATEGORY_IDS.includes(preselect as ExamCategory)
+      ? (preselect as ExamCategory)
+      : null;
   });
 
   const {
@@ -324,6 +306,8 @@ export default function PricingPage() {
         >
           {EXAM_CATEGORIES.map((category) => {
             const price = priceFor(category.id, billingPeriod);
+            const visual = EXAM_VISUALS[category.id];
+            const Icon = visual.icon;
             const isSelected = selectedCategory === category.id;
             const unavailable = !price;
 
@@ -345,7 +329,9 @@ export default function PricingPage() {
                 data-testid={`button-category-${category.id}`}
               >
                 <div className="flex items-start gap-3">
-                  <IconTile icon={category.icon} tone={category.tone} size="md" />
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${visual.tint}`}>
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                  </span>
                   <div className="min-w-0 flex-1">
                     <span className="block font-semibold">
                       {isSpanish ? category.labelEs : category.label}
@@ -369,7 +355,7 @@ export default function PricingPage() {
                     )}
                   </div>
                   {isSelected && (
-                    <Check className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                    <Check className={`h-5 w-5 shrink-0 ${visual.accent}`} aria-hidden="true" />
                   )}
                 </div>
               </button>

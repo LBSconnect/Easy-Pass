@@ -21,6 +21,15 @@ interface Props {
   className?: string;
   /** Accessible name. Required - the ring is meaningless to a screen reader without it. */
   label: string;
+  /**
+   * Override the band colour with a fixed tone class.
+   *
+   * Used on the exams page, where each exam carries its own accent and four
+   * band-coloured rings side by side would read as a traffic light rather than
+   * four exams. The digits and caption still carry the value, so nothing is
+   * lost by dropping the band hue there.
+   */
+  tone?: string;
 }
 
 /** Band colours. Text and caption always carry the same meaning. */
@@ -39,6 +48,7 @@ export function ReadinessRing({
   caption,
   className,
   label,
+  tone,
 }: Props) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -70,12 +80,18 @@ export function ReadinessRing({
             strokeWidth={strokeWidth}
             strokeLinecap="round"
             strokeDasharray={`${dash} ${circumference - dash}`}
-            className={cn("stroke-current transition-[stroke-dasharray] duration-500", toneFor(value))}
+            className={cn(
+              "stroke-current transition-[stroke-dasharray] duration-500",
+              tone ?? toneFor(value),
+            )}
           />
         )}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center" aria-hidden="true">
-        <span className={cn("font-bold leading-none", toneFor(value))} style={{ fontSize: size * 0.28 }}>
+        <span
+          className={cn("font-bold leading-none", tone ?? toneFor(value))}
+          style={{ fontSize: size * 0.28 }}
+        >
           {value === null ? "—" : clamped}
         </span>
         {caption && (

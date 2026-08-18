@@ -829,6 +829,18 @@ export async function registerRoutes(
     }
   });
 
+  // How many questions each category holds. Public: it is a fact about the
+  // product, the same one the marketing pages state, and nothing about it is
+  // specific to a student.
+  app.get("/api/questions/counts", async (_req, res) => {
+    try {
+      res.json(await storage.getActiveQuestionCounts());
+    } catch (error) {
+      console.error("Error counting questions:", error);
+      res.status(500).json({ message: "Failed to count questions" });
+    }
+  });
+
   // ---------------------------------------------------------------------
   // Alexi sessions.
   //

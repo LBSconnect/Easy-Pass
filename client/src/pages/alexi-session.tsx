@@ -65,7 +65,7 @@ interface ReviewItem extends PracticeQuestion {
 }
 
 type Block =
-  | { mode: "teach"; label: string; estimatedMinutes: number; examples: TeachExample[] }
+  | { mode: "teach"; label: string; estimatedMinutes: number; keyPoints: string[]; examples: TeachExample[] }
   | { mode: "flashcards"; label: string; estimatedMinutes: number; cards: Flashcard[] }
   | { mode: "practice" | "scenarios"; label: string; estimatedMinutes: number; questions: PracticeQuestion[] }
   | { mode: "review"; label: string; estimatedMinutes: number; items: ReviewItem[] }
@@ -352,10 +352,38 @@ function TeachStep({
     <StepCard
       icon={GraduationCap}
       title={block.label}
-      hint={es ? "Ejemplos resueltos, con la explicación oficial" : "Worked examples, with the official explanation"}
+      hint={es ? "Puntos clave y ejemplos resueltos" : "Key points, then worked examples"}
       testId="step-teach"
     >
-      <ol className="mt-4 space-y-5">
+      {/* Every line here comes from approved material for this concept -
+          either editorial copy in the study-topic config or the explanations
+          already attached to its questions. Nothing on this page is written
+          at render time. */}
+      {block.keyPoints.length > 0 && (
+        <div className="mt-4 rounded-lg border border-primary/25 bg-primary/[0.05] p-4" data-testid="list-key-points">
+          <p className="text-sm font-semibold text-primary">
+            {es ? "Lo esencial" : "The essentials"}
+          </p>
+          <ul className="mt-2.5 space-y-2">
+            {block.keyPoints.map((point, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm">
+                <CircleCheck
+                  className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                  aria-hidden="true"
+                />
+                <span className="min-w-0">{point}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {block.examples.length > 0 && (
+        <p className="mt-5 text-sm font-medium">
+          {es ? "Ejemplos resueltos" : "Worked examples"}
+        </p>
+      )}
+      <ol className="mt-3 space-y-5">
         {block.examples.map((e, i) => (
           <li key={e.questionId} className="rounded-lg border p-4">
             <Badge variant="secondary" className="text-xs">{e.topic}</Badge>

@@ -50,12 +50,16 @@ export interface PlanInput {
   answeredQuestionIds: Set<string>;
   /** The concept the recommendation named, matched against question topics. */
   conceptTopic: string | null;
+  /** Resolved by the caller: authored if the config has them, else distilled. */
+  keyPoints?: string[];
 }
 
 export interface TeachBlock {
   mode: "teach";
   label: string;
   estimatedMinutes: number;
+  /** Short grounded statements shown before the worked examples. */
+  keyPoints: string[];
   /** Worked examples: question, correct answer and the approved explanation. */
   examples: Array<{
     questionId: string;
@@ -199,11 +203,15 @@ export function resolveBlock(
           correctIndex: q.correctAnswer,
           explanation: (q.explanation ?? "").trim(),
         }));
-      if (examples.length === 0) return null;
+      const keyPoints = input.keyPoints ?? [];
+      // Worked examples remain the floor. Key points enrich the step; with
+      // neither there is nothing to teach and the block is dropped.
+      if (examples.length === 0 && keyPoints.length === 0) return null;
       return {
         mode: "teach",
         label: block.label,
         estimatedMinutes: block.estimatedMinutes,
+        keyPoints,
         examples,
       };
     }

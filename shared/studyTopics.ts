@@ -7,6 +7,20 @@ export interface StudyTopic {
   descriptionEn: string;
   descriptionEs: string;
   questionCount: number;
+  /**
+   * Editorial key points for Alexi's teach step, 3-5 per topic.
+   *
+   * Optional and empty for now on purpose. These are factual statements about
+   * Texas licensing law, so they belong to a subject-matter expert, not to
+   * whoever is nearest the keyboard. Until a topic has them, the teach step
+   * distils its points from the approved explanations already attached to
+   * questions on that topic - see server/alexi/keyPoints.ts - which is true by
+   * construction rather than by recall.
+   *
+   * Fill these in and they take precedence outright.
+   */
+  keyPointsEn?: string[];
+  keyPointsEs?: string[];
 }
 
 export interface CategoryTopics {

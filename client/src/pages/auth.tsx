@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { useTranslation } from "react-i18next";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useSEO, buildUrl } from "@/hooks/use-seo";
+import { safeNextPath } from "@shared/redirects";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -35,7 +36,14 @@ const signupSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 type SignupFormData = z.infer<typeof signupSchema>;
 
-function LoginForm({ onSwitchToSignup }: { onSwitchToSignup: () => void }) {
+function LoginForm({
+  onSwitchToSignup,
+  next,
+}: {
+  onSwitchToSignup: () => void;
+  /** Where to land after signing in. Already validated by the caller. */
+  next: string;
+}) {
   const [showPassword, setShowPassword] = useState(false);
   const [, navigate] = useLocation();
   const { t } = useTranslation();
@@ -55,7 +63,7 @@ function LoginForm({ onSwitchToSignup }: { onSwitchToSignup: () => void }) {
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/auth/user"], data);
       toast({ title: t("auth.loginSuccess", "Login successful!") });
-      navigate("/dashboard");
+      navigate(next);
     },
     onError: (error: Error) => {
       toast({ 
@@ -172,7 +180,14 @@ function LoginForm({ onSwitchToSignup }: { onSwitchToSignup: () => void }) {
   );
 }
 
-function SignupForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
+function SignupForm({
+  onSwitchToLogin,
+  next,
+}: {
+  onSwitchToLogin: () => void;
+  /** Where to land after creating an account. Already validated by the caller. */
+  next: string;
+}) {
   const [showPassword, setShowPassword] = useState(false);
   const [, navigate] = useLocation();
   const { t } = useTranslation();
@@ -199,7 +214,7 @@ function SignupForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/auth/user"], data);
       toast({ title: t("auth.signupSuccess", "Account created successfully!") });
-      navigate("/dashboard");
+      navigate(next);
     },
     onError: (error: Error) => {
       toast({ 
@@ -362,7 +377,20 @@ function SignupForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
 
 export default function AuthPage() {
   const [location] = useLocation();
+  const search = useSearch();
   const [isLogin, setIsLogin] = useState(location !== "/signup");
+
+  /**
+   * Where to go once they are signed in.
+   *
+   * Pages that need an account first - the pricing page's Subscribe button,
+   * mainly - send people here carrying what they were trying to do, so they
+   * come back to it instead of being dropped on a dashboard that has forgotten
+   * their choice. `safeNextPath` refuses anything that leaves this app, and
+   * falls back to the dashboard, so this stays a redirect and never becomes an
+   * open one.
+   */
+  const next = safeNextPath(new URLSearchParams(search).get("next"));
 
   useEffect(() => {
     setIsLogin(location !== "/signup");
@@ -381,9 +409,9 @@ export default function AuthPage() {
       <Navbar />
       <main className="flex-1 flex items-center justify-center py-12 px-4">
         {isLogin ? (
-          <LoginForm key="login" onSwitchToSignup={() => setIsLogin(false)} />
+          <LoginForm key="login" next={next} onSwitchToSignup={() => setIsLogin(false)} />
         ) : (
-          <SignupForm key="signup" onSwitchToLogin={() => setIsLogin(true)} />
+          <SignupForm key="signup" next={next} onSwitchToLogin={() => setIsLogin(true)} />
         )}
       </main>
       <Footer />

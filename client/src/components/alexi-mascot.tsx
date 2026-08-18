@@ -33,11 +33,15 @@ interface Props {
    * Bring the character to life: a slow float, a wave, blinking eyes and a
    * pulsing chest light.
    *
-   * Off by default. Motion belongs on a marketing page where the mascot is the
-   * subject, not beside a heading a student is trying to read - and never on
-   * the exam runner. Every animation here is disabled under
-   * prefers-reduced-motion, which is not a nicety: for some people this kind of
-   * movement causes real nausea and headaches.
+   * Off by default, and turned on for the portrait placements - the home page
+   * hero and the dashboard's recommendation card - where the character is the
+   * subject of its own space. The small inline glyphs that sit in a row with a
+   * heading stay still: a four-second float there nudges the text beside it.
+   * Never on the exam runner.
+   *
+   * Every animation here is disabled under prefers-reduced-motion, which is
+   * not a nicety: for some people this kind of movement causes real nausea and
+   * headaches.
    */
   animated?: boolean;
   className?: string;

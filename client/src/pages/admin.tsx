@@ -32,6 +32,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sparkles } from "lucide-react";
 import { GeneratedQuestionReview } from "@/components/admin/generated-question-review";
+import { GenerationConsole } from "@/components/admin/generation-console";
 import {
   Table,
   TableBody,
@@ -1844,6 +1845,9 @@ export default function AdminPage() {
             </TabsContent>
 
             <TabsContent value="drafts" className="space-y-4">
+              {/* Status, then the generate control, then the queue: the order
+                  an operator works in. */}
+              <GenerationConsole />
               <GeneratedQuestionReview />
             </TabsContent>
 

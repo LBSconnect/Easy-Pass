@@ -12,8 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowRight, Eye, EyeOff } from "lucide-react";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
+import { PageShell } from "@/components/page-shell";
 import { useSEO, buildUrl } from "@/hooks/use-seo";
 import { safeNextPath } from "@shared/redirects";
 
@@ -405,16 +404,12 @@ export default function AuthPage() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
-      <main className="flex-1 flex items-center justify-center py-12 px-4">
+    <PageShell width="narrow" centered>
         {isLogin ? (
           <LoginForm key="login" next={next} onSwitchToSignup={() => setIsLogin(false)} />
         ) : (
           <SignupForm key="signup" next={next} onSwitchToLogin={() => setIsLogin(true)} />
         )}
-      </main>
-      <Footer />
-    </div>
+    </PageShell>
   );
 }

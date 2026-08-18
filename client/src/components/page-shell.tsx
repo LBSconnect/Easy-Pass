@@ -36,6 +36,15 @@ interface PageShellProps {
   className?: string;
   /** Drop the footer for immersive flows (an exam in progress, say). */
   hideFooter?: boolean;
+  /**
+   * Centre the content vertically in the viewport.
+   *
+   * For the single-card flows - sign in, reset a password, "page not found" -
+   * where the card floating mid-screen is the layout rather than an accident.
+   * They each had their own `flex items-center justify-center` main element,
+   * which is why they were the pages that never joined the shared shell.
+   */
+  centered?: boolean;
 }
 
 export function PageShell({
@@ -43,12 +52,20 @@ export function PageShell({
   width = "content",
   className,
   hideFooter = false,
+  centered = false,
 }: PageShellProps) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
-      <main className="flex-1">
-        <div className={cn("container mx-auto px-4 py-6 md:py-8", WIDTHS[width], className)}>
+      <main className={cn("flex-1", centered && "flex items-center justify-center")}>
+        <div
+          className={cn(
+            "container mx-auto px-4 py-6 md:py-8",
+            WIDTHS[width],
+            centered && "w-full",
+            className,
+          )}
+        >
           {children}
         </div>
       </main>

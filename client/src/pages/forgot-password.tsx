@@ -10,8 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
+import { PageShell } from "@/components/page-shell";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, ArrowLeft, CheckCircle, Loader2 } from "lucide-react";
 
@@ -52,9 +51,7 @@ export default function ForgotPasswordPage() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <main className="flex-1 flex items-center justify-center py-12 px-4">
+      <PageShell width="narrow" centered>
           <Card className="w-full max-w-md">
             <CardHeader className="text-center">
               <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
@@ -81,16 +78,12 @@ export default function ForgotPasswordPage() {
               </Link>
             </CardContent>
           </Card>
-        </main>
-        <Footer />
-      </div>
+    </PageShell>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
-      <main className="flex-1 flex items-center justify-center py-12 px-4">
+    <PageShell width="narrow" centered>
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <Mail className="h-12 w-12 text-primary mx-auto mb-4" />
@@ -157,8 +150,6 @@ export default function ForgotPasswordPage() {
             </div>
           </CardContent>
         </Card>
-      </main>
-      <Footer />
-    </div>
+    </PageShell>
   );
 }

@@ -2,8 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
+import { PageShell } from "@/components/page-shell";
 import { AlertCircle, Home } from "lucide-react";
 
 export default function NotFound() {
@@ -11,9 +10,7 @@ export default function NotFound() {
   const isSpanish = i18n.language === "es";
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
-      <main className="flex-1 flex items-center justify-center px-4 py-16">
+    <PageShell width="narrow" centered>
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
             <AlertCircle className="h-10 w-10 text-destructive mx-auto mb-4" />
@@ -33,8 +30,6 @@ export default function NotFound() {
             </Button>
           </CardContent>
         </Card>
-      </main>
-      <Footer />
-    </div>
+    </PageShell>
   );
 }

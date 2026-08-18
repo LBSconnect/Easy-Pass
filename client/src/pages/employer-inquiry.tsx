@@ -13,8 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
+import { PageShell } from "@/components/page-shell";
 import { useToast } from "@/hooks/use-toast";
 import { useSEO, buildUrl } from "@/hooks/use-seo";
 import { Building2, ArrowLeft, CheckCircle, Loader2 } from "lucide-react";
@@ -107,9 +106,7 @@ export default function EmployerInquiryPage() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <main className="flex-1 flex items-center justify-center py-12 px-4">
+      <PageShell width="content" centered>
           <Card className="w-full max-w-md">
             <CardHeader className="text-center">
               <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
@@ -131,16 +128,12 @@ export default function EmployerInquiryPage() {
               </Link>
             </CardContent>
           </Card>
-        </main>
-        <Footer />
-      </div>
+    </PageShell>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
-      <main className="flex-1 py-12 px-4">
+    <PageShell width="content">
         <Card className="w-full max-w-xl mx-auto">
           <CardHeader className="text-center">
             <Building2 className="h-12 w-12 text-primary mx-auto mb-4" />
@@ -289,8 +282,6 @@ export default function EmployerInquiryPage() {
             </Form>
           </CardContent>
         </Card>
-      </main>
-      <Footer />
-    </div>
+    </PageShell>
   );
 }

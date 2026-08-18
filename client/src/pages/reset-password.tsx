@@ -16,8 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
+import { PageShell } from "@/components/page-shell";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Lock, CheckCircle, XCircle, Loader2 } from "lucide-react";
@@ -100,9 +99,7 @@ export default function ResetPasswordPage() {
   
   if (!token) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <main className="flex-1 flex items-center justify-center">
+      <PageShell width="narrow" centered>
           <Card className="w-full max-w-md mx-4">
             <CardHeader className="text-center">
               <XCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
@@ -117,34 +114,26 @@ export default function ResetPasswordPage() {
               </Link>
             </CardContent>
           </Card>
-        </main>
-        <Footer />
-      </div>
+    </PageShell>
     );
   }
   
   if (checkingToken) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <main className="flex-1 flex items-center justify-center">
+      <PageShell width="narrow" centered>
           <Card className="w-full max-w-md mx-4">
             <CardContent className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <span className="ml-2">Verifying link...</span>
             </CardContent>
           </Card>
-        </main>
-        <Footer />
-      </div>
+    </PageShell>
     );
   }
   
   if (!tokenCheck?.valid) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <main className="flex-1 flex items-center justify-center">
+      <PageShell width="narrow" centered>
           <Card className="w-full max-w-md mx-4">
             <CardHeader className="text-center">
               <XCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
@@ -159,17 +148,13 @@ export default function ResetPasswordPage() {
               </Link>
             </CardContent>
           </Card>
-        </main>
-        <Footer />
-      </div>
+    </PageShell>
     );
   }
   
   if (isSuccess) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <main className="flex-1 flex items-center justify-center">
+      <PageShell width="narrow" centered>
           <Card className="w-full max-w-md mx-4">
             <CardHeader className="text-center">
               <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
@@ -184,16 +169,12 @@ export default function ResetPasswordPage() {
               </Link>
             </CardContent>
           </Card>
-        </main>
-        <Footer />
-      </div>
+    </PageShell>
     );
   }
   
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
-      <main className="flex-1 flex items-center justify-center py-12">
+    <PageShell width="narrow" centered>
         <Card className="w-full max-w-md mx-4">
           <CardHeader className="text-center">
             <Lock className="h-12 w-12 text-primary mx-auto mb-4" />
@@ -260,8 +241,6 @@ export default function ResetPasswordPage() {
             </Form>
           </CardContent>
         </Card>
-      </main>
-      <Footer />
-    </div>
+    </PageShell>
   );
 }

@@ -201,6 +201,30 @@ const STEPS: Step[] = [
             WHERE user_id IS NOT NULL;`,
   },
 
+  // --- Bilingual glossary ---------------------------------------------------
+  {
+    name: "glossary_terms",
+    sql: `CREATE TABLE IF NOT EXISTS glossary_terms (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      category exam_category,
+      term_en varchar(120) NOT NULL,
+      term_es varchar(120) NOT NULL,
+      definition_en text NOT NULL,
+      definition_es text NOT NULL,
+      source_question_ids jsonb,
+      status varchar(20) NOT NULL DEFAULT 'draft',
+      created_by varchar,
+      created_at timestamp NOT NULL DEFAULT now(),
+      updated_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_glossary_status ON glossary_terms (status);
+    CREATE INDEX IF NOT EXISTS idx_glossary_category ON glossary_terms (category);
+    -- One definition per term per exam. Two rows for the same word would put
+    -- contradictory definitions in front of a student with no way to choose.
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_glossary_term
+      ON glossary_terms (lower(term_en), COALESCE(category::text, ''));`,
+  },
+
   // --- Measured item difficulty -------------------------------------------
   {
     name: "questions difficulty columns",
@@ -266,6 +290,7 @@ export async function checkSchemaHealth(): Promise<{
     "flashcard_reviews",
     "ai_usage_events",
     "generated_questions",
+    "glossary_terms",
   ];
   const expectedColumns: Array<[string, string]> = [
     ["user_profiles", "exam_date"],

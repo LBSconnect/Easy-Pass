@@ -105,6 +105,37 @@ export const questions = pgTable("questions", {
  * The validator's own verdict is stored alongside, not acted on. It can reject
  * outright, but it can never approve - only a reviewer does that.
  */
+/**
+ * Bilingual glossary of exam terminology.
+ *
+ * Definitions are written by a person and never generated. The terms
+ * themselves can be surfaced from the approved question bank - see
+ * server/alexi/glossaryCandidates.ts, which produces a worklist and
+ * deliberately no definitions - but what a term means in Texas insurance or
+ * real-estate law is a statement about law, and it belongs to someone
+ * qualified to make it.
+ *
+ * Both languages are required before a term is published, for the same
+ * reason generated questions are: half a bilingual glossary is a blank
+ * where a Spanish-speaking student expects an answer.
+ */
+export const glossaryTerms = pgTable("glossary_terms", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  /** Null when the term applies across exams rather than to one. */
+  category: examCategoryEnum("category"),
+  termEn: varchar("term_en", { length: 120 }).notNull(),
+  termEs: varchar("term_es", { length: 120 }).notNull(),
+  definitionEn: text("definition_en").notNull(),
+  definitionEs: text("definition_es").notNull(),
+  /** Bank questions the term was surfaced from, so its use is checkable. */
+  sourceQuestionIds: jsonb("source_question_ids").$type<string[]>(),
+  /** draft | published. Only published terms reach students. */
+  status: varchar("status", { length: 20 }).notNull().default("draft"),
+  createdBy: varchar("created_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const generatedQuestions = pgTable("generated_questions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   category: examCategoryEnum("category").notNull(),
@@ -593,6 +624,8 @@ export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
 export type GeneratedQuestionRow = typeof generatedQuestions.$inferSelect;
 export type InsertGeneratedQuestion = typeof generatedQuestions.$inferInsert;
+export type GlossaryTerm = typeof glossaryTerms.$inferSelect;
+export type InsertGlossaryTerm = typeof glossaryTerms.$inferInsert;
 export type Question = typeof questions.$inferSelect;
 export type InsertExamSession = z.infer<typeof insertExamSessionSchema>;
 export type ExamSession = typeof examSessions.$inferSelect;

@@ -30,9 +30,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles } from "lucide-react";
+import { Sparkles,
+  BookA,
+} from "lucide-react";
 import { GeneratedQuestionReview } from "@/components/admin/generated-question-review";
 import { GenerationConsole } from "@/components/admin/generation-console";
+import { GlossaryEditor } from "@/components/admin/glossary-editor";
 import {
   Table,
   TableBody,
@@ -876,6 +879,10 @@ export default function AdminPage() {
                     {draftCount}
                   </Badge>
                 )}
+              </TabsTrigger>
+              <TabsTrigger value="glossary" className="gap-2">
+                <BookA className="h-4 w-4" />
+                Glossary
               </TabsTrigger>
               <TabsTrigger value="feedback" className="gap-2">
                 <Flag className="h-4 w-4" />
@@ -1836,6 +1843,10 @@ export default function AdminPage() {
                   an operator works in. */}
               <GenerationConsole />
               <GeneratedQuestionReview />
+            </TabsContent>
+
+            <TabsContent value="glossary" className="space-y-4">
+              <GlossaryEditor />
             </TabsContent>
 
             <TabsContent value="feedback" className="space-y-4">

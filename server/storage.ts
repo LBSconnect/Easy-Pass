@@ -2,6 +2,7 @@ import {
   userProfiles,
   questions,
   generatedQuestions,
+  glossaryTerms,
   examSessions,
   examResults,
   paymentHistory,
@@ -21,6 +22,8 @@ import {
   type Question,
   type GeneratedQuestionRow,
   type InsertGeneratedQuestion,
+  type GlossaryTerm,
+  type InsertGlossaryTerm,
   type InsertQuestion,
   type ExamSession,
   type InsertExamSession,
@@ -56,7 +59,7 @@ import {
 } from "@shared/schema";
 import { users, type User } from "@shared/models/auth";
 import { db, pool } from "./db";
-import { eq, and, desc, sql, gte, inArray, isNotNull } from "drizzle-orm";
+import { eq, and, or, desc, sql, gte, inArray, isNotNull, isNull } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -181,6 +184,14 @@ export interface IStorage {
 
   createDiagnosticAttempt(attempt: InsertDiagnosticAttempt): Promise<DiagnosticAttempt>;
   getDiagnosticAttempt(id: string): Promise<DiagnosticAttempt | undefined>;
+  /** Published glossary terms a student can see, for one exam or all. */
+  getPublishedGlossary(category?: ExamCategory): Promise<GlossaryTerm[]>;
+  /** Everything, including drafts. Admin only. */
+  getAllGlossaryTerms(): Promise<GlossaryTerm[]>;
+  createGlossaryTerm(term: InsertGlossaryTerm): Promise<GlossaryTerm>;
+  updateGlossaryTerm(id: string, data: Partial<InsertGlossaryTerm>): Promise<GlossaryTerm | undefined>;
+  deleteGlossaryTerm(id: string): Promise<boolean>;
+
   /** Most recent COMPLETED attempt for a user, newest first. */
   getLatestDiagnosticAttempt(userId: string): Promise<DiagnosticAttempt | undefined>;
   completeDiagnosticAttempt(id: string, data: { score: number; correctAnswers: number }): Promise<DiagnosticAttempt | undefined>;
@@ -1173,6 +1184,53 @@ export class DatabaseStorage implements IStorage {
    * submitted - has no score, and treating one as "done" would tick the
    * onboarding step off without the student ever seeing a result.
    */
+  /**
+   * What a student sees. Published terms only - a draft is someone's
+   * half-written definition, and a half-written definition of a legal term is
+   * worse than none.
+   */
+  async getPublishedGlossary(category?: ExamCategory): Promise<GlossaryTerm[]> {
+    const published = eq(glossaryTerms.status, "published");
+    const rows = await db
+      .select()
+      .from(glossaryTerms)
+      .where(
+        category
+          // A term with no category applies across exams, so it belongs in
+          // every exam's glossary rather than none.
+          ? and(published, or(eq(glossaryTerms.category, category), isNull(glossaryTerms.category)))
+          : published,
+      )
+      .orderBy(glossaryTerms.termEn);
+    return rows;
+  }
+
+  async getAllGlossaryTerms(): Promise<GlossaryTerm[]> {
+    return db.select().from(glossaryTerms).orderBy(glossaryTerms.termEn);
+  }
+
+  async createGlossaryTerm(term: InsertGlossaryTerm): Promise<GlossaryTerm> {
+    const [created] = await db.insert(glossaryTerms).values(term).returning();
+    return created;
+  }
+
+  async updateGlossaryTerm(
+    id: string,
+    data: Partial<InsertGlossaryTerm>,
+  ): Promise<GlossaryTerm | undefined> {
+    const [updated] = await db
+      .update(glossaryTerms)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(glossaryTerms.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteGlossaryTerm(id: string): Promise<boolean> {
+    const deleted = await db.delete(glossaryTerms).where(eq(glossaryTerms.id, id)).returning();
+    return deleted.length > 0;
+  }
+
   async getLatestDiagnosticAttempt(userId: string): Promise<DiagnosticAttempt | undefined> {
     const [attempt] = await db
       .select()

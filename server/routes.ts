@@ -24,6 +24,8 @@ import { difficultyFor } from "./alexi/nextBestAction";
 import { assessRisk, quarantineReason, type FeedbackType } from "./contentRisk";
 import { checkSchemaHealth } from "./migrations";
 import { examDatePatch } from "@shared/examDatePatch";
+import { checkGlossaryDraft } from "@shared/glossaryGate";
+import { glossaryCandidates } from "./alexi/glossaryCandidates";
 import { pool } from "./db";
 import { buildNotebook, filterNotebook, notebookCounts, type NotebookFilter } from "./missedQuestions";
 import { buildSimulatorPaper } from "./simulatorPaper";
@@ -81,6 +83,16 @@ const submitExamSchema = z.object({
 
 const checkoutSchema = z.object({
   priceId: z.string().min(1),
+});
+
+const glossaryTermSchema = z.object({
+  category: z.enum(examCategoryEnum.enumValues).nullable().optional(),
+  termEn: z.string().min(1).max(120),
+  termEs: z.string().min(1).max(120),
+  definitionEn: z.string().min(1).max(4000),
+  definitionEs: z.string().min(1).max(4000),
+  sourceQuestionIds: z.array(z.string()).optional(),
+  status: z.enum(["draft", "published"]).optional(),
 });
 
 const profileUpdateSchema = z.object({
@@ -326,6 +338,165 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error submitting diagnostic assessment:", error);
       res.status(500).json({ message: "Failed to submit assessment" });
+    }
+  });
+
+  // ==========================================
+  // Bilingual glossary
+  // ==========================================
+
+  /**
+   * What a student sees. Published terms only.
+   *
+   * A draft is somebody's half-written definition of a legal term, which is
+   * worse in front of a revising student than no definition at all.
+   */
+  app.get("/api/glossary", async (req, res) => {
+    try {
+      const raw = typeof req.query.category === "string" ? req.query.category : undefined;
+      const category = examCategoryEnum.enumValues.includes(raw as ExamCategory)
+        ? (raw as ExamCategory)
+        : undefined;
+
+      res.json(await storage.getPublishedGlossary(category));
+    } catch (error) {
+      console.error("Error fetching glossary:", error);
+      res.status(500).json({ message: "Failed to fetch glossary" });
+    }
+  });
+
+  /** Everything, drafts included. */
+  app.get("/api/admin/glossary", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      res.json(await storage.getAllGlossaryTerms());
+    } catch (error) {
+      console.error("Error fetching glossary for admin:", error);
+      res.status(500).json({ message: "Failed to fetch glossary" });
+    }
+  });
+
+  /**
+   * Terms the question bank uses that the glossary does not define yet.
+   *
+   * A worklist, never content: this returns phrases and where they appear,
+   * and no definition of any kind. What a term means in Texas insurance or
+   * real-estate law belongs to someone qualified to say so.
+   */
+  app.get("/api/admin/glossary/candidates", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+
+      const raw = typeof req.query.category === "string" ? req.query.category : undefined;
+      const category = examCategoryEnum.enumValues.includes(raw as ExamCategory)
+        ? (raw as ExamCategory)
+        : undefined;
+
+      // No category means "across every exam", which the storage method does
+      // not express - so ask for each and pool them.
+      const categories = category ? [category] : [...examCategoryEnum.enumValues];
+      const [pools, existing] = await Promise.all([
+        Promise.all(categories.map((c) => storage.getActiveQuestions(c))),
+        storage.getAllGlossaryTerms(),
+      ]);
+      const questionsInBank = pools.flat();
+
+      res.json(
+        glossaryCandidates(
+          questionsInBank.map((q) => ({
+            id: q.id,
+            topic: q.topic,
+            questionTextEn: q.questionTextEn,
+            explanationEn: q.explanationEn,
+          })),
+          existing.map((t) => t.termEn),
+        ),
+      );
+    } catch (error) {
+      console.error("Error building glossary candidates:", error);
+      res.status(500).json({ message: "Failed to build candidate list" });
+    }
+  });
+
+  app.post("/api/admin/glossary", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = await requireAdmin(req, res);
+      if (!adminId) return;
+
+      const parsed = glossaryTermSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid term", errors: parsed.error.errors });
+      }
+
+      // Publishing needs both languages complete; saving a draft does not,
+      // because a half-written entry is exactly what a draft is for.
+      if (parsed.data.status === "published") {
+        const gate = checkGlossaryDraft(parsed.data);
+        if (!gate.ready) {
+          return res.status(400).json({
+            message: `Cannot publish yet - missing: ${gate.missing.join(", ")}`,
+            missing: gate.missing,
+          });
+        }
+      }
+
+      res.json(await storage.createGlossaryTerm({ ...parsed.data, createdBy: adminId }));
+    } catch (error: any) {
+      // The unique index is the guard against two contradictory definitions
+      // of one term, so a collision is a message rather than a 500.
+      if (error?.code === "23505") {
+        return res.status(409).json({ message: "That term is already defined for this exam" });
+      }
+      console.error("Error creating glossary term:", error);
+      res.status(500).json({ message: "Failed to create term" });
+    }
+  });
+
+  app.patch("/api/admin/glossary/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+
+      const parsed = glossaryTermSchema.partial().safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid term", errors: parsed.error.errors });
+      }
+
+      if (parsed.data.status === "published") {
+        // Check the merged result, not just the patch: publishing a term by
+        // sending only `status` must still verify what is already stored.
+        const existing = (await storage.getAllGlossaryTerms()).find((t) => t.id === req.params.id);
+        if (!existing) return res.status(404).json({ message: "Term not found" });
+
+        const gate = checkGlossaryDraft({ ...existing, ...parsed.data });
+        if (!gate.ready) {
+          return res.status(400).json({
+            message: `Cannot publish yet - missing: ${gate.missing.join(", ")}`,
+            missing: gate.missing,
+          });
+        }
+      }
+
+      const updated = await storage.updateGlossaryTerm(req.params.id, parsed.data);
+      if (!updated) return res.status(404).json({ message: "Term not found" });
+      res.json(updated);
+    } catch (error: any) {
+      if (error?.code === "23505") {
+        return res.status(409).json({ message: "That term is already defined for this exam" });
+      }
+      console.error("Error updating glossary term:", error);
+      res.status(500).json({ message: "Failed to update term" });
+    }
+  });
+
+  app.delete("/api/admin/glossary/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      const removed = await storage.deleteGlossaryTerm(req.params.id);
+      if (!removed) return res.status(404).json({ message: "Term not found" });
+      res.json({ deleted: true });
+    } catch (error) {
+      console.error("Error deleting glossary term:", error);
+      res.status(500).json({ message: "Failed to delete term" });
     }
   });
 

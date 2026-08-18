@@ -310,9 +310,20 @@ export default function ProfilePage() {
                               <p className="font-medium text-sm truncate">
                                 {t(`categories.${result.category}`)}
                               </p>
+                              {/* `timeTaken` is not always present - older
+                                  results and any row written before it was
+                                  recorded have none - and Math.floor(null/60)
+                                  rendered a literal "NaN:NaN" at the student.
+                                  No duration is better than a broken one. */}
                               <p className="text-xs text-muted-foreground">
-                                {new Date(result.completedAt).toLocaleDateString()} -{" "}
-                                {Math.floor(result.timeTaken / 60)}:{String(result.timeTaken % 60).padStart(2, "0")}
+                                {new Date(result.completedAt).toLocaleDateString()}
+                                {Number.isFinite(result.timeTaken) && (
+                                  <>
+                                    {" - "}
+                                    {Math.floor(Number(result.timeTaken) / 60)}:
+                                    {String(Number(result.timeTaken) % 60).padStart(2, "0")}
+                                  </>
+                                )}
                               </p>
                             </div>
                             <div className="flex items-center gap-3">
@@ -396,8 +407,19 @@ export default function ProfilePage() {
                             {profile.allowedCategories.map((category) => {
                               const Icon = categoryIcons[category as keyof typeof categoryIcons];
                               return (
-                                <Badge key={category} variant="secondary" className="flex items-center gap-1">
-                                  {Icon && <Icon className="h-3 w-3" />}
+                                /* Badge is nowrap by default, which is right
+                                   for a short status pill and wrong here: a
+                                   full exam name cannot wrap, so its width
+                                   became the card's minimum and pushed the page
+                                   past the viewport. Spanish exposed it -
+                                   "Seguro de Propiedad y Accidentes de Texas"
+                                   is well longer than the English. */
+                                <Badge
+                                  key={category}
+                                  variant="secondary"
+                                  className="flex max-w-full items-center gap-1 whitespace-normal text-left"
+                                >
+                                  {Icon && <Icon className="h-3 w-3 shrink-0" />}
                                   <span className="text-xs">{t(`categories.${category}`)}</span>
                                 </Badge>
                               );

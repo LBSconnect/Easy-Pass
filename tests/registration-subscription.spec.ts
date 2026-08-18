@@ -1,5 +1,9 @@
 import { test, expect } from '@playwright/test';
 
+// The app routes sign-in at /login (and /signup); there is no /auth. These
+// specs pointed at /auth, which renders the not-found page — they had simply
+// never been run, so nothing surfaced it.
+
 import { requireWritableTarget } from './helpers/target';
 
 // These specs create accounts. The guard keeps them off any environment that
@@ -20,7 +24,7 @@ test.describe('Registration Flow', () => {
   const testPassword = 'TestPassword123!';
 
   test('registration page loads correctly', async ({ page }) => {
-    await page.goto('/auth');
+    await page.goto('/login');
 
     // Check that auth page loads
     await expect(page).toHaveTitle(/Easy Pass|MyEasyPass/i);
@@ -99,7 +103,7 @@ test.describe('Registration Flow', () => {
 
 test.describe('Login Flow', () => {
   test('login page loads correctly', async ({ page }) => {
-    await page.goto('/auth');
+    await page.goto('/login');
 
     // Check that auth page loads
     await expect(page).toHaveTitle(/Easy Pass|MyEasyPass/i);

@@ -65,6 +65,10 @@ jobs:
       # nothing sets this in a deployed environment.
       SESSION_COOKIE_SECURE: "false"
       TEST_BASE_URL: http://localhost:5000
+      # The server is served from this origin, and the CORS allowlist only
+      # knows the deployed hostnames. Without it the production build rejects
+      # its own stylesheets and every page renders blank.
+      CORS_ALLOWED_ORIGINS: http://localhost:5000
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.pw-browsers
 
     steps:

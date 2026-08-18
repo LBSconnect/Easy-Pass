@@ -1,18 +1,22 @@
 import { test, expect } from '@playwright/test';
 
+// The app routes sign-in at /login (and /signup); there is no /auth. These
+// specs pointed at /auth, which renders the not-found page — they had simply
+// never been run, so nothing surfaced it.
+
 test('homepage loads and shows Easy Pass branding', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveTitle(/.+/);
 });
 
 test('navigation to auth page works', async ({ page }) => {
-  await page.goto('/auth');
+  await page.goto('/login');
   await expect(page.locator('input[name="email"]')).toBeVisible();
   await expect(page.locator('input[name="password"]')).toBeVisible();
 });
 
 test('login shows error with invalid credentials', async ({ page }) => {
-  await page.goto('/auth');
+  await page.goto('/login');
 
   await page.fill('input[name="email"]', 'nonexistent@example.com');
   await page.fill('input[name="password"]', 'wrongpassword123');
@@ -23,7 +27,7 @@ test('login shows error with invalid credentials', async ({ page }) => {
 });
 
 test('registration form validates required fields', async ({ page }) => {
-  await page.goto('/auth');
+  await page.goto('/login');
 
   // Try to find and click a signup/register tab or link if present
   const signupTab = page.locator('text=/sign up|register|create account/i');

@@ -30,6 +30,7 @@ import { selectDueCards, scheduleNext, newCardState } from "./spacedRepetition";
 import { shuffleQuestionOptions } from "./shuffleQuestionOptions";
 import { studyAssistant } from "./alexi/studyAssistantService";
 import { TUTOR_INTENTS, MAX_STUDENT_MESSAGE_CHARS, type TutorIntent } from "./alexi/tutor";
+import { buildSessionPlan, type PlannableQuestion } from "./alexi/sessionPlan";
 
 const alexiTutorSchema = z.object({
   questionId: z.string().min(1),
@@ -37,6 +38,11 @@ const alexiTutorSchema = z.object({
   // Optional free text, hard-capped. The cap is the substantive control on
   // how much attacker-controlled text can reach a prompt.
   message: z.string().max(MAX_STUDENT_MESSAGE_CHARS).optional(),
+});
+
+const sessionAnswerSchema = z.object({
+  questionId: z.string().min(1),
+  answerIndex: z.number().int().min(0).max(9),
 });
 
 const startExamSchema = z.object({
@@ -820,6 +826,172 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error answering tutor request:", error);
       res.status(500).json({ message: "Failed to answer" });
+    }
+  });
+
+  // ---------------------------------------------------------------------
+  // Alexi sessions.
+  //
+  // The recommendation engine has always described a session - "3-minute
+  // review, 8 flashcards, 12 targeted questions" - and Start dropped the
+  // student on a generic page. These two routes make the described session a
+  // thing you can actually sit.
+  //
+  // Answers are recorded as `drill` responses, which feed mastery and the
+  // EasyPass Score, but deliberately do NOT create an exam_result. A five
+  // question warm-up is not a sitting, and letting it into "Recent Results"
+  // would quietly redefine what that card means.
+  // ---------------------------------------------------------------------
+  app.post("/api/alexi/session/:category", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { category } = req.params;
+
+      if (!examCategoryEnum.enumValues.includes(category as ExamCategory)) {
+        return res.status(400).json({ message: "Unknown exam category" });
+      }
+      const examCategory = category as ExamCategory;
+
+      const subscriptionCheck = await ensureSubscriptionActive(userId, examCategory);
+      if (!subscriptionCheck.active) {
+        return res.status(403).json({ message: subscriptionCheck.message });
+      }
+
+      const profile = await storage.getProfile(userId);
+      const language = profile?.preferredLanguage === "es" ? "es" : "en";
+
+      const requestedMinutes = Number.parseInt(String(req.query.minutes ?? ""), 10);
+      const minutes = Number.isFinite(requestedMinutes)
+        ? Math.min(Math.max(requestedMinutes, 5), 90)
+        : 15;
+
+      const recommendation = await studyAssistant.getRecommendation(userId, examCategory, {
+        availableMinutes: minutes,
+      });
+
+      const [pool, missedIds, responses] = await Promise.all([
+        storage.getActiveQuestions(examCategory),
+        storage.getMissedQuestionIds(userId, examCategory),
+        storage.getResponsesForCategory(userId, examCategory),
+      ]);
+
+      // Option order is shuffled per session, so the stored bank is never
+      // mutated and two students never share an answer key.
+      const answerOrder: Record<string, number> = {};
+      const plannable: PlannableQuestion[] = pool.map((question) => {
+        const shuffled = shuffleQuestionOptions(
+          question.optionsEn,
+          question.optionsEs,
+          question.correctAnswer,
+        );
+        answerOrder[question.id] = shuffled.correctAnswer;
+        return {
+          id: question.id,
+          topic: question.topic ?? "General",
+          questionText: language === "es" ? question.questionTextEs : question.questionTextEn,
+          options: language === "es" ? shuffled.optionsEs : shuffled.optionsEn,
+          correctAnswer: shuffled.correctAnswer,
+          explanation: language === "es" ? question.explanationEs : question.explanationEn,
+        };
+      });
+
+      const plan = buildSessionPlan({
+        blocks: recommendation.recommendation.blocks,
+        pool: plannable,
+        missedQuestionIds: missedIds,
+        answeredQuestionIds: new Set(responses.map((r) => r.questionId)),
+        conceptTopic: recommendation.recommendation.concept?.label ?? null,
+      });
+
+      if (plan.blocks.length === 0) {
+        return res.status(404).json({ message: "No material available for this session" });
+      }
+
+      // A session row exists to hold the answer order for grading. It is
+      // never completed through the exam-submit path.
+      const session = await storage.createExamSession({
+        userId,
+        category: examCategory,
+        questionIds: plan.questionIds,
+        answerOrder,
+        currentQuestionIndex: 0,
+        timeLimit: plan.estimatedMinutes * 60,
+        isCompleted: false,
+      });
+
+      res.json({
+        sessionId: session.id,
+        category: examCategory,
+        headline: recommendation.recommendation.headline,
+        phrasing: recommendation.phrasing,
+        concept: recommendation.recommendation.concept,
+        estimatedMinutes: plan.estimatedMinutes,
+        blocks: plan.blocks,
+      });
+    } catch (error) {
+      console.error("Error starting Alexi session:", error);
+      res.status(500).json({ message: "Failed to start session" });
+    }
+  });
+
+  // One answer at a time, so a student who stops halfway keeps credit for the
+  // questions they did answer, and gets the explanation while the question is
+  // still in front of them.
+  app.post("/api/alexi/session/:sessionId/answer", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { sessionId } = req.params;
+
+      const parsed = sessionAnswerSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid answer", errors: parsed.error.errors });
+      }
+      const { questionId, answerIndex } = parsed.data;
+
+      const session = await storage.getExamSession(sessionId);
+      if (!session || session.userId !== userId) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      if (!(session.questionIds as string[]).includes(questionId)) {
+        return res.status(400).json({ message: "Question is not part of this session" });
+      }
+
+      const question = await storage.getQuestion(questionId);
+      if (!question) {
+        return res.status(404).json({ message: "Question not found" });
+      }
+
+      const profile = await storage.getProfile(userId);
+      const language = profile?.preferredLanguage === "es" ? "es" : "en";
+
+      // The shuffled index recorded when the session started is the authority,
+      // never the bank's stored index - the student saw the shuffled order.
+      const answerOrder = (session.answerOrder ?? {}) as Record<string, number>;
+      const correctIndex = answerOrder[questionId] ?? question.correctAnswer;
+      const isCorrect = answerIndex === correctIndex;
+
+      await storage.recordQuestionResponses([
+        {
+          userId,
+          questionId,
+          category: session.category,
+          topic: question.topic ?? "General",
+          source: "drill",
+          sessionId,
+          selectedAnswer: answerIndex,
+          isCorrect,
+          language,
+        },
+      ]);
+
+      res.json({
+        isCorrect,
+        correctIndex,
+        explanation: language === "es" ? question.explanationEs : question.explanationEn,
+      });
+    } catch (error) {
+      console.error("Error recording session answer:", error);
+      res.status(500).json({ message: "Failed to record answer" });
     }
   });
 

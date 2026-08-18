@@ -14,6 +14,7 @@ import DashboardPage from "@/pages/dashboard";
 import MissedQuestionsPage from "@/pages/missed-questions";
 import FlashcardsPage from "@/pages/flashcards";
 import StudyAssistantPage from "@/pages/study-assistant";
+import AlexiSessionPage from "@/pages/alexi-session";
 import { PageErrorBoundary } from "@/components/error-boundary";
 import ExamsPage from "@/pages/exams";
 import PricingPage from "@/pages/pricing";
@@ -119,6 +120,7 @@ function Router() {
       <Route path="/missed-questions" component={() => <ProtectedRoute component={MissedQuestionsPage} />} />
       <Route path="/flashcards" component={() => <ProtectedRoute component={FlashcardsPage} />} />
       <Route path="/study-assistant" component={() => <ProtectedRoute component={StudyAssistantPage} />} />
+      <Route path="/session/:category" component={() => <ProtectedRoute component={AlexiSessionPage} />} />
       {/* Not wrapped in ProtectedRoute: guests can browse categories and try
           a short quick-practice preview before being asked to sign up.
           ExamsPage itself branches on auth state for the rest of the flow. */}

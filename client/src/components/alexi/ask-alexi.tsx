@@ -103,15 +103,30 @@ export function AskAlexi({ questionId, answeredIncorrectly = false, topic }: Pro
   const intents = INTENTS.filter((i) => !i.needsWrong || answeredIncorrectly);
 
   return (
-    <div className="mt-4 rounded-lg border bg-muted/30 p-3.5" data-testid="panel-ask-alexi">
-      <div className="flex items-center gap-2">
-        <AlexiMascot size={26} waving={false} sparkles={false} />
-        <p className="text-sm font-semibold">
-          {es ? `Pregúntale a ${named}` : `Ask ${named}`}
-        </p>
+    <div
+      // Branded rather than a grey utility box: this is the one place a
+      // student can ask a question, and it was disappearing into the card
+      // behind it.
+      className="mt-4 rounded-xl border-2 border-primary/30 bg-gradient-to-br from-primary/[0.09] to-primary/[0.03] p-4 shadow-sm"
+      data-testid="panel-ask-alexi"
+    >
+      <div className="flex items-center gap-2.5">
+        <span className="inline-flex shrink-0 items-center justify-center rounded-full bg-background p-1 shadow-sm">
+          <AlexiMascot size={34} waving={false} sparkles={false} />
+        </span>
+        <div className="min-w-0">
+          <p className="text-base font-bold text-primary">
+            {es ? `Pregúntale a ${named}` : `Ask ${named}`}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {es
+              ? "Explicaciones sobre esta pregunta, al instante"
+              : "Instant explanations about this question"}
+          </p>
+        </div>
       </div>
 
-      <div className="mt-2.5 flex flex-wrap gap-2">
+      <div className="mt-3.5 flex flex-wrap gap-2">
         {intents.map((i) => (
           <Button
             key={i.key}
@@ -119,6 +134,7 @@ export function AskAlexi({ questionId, answeredIncorrectly = false, topic }: Pro
             variant="outline"
             disabled={ask.isPending}
             onClick={() => ask.mutate(i.key)}
+            className="border-primary/40 bg-background font-medium text-primary hover:bg-primary hover:text-primary-foreground"
             data-testid={`button-ask-${i.key}`}
           >
             <i.icon className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
@@ -147,7 +163,7 @@ export function AskAlexi({ questionId, answeredIncorrectly = false, topic }: Pro
               ? "Ej.: no entiendo la diferencia entre las opciones B y C"
               : "e.g. I don't get the difference between options B and C"
           }
-          className="mt-1.5 text-sm"
+          className="mt-1.5 bg-background text-sm"
           data-testid="input-ask-message"
         />
         <p className="mt-1 text-right text-xs text-muted-foreground" aria-live="polite">
@@ -156,7 +172,11 @@ export function AskAlexi({ questionId, answeredIncorrectly = false, topic }: Pro
       </div>
 
       {ask.isPending && (
-        <p className="mt-2 text-sm text-muted-foreground" data-testid="text-ask-pending">
+        <p
+          className="mt-3.5 flex items-center gap-2 text-sm font-medium text-primary"
+          data-testid="text-ask-pending"
+        >
+          <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-primary" aria-hidden="true" />
           {es ? `${named} está pensando…` : `${named} is thinking…`}
         </p>
       )}
@@ -173,16 +193,20 @@ export function AskAlexi({ questionId, answeredIncorrectly = false, topic }: Pro
         // aria-live so a screen-reader user hears the answer arrive rather than
         // having to go looking for it.
         <div
-          className="mt-3 rounded-md border bg-background p-3"
+          className="mt-3.5 rounded-lg border-l-4 border-l-primary border-y border-r bg-background p-3.5 shadow-sm"
           role="status"
           aria-live="polite"
           data-testid="text-ask-answer"
         >
-          <p className="whitespace-pre-line text-sm">{answer.answer}</p>
+          <p className="whitespace-pre-line text-sm leading-relaxed">{answer.answer}</p>
 
           {/* Where the answer came from is stated, never implied. A student
               deciding how much to trust it deserves to know. */}
-          <Badge variant="secondary" className="mt-2.5 text-xs" data-testid={`badge-source-${answer.source}`}>
+          <Badge
+            variant="secondary"
+            className="mt-3 border-primary/25 bg-primary/10 text-xs text-primary"
+            data-testid={`badge-source-${answer.source}`}
+          >
             {answer.source === "grounded"
               ? es ? "Basado en tu material aprobado" : "Based on your approved study material"
               : answer.source === "fallback"

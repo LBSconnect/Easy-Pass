@@ -98,25 +98,18 @@ export function modeLabel(mode: LearningMode, es: boolean): string {
 }
 
 /**
- * Where a session block sends the student.
+ * Where Start sends the student.
  *
- * Blocks map onto features that already exist rather than inventing new
- * screens - the assistant's job is to route attention, not to duplicate the
- * product.
+ * The session runner walks the recommendation's blocks in order, so the
+ * session Alexi described is the session the student actually sits. Before
+ * this, every mode landed on a generic page and the described session was
+ * never run.
  */
 export function blockHref(mode: LearningMode, category: string): string {
-  switch (mode) {
-    // Weak-area deck, not the default mixed one - the recommendation named a
-    // concept, so the destination has to reflect it.
-    case "flashcards":
-      return "/flashcards?scope=weak";
-    case "review":
-      return "/missed-questions?filter=struggling";
-    case "teach":
-      return "/study-guide";
-    case "mock_exam":
-      return `/exams/${category}?mode=full`;
-    default:
-      return `/exams/${category}`;
-  }
+  // A full mock exam is a timed paper with its own screen and its own rules,
+  // so it stays where it is. Everything else is run by the session runner,
+  // which walks the recommendation's blocks in order.
+  if (mode === "mock_exam") return `/exams/${category}?mode=full`;
+  return `/session/${category}`;
 }
+

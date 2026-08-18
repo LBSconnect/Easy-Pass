@@ -1,0 +1,24 @@
+{
+  // Test files were excluded from `tsc` entirely, so nothing checked them.
+  //
+  // That is not theoretical: a required field was added to DashboardInput and
+  // the test helper that builds one silently kept compiling, because the file
+  // was never looked at. The tests still passed - against an object missing
+  // the field - and the gap only surfaced by reading the helper.
+  //
+  // So they are checked here instead of in the main config, which keeps the
+  // build's own typecheck fast and free of test-only types.
+  "extends": "./tsconfig.json",
+  "include": ["server/__tests__/**/*", "tests/**/*", "shared/**/*", "client/src/**/*"],
+  "exclude": ["node_modules", "build", "dist"],
+  "compilerOptions": {
+    // Its own buildinfo file: sharing one with the main config makes each run
+    // invalidate the other's cache.
+    "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo.test",
+    // The base config sets no target, which is fine for Vite but leaves tsc
+    // on its ES5 default - and top-level await and modern regex flags, which
+    // the tests genuinely use, are errors there.
+    "target": "es2022",
+    "types": ["node", "vite/client", "vitest/globals"]
+  }
+}

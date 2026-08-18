@@ -145,8 +145,15 @@ describe("UnconfiguredProvider", () => {
   it("reports the failure as non-retryable so callers fall back immediately", async () => {
     // Retrying a missing key wastes a student's time; the caller should go
     // straight to approved content.
-    const error = await new UnconfiguredProvider().complete().catch((e) => e as AIError);
+    // Resolve to null on success so a provider that stopped throwing shows up
+    // as "did not reject" rather than as a missing property on a response.
+    const thrown: unknown = await new UnconfiguredProvider()
+      .complete()
+      .then(() => null)
+      .catch((e: unknown) => e);
 
+    expect(thrown).toBeInstanceOf(AIError);
+    const error = thrown as AIError;
     expect(error.kind).toBe("not_configured");
     expect(error.retryable).toBe(false);
   });

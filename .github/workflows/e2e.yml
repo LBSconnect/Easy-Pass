@@ -1,0 +1,129 @@
+name: End-to-end
+
+# The Playwright suite existed for months and never ran anywhere: no workflow
+# invoked it, so six spec files sat as documentation. This runs them.
+#
+# It runs against a throwaway Postgres and a locally built server, never
+# against a deployed environment. That matters because several specs POST to
+# /api/register — see tests/helpers/target.ts, which refuses to run them
+# against a non-local target.
+#
+# No repository secrets. Stripe and the model provider are absent by design:
+# the suite covers auth guards, public endpoints and page rendering, all of
+# which must work without them.
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: End-to-end tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: easypass_test
+        ports:
+          - 5432:5432
+        # Without this the job races the container and the schema push fails
+        # on a database that is not accepting connections yet.
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/easypass_test
+      # Test-only value. The app refuses to start without one, and nothing
+      # here is a real session.
+      SESSION_SECRET: e2e-ci-session-secret-not-a-real-one
+      NODE_ENV: production
+      PORT: "5000"
+      TEST_BASE_URL: http://localhost:5000
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.pw-browsers
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ${{ github.workspace }}/.pw-browsers
+          key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      # Base tables come from the Drizzle schema; the additive steps in
+      # server/migrations.ts run on server start.
+      - name: Push schema
+        run: npm run db:push
+
+      - name: Build
+        run: npm run build
+
+      - name: Start server
+        run: |
+          node dist/index.cjs > /tmp/server.log 2>&1 &
+          echo $! > /tmp/server.pid
+          # Poll rather than sleep a fixed amount: the first boot also runs
+          # migrations, and how long that takes is not ours to guess.
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:5000/api/study-guide/topics > /dev/null; then
+              echo "server up after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "server did not come up; log follows:"
+          cat /tmp/server.log
+          exit 1
+
+      - name: Run end-to-end tests
+        # The config only uses the dev container's hard-coded Chromium when
+        # that file exists, so here Playwright resolves the one it installed.
+        run: npx playwright test
+
+      - name: Server log
+        if: failure()
+        run: cat /tmp/server.log || true
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Stop server
+        if: always()
+        run: kill "$(cat /tmp/server.pid)" 2>/dev/null || true

@@ -1,5 +1,13 @@
 import { test, expect } from '@playwright/test';
 
+import { requireWritableTarget } from './helpers/target';
+
+// These specs create accounts. The guard keeps them off any environment that
+// is not local unless someone explicitly opts in.
+test.beforeAll(({}, testInfo) => {
+  requireWritableTarget(testInfo.project.use.baseURL);
+});
+
 /**
  * E2E Tests for Registration and Subscription Flow
  *

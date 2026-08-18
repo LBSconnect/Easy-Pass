@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "npx playwright test",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "check:tests": "tsc -p tsconfig.test.json"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.117.1",

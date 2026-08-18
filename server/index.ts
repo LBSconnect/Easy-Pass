@@ -2,6 +2,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import cors from 'cors';
 import { buildAllowedOrigins } from '@shared/corsOrigins';
+import { resolveApiRateLimit } from '@shared/rateLimitConfig';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
@@ -94,7 +95,11 @@ app.use(cors({
 // ==========================================
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  // Configurable so an end-to-end run, where every request comes from one IP,
+  // is not cut off partway through by a guard meant for real traffic. The
+  // auth and password-reset limiters below are deliberately NOT configurable:
+  // specs assert they return 429, and they are testing a real control.
+  max: resolveApiRateLimit(process.env.API_RATE_LIMIT_MAX),
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,

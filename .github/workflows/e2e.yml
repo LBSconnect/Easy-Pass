@@ -69,6 +69,11 @@ jobs:
       # knows the deployed hostnames. Without it the production build rejects
       # its own stylesheets and every page renders blank.
       CORS_ALLOWED_ORIGINS: http://localhost:5000
+      # Every request in the suite comes from 127.0.0.1, so the general per-IP
+      # cap of 100 per 15 minutes is spent partway through and unrelated specs
+      # start failing on 429. The auth and password-reset limiters keep their
+      # real values - specs assert those return 429.
+      API_RATE_LIMIT_MAX: "100000"
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.pw-browsers
 
     steps:

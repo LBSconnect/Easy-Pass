@@ -65,6 +65,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Legend, Tooltip } from "recharts";
+import { parseExamMode } from "@shared/examMode";
 import type { ExamCategory, Question, ExamSession, ExamResult } from "@shared/schema";
 
 const categoryIcons = {
@@ -89,7 +90,7 @@ function ExamSession() {
   const category = params.category as ExamCategory;
 
   const search = useSearch();
-  const mode = new URLSearchParams(search).get("mode") === "full" ? "full" : "practice";
+  const mode = parseExamMode(new URLSearchParams(search).get("mode"));
 
   const [session, setSession] = useState<ExamSession | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -500,6 +501,23 @@ function ExamSession() {
                     {result.score}%
                   </div>
 
+                  {/* A targeted paper is deliberately over-weighted toward
+                      what this student gets wrong, so its percentage is lower
+                      than a representative paper would give and must not be
+                      read as a readiness estimate. Saying so here is the
+                      whole reason targeted practice is kept separate from the
+                      simulator. */}
+                  {mode === "targeted" && (
+                    <p
+                      className="mx-auto max-w-md text-sm text-muted-foreground"
+                      data-testid="text-targeted-disclaimer"
+                    >
+                      {i18n.language === "es"
+                        ? "Esta práctica se concentró en tus temas más débiles, así que es más difícil que un examen representativo. Trátala como práctica, no como una estimación de tu preparación."
+                        : "This practice focused on your weakest topics, so it is harder than a representative paper. Treat it as practice, not as an estimate of your readiness."}
+                    </p>
+                  )}
+
                   <div className="grid grid-cols-3 gap-4">
                     <div className="p-4 rounded-lg bg-muted">
                       <div className="text-2xl font-bold text-green-500">
@@ -712,6 +730,14 @@ function ExamSession() {
             <h1 className="truncate font-medium text-sm max-sm:sr-only">
               {t(`categories.${category}`)}
             </h1>
+            {/* Named in the runner as well as on the results screen: a
+                student should know which kind of paper they are sitting
+                while they are sitting it. */}
+            {mode === "targeted" && (
+              <Badge variant="outline" className="shrink-0 max-md:sr-only">
+                {i18n.language === "es" ? "Práctica dirigida" : "Targeted practice"}
+              </Badge>
+            )}
           </div>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-4">
@@ -1410,7 +1436,7 @@ function GuestSignupRequired({ category }: { category: ExamCategory }) {
 export default function ExamsPage() {
   const params = useParams<{ category?: string }>();
   const search = useSearch();
-  const mode = new URLSearchParams(search).get("mode") === "full" ? "full" : "practice";
+  const mode = parseExamMode(new URLSearchParams(search).get("mode"));
   const { isAuthenticated, isLoading } = useAuth();
 
   if (!params.category) {
@@ -1430,7 +1456,10 @@ export default function ExamsPage() {
 
   if (!isAuthenticated) {
     const category = params.category as ExamCategory;
-    if (mode === "full") {
+    // Targeted practice needs the student's own answer history, so it is an
+    // account feature for the same reason the full mock is - not a paywall
+    // decision, just a thing that cannot exist without a signed-in record.
+    if (mode !== "practice") {
       return <GuestSignupRequired category={category} />;
     }
     return <GuestPracticePreview category={category} />;

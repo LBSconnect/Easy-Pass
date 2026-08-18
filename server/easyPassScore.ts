@@ -60,6 +60,12 @@ export interface ScoreInput {
     topic: string;
     isCorrect: boolean;
     answeredAt: Date;
+    /**
+     * Where the answer came from. Only "drill" is treated specially - see
+     * recentAccuracy. Optional so existing callers keep working; an absent
+     * source is a plain sitting.
+     */
+    source?: string;
   }>;
   /** Completed mock/full exam scores (0-100), most recent first. */
   mockExamScores: number[];
@@ -108,11 +114,20 @@ function clamp(n: number, lo = 0, hi = 100): number {
  * has not been active recently. Answering well six months ago should not read
  * as being ready today - that is what the recency component handles - but it
  * is still better evidence than nothing.
+ *
+ * Drills are left out, and this is the only component that leaves anything
+ * out. A drill deliberately over-samples the topics a student is weakest on,
+ * so its answers are not a fair sample of how they are doing overall - the
+ * more remedial work someone does, the further this component would drift
+ * below their actual standing. Every other component is unaffected: per-topic
+ * mastery is measured within a topic, coverage counts questions seen, and
+ * recency counts activity, all of which a drill contributes to honestly.
  */
 function recentAccuracy(input: ScoreInput): ScoreComponent {
   const cutoff = new Date(input.now.getTime() - RECENT_WINDOW_DAYS * DAY_MS);
-  const recent = input.responses.filter((r) => r.answeredAt >= cutoff);
-  const pool = recent.length >= 10 ? recent : input.responses;
+  const representative = input.responses.filter((r) => r.source !== "drill");
+  const recent = representative.filter((r) => r.answeredAt >= cutoff);
+  const pool = recent.length >= 10 ? recent : representative;
 
   return {
     key: "recent_accuracy",

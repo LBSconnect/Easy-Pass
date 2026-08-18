@@ -61,7 +61,17 @@ import {
   type InsertAiUsageEvent,
 } from "@shared/schema";
 import { users, type User } from "@shared/models/auth";
+import { parseExamMode, type ExamMode } from "@shared/examMode";
 import { db, pool } from "./db";
+
+/**
+ * An exam result plus which kind of paper produced it.
+ *
+ * Scores from different modes are not comparable - a targeted paper is
+ * weighted toward what the student gets wrong - so anything that averages or
+ * trends scores has to be able to tell them apart.
+ */
+export type ExamResultWithMode = ExamResult & { mode: ExamMode };
 import { eq, and, or, desc, sql, gte, inArray, isNotNull, isNull } from "drizzle-orm";
 
 export interface IStorage {
@@ -89,7 +99,7 @@ export interface IStorage {
   deleteExamSession(id: string): Promise<boolean>;
   
   createExamResult(result: InsertExamResult): Promise<ExamResult>;
-  getExamResults(userId: string): Promise<ExamResult[]>;
+  getExamResults(userId: string): Promise<ExamResultWithMode[]>;
   getAllExamResults(): Promise<ExamResult[]>;
   clearUserExamHistory(userId: string): Promise<{
     examSessions: number;
@@ -356,12 +366,20 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async getExamResults(userId: string): Promise<ExamResult[]> {
-    return db
-      .select()
+  // Joined to the sitting so callers can tell a representative paper from a
+  // targeted one. A left join because the result is the record that matters:
+  // a missing session row must not make a student's result disappear from
+  // their own history. Such a row falls back to "practice", which is what
+  // every sitting was before targeted practice existed.
+  async getExamResults(userId: string): Promise<ExamResultWithMode[]> {
+    const rows = await db
+      .select({ result: examResults, mode: examSessions.mode })
       .from(examResults)
+      .leftJoin(examSessions, eq(examResults.sessionId, examSessions.id))
       .where(eq(examResults.userId, userId))
       .orderBy(desc(examResults.completedAt));
+
+    return rows.map((r) => ({ ...r.result, mode: parseExamMode(r.mode) }));
   }
 
   async getAllExamResults(): Promise<ExamResult[]> {

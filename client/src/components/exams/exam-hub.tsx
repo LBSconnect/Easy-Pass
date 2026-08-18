@@ -26,7 +26,7 @@ import { Sparkline } from "@/components/sparkline";
 import { AlexiMark } from "@/components/alexi-mark";
 import { AlexiMascot } from "@/components/alexi-mascot";
 import { EXAM_VISUALS } from "@/lib/examVisuals";
-import { Zap, ClipboardCheck, ArrowRight, CalendarDays, BookOpen, ChevronRight, TrendingUp, TriangleAlert } from "lucide-react";
+import { Zap, ClipboardCheck, Target, ArrowRight, CalendarDays, BookOpen, ChevronRight, TrendingUp, TriangleAlert } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 import { useStudyAssistantConfig, useRecommendation, STUDY_ASSISTANT } from "@/lib/studyAssistant";
 import type { ExamCategory, UserProfile, ExamResult } from "@shared/schema";
@@ -76,6 +76,8 @@ function ExamCard({
   isCurrent,
   mode,
   questionCount,
+  targetedAvailable,
+  hasHistory,
   es,
 }: {
   exam: (typeof EXAMS)[number];
@@ -83,6 +85,15 @@ function ExamCard({
   mode: PracticeMode;
   /** Real count from the bank. Undefined until loaded; never guessed. */
   questionCount: number | undefined;
+  /** Whether the deployment offers targeted practice at all. */
+  targetedAvailable: boolean;
+  /**
+   * Whether this student has sat this exam before. Targeted practice has
+   * nothing to aim at without answers to aim it with, so the option stays
+   * hidden rather than offering a paper that would just be ordinary practice
+   * under a more promising name.
+   */
+  hasHistory: boolean;
   es: boolean;
 }) {
   const { data: readiness } = useQuery<Readiness>({
@@ -161,6 +172,23 @@ function ExamCard({
             </Link>
           </Button>
         </div>
+
+        {targetedAvailable && hasHistory && (
+          <Button
+            variant="outline"
+            asChild
+            className="mt-2 min-h-11 w-full"
+            data-testid={`button-targeted-${exam.id}`}
+          >
+            <Link
+              href={`/exams/${exam.id}?mode=targeted`}
+              onClick={() => trackEvent("targeted_practice_clicked", { exam_type: exam.id })}
+            >
+              <Target className="mr-1.5 h-4 w-4" aria-hidden="true" />
+              {es ? "Practicar mis áreas débiles" : "Practise my weak areas"}
+            </Link>
+          </Button>
+        )}
 
         <Link
           href="/study-guide"
@@ -423,6 +451,8 @@ export function ExamHub() {
                 isCurrent={exam.id === current}
                 mode={mode}
                 questionCount={questionCounts?.[exam.id]}
+                targetedAvailable={Boolean(config?.targetedPracticeAvailable)}
+                hasHistory={(results ?? []).some((r) => r.category === exam.id)}
                 es={es}
               />
             ))}

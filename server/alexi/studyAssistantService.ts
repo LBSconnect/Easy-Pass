@@ -35,6 +35,8 @@ import {
   type ApprovedQuestionContext,
   type TutorIntent,
 } from "./tutor";
+import { resolveTargetedPractice, TARGETED_PRACTICE_ENV } from "@shared/alexiFlags";
+import { isRepresentativeSitting } from "@shared/examMode";
 import type { ExamCategory } from "@shared/schema";
 
 /**
@@ -127,6 +129,7 @@ export class StudyAssistantService {
       displayName: STUDY_ASSISTANT.displayName,
       flags: config.flags,
       aiAvailable: hasCredentials(),
+      targetedPracticeAvailable: resolveTargetedPractice(process.env[TARGETED_PRACTICE_ENV]),
     };
   }
 
@@ -143,8 +146,12 @@ export class StudyAssistantService {
       storage.getProfile(userId),
     ]);
 
+    // Targeted practice is excluded here for the same reason it is excluded
+    // from the readiness recompute on submit: the paper is weighted toward
+    // what this student fails, so its percentage is not a reading of where
+    // they stand. See shared/examMode.ts.
     const mockExamScores = results
-      .filter((r) => r.category === category)
+      .filter((r) => r.category === category && isRepresentativeSitting(r.mode))
       .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
       .map((r) => r.score);
 
@@ -153,6 +160,7 @@ export class StudyAssistantService {
       topic: r.topic,
       isCorrect: r.isCorrect,
       answeredAt: new Date(r.answeredAt),
+      source: r.source,
     }));
 
     const readiness = calculateEasyPassScore({

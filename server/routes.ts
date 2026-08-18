@@ -29,6 +29,9 @@ import { glossaryCandidates } from "./alexi/glossaryCandidates";
 import { pool } from "./db";
 import { buildNotebook, filterNotebook, notebookCounts, type NotebookFilter } from "./missedQuestions";
 import { buildSimulatorPaper } from "./simulatorPaper";
+import { buildTargetedPaper } from "./alexi/targetedPaper";
+import { resolveTargetedPractice, TARGETED_PRACTICE_ENV } from "@shared/alexiFlags";
+import { EXAM_MODES, isRepresentativeSitting, questionCountFor, timeLimitFor } from "@shared/examMode";
 import { selectDueCards, scheduleNext, newCardState } from "./spacedRepetition";
 import { shuffleQuestionOptions } from "./shuffleQuestionOptions";
 import { studyAssistant } from "./alexi/studyAssistantService";
@@ -72,9 +75,15 @@ const sessionAnswerSchema = z.object({
   answerIndex: z.number().int().min(0).max(9),
 });
 
+/** How far back a question counts as "recently seen" for targeted practice. */
+const RECENTLY_SEEN_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
+
 const startExamSchema = z.object({
   category: z.enum(examCategoryEnum.enumValues),
-  mode: z.enum(["practice", "full"]).default("practice"),
+  // "targeted" is practice weighted toward what this student keeps getting
+  // wrong. It is deliberately not called a mock exam anywhere - see
+  // server/alexi/targetedPaper.ts for why the two must stay distinct.
+  mode: z.enum(EXAM_MODES).default("practice"),
 });
 
 const submitExamSchema = z.object({
@@ -658,22 +667,52 @@ export async function registerRoutes(
         return res.status(403).json({ message: subscriptionCheck.message });
       }
       
+      if (mode === "targeted" && !resolveTargetedPractice(process.env[TARGETED_PRACTICE_ENV])) {
+        return res.status(403).json({ message: "Targeted practice is not available yet" });
+      }
+
       // Practice: 50 random questions, 90 min | Full Mock: 150 random questions, 120 min
-      const questionLimit = mode === "full" ? 150 : 50;
-      const timeLimit = mode === "full" ? 7200 : 5400; // 120 min or 90 min in seconds
+      // Targeted: 50 questions weighted to this student's weak topics, 90 min.
+      const questionLimit = questionCountFor(mode);
+      const timeLimit = timeLimitFor(mode);
       
       console.log(`[Exam Start] Category: ${category}, Mode: ${mode}, Limit: ${questionLimit}, Time: ${timeLimit}s`);
       // Full mock = exam-day simulator: the paper is weighted so topics appear
       // in proportion to the bank rather than by luck of a random draw.
       // Practice stays a straight random sample.
       let questions;
-      if (mode === "full") {
+      if (mode === "full" || mode === "targeted") {
         const activePool = await storage.getActiveQuestions(category);
-        const paper = buildSimulatorPaper({
-          pool: activePool.map((q) => ({ id: q.id, topic: q.topic })),
-          targetCount: questionLimit,
-          seed: Date.now(),
-        });
+        const pool = activePool.map((q) => ({ id: q.id, topic: q.topic }));
+        const seed = Date.now();
+
+        let paper;
+        if (mode === "targeted") {
+          const mastery = await storage.getTopicMastery(userId, category);
+          // Only topics the student has actually attempted carry an accuracy.
+          // The rest are left out so buildTargetedPaper treats them as
+          // unknown rather than as a score of zero, which would send the
+          // whole paper to topics they have simply never opened.
+          const topicAccuracy = mastery
+            .filter((m) => m.answered > 0 && m.topic)
+            .map((m) => ({ topic: m.topic, accuracy: m.accuracy }));
+
+          // A fortnight is long enough that a question is not fresh in mind
+          // and short enough that a regular student still has unseen ones.
+          const since = new Date(seed - RECENTLY_SEEN_WINDOW_MS);
+          const recent = await storage.getResponsesSince(userId, since);
+
+          paper = buildTargetedPaper({
+            pool,
+            targetCount: questionLimit,
+            topicAccuracy,
+            recentlySeenIds: recent.map((r) => r.questionId),
+            seed,
+          });
+        } else {
+          paper = buildSimulatorPaper({ pool, targetCount: questionLimit, seed });
+        }
+
         const byId = new Map(activePool.map((q) => [q.id, q]));
         questions = paper
           .map((p) => byId.get(p.id))
@@ -715,6 +754,9 @@ export async function registerRoutes(
         currentQuestionIndex: 0,
         timeLimit,
         isCompleted: false,
+        // Recorded so the result can say what kind of paper it was. A
+        // targeted paper's score is not comparable with a full mock's.
+        mode,
       });
 
       // Never send the per-session shuffled correct-answer mapping to the client
@@ -797,7 +839,11 @@ export async function registerRoutes(
             ...r,
             userId,
             category: session.category,
-            source: "exam" as const,
+            // A targeted paper is a drill, and the existing enum already has
+            // the word for it. Recorded honestly so the score can weigh these
+            // answers correctly rather than mistaking them for a sitting that
+            // sampled the whole syllabus.
+            source: session.mode === "targeted" ? ("drill" as const) : ("exam" as const),
             sessionId,
           })),
         );
@@ -819,8 +865,11 @@ export async function registerRoutes(
           storage.countActiveQuestions(session.category),
         ]);
 
+        // Targeted papers are excluded: their score is depressed by design,
+        // and letting it move the readiness figure would punish the student
+        // for practising their weak areas.
         const categoryResults = allResults
-          .filter((r) => r.category === session.category)
+          .filter((r) => r.category === session.category && isRepresentativeSitting(r.mode))
           .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
 
         const toScoreInput = (
@@ -832,6 +881,9 @@ export async function registerRoutes(
             topic: r.topic,
             isCorrect: r.isCorrect,
             answeredAt: new Date(r.answeredAt),
+            // Carried so the score can leave drill answers out of the
+            // recent-accuracy component. See server/easyPassScore.ts.
+            source: r.source,
           })),
           mockExamScores: mockScores,
           questionBankSize: bankSize,
@@ -909,7 +961,7 @@ export async function registerRoutes(
       ]);
 
       const mockExamScores = results
-        .filter((r) => r.category === examCategory)
+        .filter((r) => r.category === examCategory && isRepresentativeSitting(r.mode))
         .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
         .map((r) => r.score);
 
@@ -919,6 +971,7 @@ export async function registerRoutes(
         topic: r.topic,
         isCorrect: r.isCorrect,
         answeredAt: new Date(r.answeredAt),
+        source: r.source,
       }));
 
       const readiness = calculateEasyPassScore({

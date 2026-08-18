@@ -195,6 +195,10 @@ export const examSessions = pgTable("exam_sessions", {
   completedAt: timestamp("completed_at"),
   timeLimit: integer("time_limit").default(3600).notNull(),
   isCompleted: boolean("is_completed").default(false).notNull(),
+  // "practice" | "full" | "targeted" - see shared/examMode.ts. Stored as text
+  // rather than an enum so adding a mode is a code change, not a type
+  // migration on a table holding every sitting a student has ever taken.
+  mode: varchar("mode", { length: 20 }).default("practice").notNull(),
 }, (table) => [
   index("idx_exam_sessions_user").on(table.userId),
   index("idx_exam_sessions_category").on(table.category),

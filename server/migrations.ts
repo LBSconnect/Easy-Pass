@@ -258,6 +258,19 @@ const STEPS: Step[] = [
           ALTER TABLE questions ADD COLUMN IF NOT EXISTS p_value_basis_points integer;
           ALTER TABLE questions ADD COLUMN IF NOT EXISTS difficulty_calibrated_at timestamp;`,
   },
+
+  // --- Which kind of paper a sitting was ----------------------------------
+  // Targeted practice is deliberately over-weighted toward a student's weak
+  // topics, so its score is lower than a representative paper's and must not
+  // be read as readiness. Without this column a completed session cannot say
+  // which kind it was, and every sitting looks alike to the score.
+  //
+  // Defaulted rather than backfilled: every existing row predates targeted
+  // practice, so "practice" is what they actually were.
+  {
+    name: "exam_sessions mode",
+    sql: `ALTER TABLE exam_sessions ADD COLUMN IF NOT EXISTS mode varchar(20) DEFAULT 'practice' NOT NULL;`,
+  },
 ];
 
 export interface MigrationResult {
@@ -327,6 +340,7 @@ export async function checkSchemaHealth(): Promise<{
     ["questions", "difficulty"],
     ["questions", "p_value_basis_points"],
     ["questions", "difficulty_calibrated_at"],
+    ["exam_sessions", "mode"],
   ];
 
   const tables = await pool.query(

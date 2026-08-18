@@ -16,6 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CalendarDays } from "lucide-react";
+import { WavingHand } from "@/components/waving-hand";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { trackEvent } from "@/lib/analytics";
 
@@ -67,22 +68,27 @@ export function WelcomeCard({ firstName, examLabel, examDate, daysRemaining }: P
   });
 
   return (
-    <Card className="border-primary/20 bg-primary/[0.04]">
+    <Card className="border-primary/20 bg-gradient-to-r from-primary/[0.07] to-primary/[0.02]">
       <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between md:p-6">
-        <div className="min-w-0">
-          <h1 className="text-xl font-bold md:text-2xl" data-testid="text-greeting">
-            {greetingFor(i18n.language)}, {firstName}!
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {es
-              ? "Vas progresando. Sigamos construyendo tu confianza."
-              : "You're making progress. Let's keep building your confidence."}
-          </p>
+        <div className="flex min-w-0 items-center gap-3 md:gap-4">
+          <WavingHand size={40} className="hidden sm:block md:h-12 md:w-12" />
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold md:text-2xl" data-testid="text-greeting">
+              {greetingFor(i18n.language)}, {firstName}!
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {es
+                ? "Vas progresando muy bien. Sigamos construyendo tu confianza."
+                : "You're making great progress. Let's keep building your confidence."}
+            </p>
+          </div>
         </div>
 
         {examLabel && (
-          <div className="flex shrink-0 items-center gap-3 rounded-lg border bg-background p-3">
-            <CalendarDays className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+          <div className="flex shrink-0 items-center gap-3 rounded-xl border bg-background p-3 shadow-sm">
+            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <CalendarDays className="h-5 w-5 text-primary" aria-hidden="true" />
+            </span>
             <div className="min-w-0">
               <p className="text-sm font-semibold" data-testid="text-current-exam">
                 {examLabel}

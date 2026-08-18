@@ -105,9 +105,11 @@ export function sectionsFor(state: DashboardState, input: DashboardInput): Dashb
 
   switch (state) {
     case "exam_approaching":
-      // Countdown and readiness lead; mastery moves up because the remaining
-      // decision is which weak area to spend the last days on.
-      base.push("score", "alexi", "plan", "mastery", "quick_actions");
+      // Alexi leads in every state. The approved concept and the stated
+      // priority order both put the recommendation above the score, and they
+      // are right: with days left, "here is what to do about it" beats "here
+      // is the problem restated as a number".
+      base.push("alexi", "score", "plan", "mastery", "quick_actions");
       break;
     case "retaker":
       // Rescue framing first - a retaker's question is "what went wrong", and
@@ -118,11 +120,12 @@ export function sectionsFor(state: DashboardState, input: DashboardInput): Dashb
       // Drilling basics is the wrong advice here; confirmation under exam
       // conditions is the useful next step, so quick actions rise above the
       // daily plan.
-      base.push("score", "alexi", "quick_actions", "plan", "mastery");
+      base.push("alexi", "score", "quick_actions", "plan", "mastery");
       break;
     case "diagnostic_complete":
-      // Score is the new information; the plan is what to do about it.
-      base.push("score", "alexi", "plan", "mastery", "quick_actions");
+      // The score is the new information, but the plan is what to do about it,
+      // and the recommendation is the plan's first step.
+      base.push("alexi", "score", "plan", "mastery", "quick_actions");
       break;
     default:
       base.push("alexi", "score", "plan", "mastery", "quick_actions");

@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ReadinessRing } from "@/components/readiness-ring";
 import { TrendingUp, TrendingDown, ShieldCheck, TriangleAlert, ArrowRight } from "lucide-react";
+import { IconTile } from "@/components/icon-tile";
 import { trackEvent } from "@/lib/analytics";
 import type { ExamCategory } from "@shared/schema";
 
@@ -88,9 +89,12 @@ export function ScoreCard({ category }: { category: ExamCategory }) {
     return (
       <Card className="h-full" data-testid="card-score-provisional">
         <CardContent className="flex h-full flex-col p-5 md:p-6">
-          <h2 className="text-base font-semibold">
-            {es ? "Puntaje EasyPass" : "EasyPass Score"}
-          </h2>
+          <div className="flex items-center gap-2.5">
+            <IconTile icon={TrendingUp} tone="blue" />
+            <h2 className="text-base font-semibold">
+              {es ? "Puntaje EasyPass" : "EasyPass Score"}
+            </h2>
+          </div>
           <div className="mt-4 flex items-center gap-4">
             <ReadinessRing value={null} size={80} label={es ? "Puntaje EasyPass" : "EasyPass Score"} />
             <p className="text-sm text-muted-foreground">
@@ -120,7 +124,12 @@ export function ScoreCard({ category }: { category: ExamCategory }) {
   return (
     <Card className="h-full" data-testid="card-score">
       <CardContent className="flex h-full flex-col p-5 md:p-6">
-        <h2 className="text-base font-semibold">{es ? "Puntaje EasyPass" : "EasyPass Score"}</h2>
+        <div className="flex items-center gap-2.5">
+          <IconTile icon={TrendingUp} tone="blue" />
+          <h2 className="text-base font-semibold">
+            {es ? "Puntaje EasyPass" : "EasyPass Score"}
+          </h2>
+        </div>
 
         <div className="mt-4 flex items-center justify-between gap-4">
           <div className="min-w-0">
@@ -162,56 +171,51 @@ export function ScoreCard({ category }: { category: ExamCategory }) {
         </div>
 
         {(strongest || weakest) && (
-          <div className="mt-5 grid gap-3 border-t pt-4 sm:grid-cols-2">
+          <div className="mt-5 grid gap-3 border-t pt-4 sm:grid-cols-2 sm:gap-0 sm:divide-x">
             {strongest && (
-              <div className="flex items-start gap-2 min-w-0">
-                <ShieldCheck
-                  className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400"
-                  aria-hidden="true"
-                />
-                <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-2.5 sm:pr-4">
+                <IconTile icon={ShieldCheck} tone="emerald" circle />
+                <div className="min-w-0 flex-1">
                   <p className="text-xs text-muted-foreground">
                     {es ? "Tema más fuerte" : "Strongest Topic"}
                   </p>
-                  <p className="truncate text-sm font-medium" data-testid="text-strongest-topic">
-                    {strongest.topic} — {strongest.accuracy}%
+                  <p className="truncate text-sm font-semibold" data-testid="text-strongest-topic">
+                    {strongest.topic}
                   </p>
                 </div>
+                <span className="shrink-0 text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                  {strongest.accuracy}%
+                </span>
               </div>
             )}
             {weakest && weakest.topic !== strongest?.topic && (
-              <div className="flex items-start gap-2 min-w-0">
-                <TriangleAlert
-                  className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
-                  aria-hidden="true"
-                />
-                <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-2.5 sm:pl-4">
+                <IconTile icon={TriangleAlert} tone="amber" circle />
+                <div className="min-w-0 flex-1">
                   <p className="text-xs text-muted-foreground">
                     {es ? "Necesita atención" : "Needs Attention"}
                   </p>
-                  <p className="truncate text-sm font-medium" data-testid="text-weakest-topic">
-                    {weakest.topic} — {weakest.accuracy}%
+                  <p className="truncate text-sm font-semibold" data-testid="text-weakest-topic">
+                    {weakest.topic}
                   </p>
                 </div>
+                <span className="shrink-0 text-sm font-bold tabular-nums text-amber-600 dark:text-amber-400">
+                  {weakest.accuracy}%
+                </span>
               </div>
             )}
           </div>
         )}
 
-        <Button
-          variant="outline"
-          asChild
-          className="mt-auto w-full pt-0 sm:w-auto"
+        <Link
+          href="/study-assistant"
+          onClick={() => trackEvent("easypass_score_clicked", { exam_type: category })}
+          className="mt-auto inline-flex min-h-6 items-center gap-1 self-start rounded pt-4 text-sm text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           data-testid="button-readiness-report"
         >
-          <Link
-            href="/study-assistant"
-            onClick={() => trackEvent("easypass_score_clicked", { exam_type: category })}
-          >
-            {es ? "Ver mi informe" : "View My Readiness Report"}
-            <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
-          </Link>
-        </Button>
+          {es ? "Ver mi informe" : "View My Readiness Report"}
+          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
       </CardContent>
     </Card>
   );

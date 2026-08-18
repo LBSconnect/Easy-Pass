@@ -17,8 +17,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Layers, Target, RotateCcw, ClipboardCheck, BookOpen, Clock, Play,
+  Layers, Target, RotateCcw, CircleCheck, ClipboardCheck, BookOpen, Clock, Play,
+  CalendarDays,
 } from "lucide-react";
+import { IconTile, type TileTone } from "@/components/icon-tile";
 import { trackEvent } from "@/lib/analytics";
 import { STUDY_ASSISTANT, useStudyAssistantConfig } from "@/lib/studyAssistant";
 import type { ExamCategory } from "@shared/schema";
@@ -46,12 +48,12 @@ interface StudyPlan {
   estimatedMinutes: number;
 }
 
-const TASK_META: Record<TaskKind, { icon: typeof Target; href: string }> = {
-  weak_topic_drill: { icon: Target, href: "/exams" },
-  missed_review: { icon: RotateCcw, href: "/missed-questions" },
-  mock_exam: { icon: ClipboardCheck, href: "/exams" },
-  mastery_check: { icon: ClipboardCheck, href: "/exams" },
-  broad_practice: { icon: BookOpen, href: "/exams" },
+const TASK_META: Record<TaskKind, { icon: typeof Target; href: string; tone: TileTone }> = {
+  weak_topic_drill: { icon: Target, href: "/exams", tone: "blue" },
+  missed_review: { icon: RotateCcw, href: "/missed-questions", tone: "amber" },
+  mock_exam: { icon: ClipboardCheck, href: "/exams", tone: "violet" },
+  mastery_check: { icon: CircleCheck, href: "/exams", tone: "emerald" },
+  broad_practice: { icon: BookOpen, href: "/exams", tone: "teal" },
 };
 
 function taskCopy(task: PlanTask, es: boolean): { title: string; sub: string } {
@@ -143,6 +145,7 @@ export function TodaysPlanCard({ category }: { category: ExamCategory }) {
     <Card data-testid="card-todays-plan">
       <CardContent className="p-5 md:p-6">
         <div className="flex flex-wrap items-center gap-2">
+          <IconTile icon={CalendarDays} tone="blue" />
           <h2 className="text-base font-semibold">{es ? "Plan de hoy" : "Today's Plan"}</h2>
           <Badge variant="secondary" className="inline-flex items-center gap-1 text-xs">
             <Clock className="h-3 w-3" aria-hidden="true" />
@@ -174,16 +177,21 @@ export function TodaysPlanCard({ category }: { category: ExamCategory }) {
                   className="flex min-h-11 items-center gap-3 rounded-md border p-3 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   data-testid={`plan-task-${task.kind}`}
                 >
-                  <span className="rounded-md bg-primary/10 p-1.5">
-                    <meta.icon className="h-4 w-4 text-primary" aria-hidden="true" />
-                  </span>
+                  <IconTile icon={meta.icon} tone={meta.tone} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">{copy.title}</span>
                     <span className="block truncate text-xs text-muted-foreground">{copy.sub}</span>
                   </span>
-                  <span className="shrink-0 text-xs text-muted-foreground">
+                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                     {task.estimatedMinutes} {es ? "min" : "min"}
                   </span>
+                  {/* Empty marker, not a control: the plan is completed by
+                      doing the task, so a real checkbox here would promise a
+                      toggle that does nothing. */}
+                  <span
+                    className="hidden h-[18px] w-[18px] shrink-0 rounded border sm:block"
+                    aria-hidden="true"
+                  />
                 </Link>
               </li>
             );

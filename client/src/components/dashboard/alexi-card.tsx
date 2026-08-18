@@ -18,8 +18,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Clock, Play, LifeBuoy, ChevronDown } from "lucide-react";
-import { AlexiMark } from "@/components/alexi-mark";
+import { Play, LifeBuoy, ChevronDown } from "lucide-react";
+import { AlexiMascot } from "@/components/alexi-mascot";
 import { trackEvent } from "@/lib/analytics";
 import {
   STUDY_ASSISTANT,
@@ -51,9 +51,11 @@ export function AlexiCard({ category, hasHistory }: Props) {
     return (
       <Card className="h-full border-primary/25 bg-primary/[0.04]" data-testid="card-alexi-empty">
         <CardContent className="flex h-full flex-col p-5 md:p-6">
-          <div className="flex items-center gap-2">
-            <AlexiMark size={22} className="text-primary" />
-            <span className="text-sm font-semibold text-primary">{named}</span>
+          <div className="flex items-center gap-3">
+            <span className="hidden shrink-0 items-center justify-center rounded-full bg-background/70 p-1 sm:inline-flex">
+              <AlexiMascot size={56} waving={false} sparkles={false} />
+            </span>
+            <span className="text-base font-bold">{named}</span>
           </div>
           <p className="mt-3 text-sm text-muted-foreground">
             {es
@@ -92,68 +94,72 @@ export function AlexiCard({ category, hasHistory }: Props) {
 
   const { recommendation: rec, phrasing, profile } = data;
 
+  // The session contents read as one line rather than a bullet list. The
+  // concept still gets its own emphasis because it is the answer to "what am I
+  // being sent to do".
+  const blockSummary = rec.blocks.map((b) => b.label).join(" · ");
+
   return (
     <Card className="h-full border-primary/25 bg-primary/[0.04]" data-testid="card-alexi">
       <CardContent className="flex h-full flex-col p-5 md:p-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <AlexiMark size={22} className="text-primary" />
-          <span className="text-sm font-semibold text-primary" data-testid="text-alexi-title">
-            {branded
-              ? es ? `${named} encontró algo` : `${named} found something`
-              : es ? "Tu próximo paso" : "Your next step"}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          {/* Mascot sits on a pale disc so it reads as a portrait, not a spot
+              illustration floating in the card. */}
+          <span className="hidden shrink-0 items-center justify-center rounded-full bg-background/70 p-2 shadow-sm sm:inline-flex">
+            <AlexiMascot size={92} label={`${named}`} />
           </span>
-          <Badge variant="secondary" className="text-xs">
-            {es ? "Recomendado" : "Recommended"}
-          </Badge>
-          {profile.isRetaker && (
-            <Badge variant="outline" className="text-xs">
-              {es ? "Reintento" : "Retaker"}
-            </Badge>
-          )}
-        </div>
 
-        {profile.insight && (
-          <p className="mt-3 text-sm" data-testid="text-alexi-insight">
-            {profile.insight}
-          </p>
-        )}
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="flex flex-wrap items-center gap-2">
+              <AlexiMascot size={34} waving={false} sparkles={false} className="sm:hidden" />
+              <h2 className="text-lg font-bold leading-snug" data-testid="text-alexi-title">
+                {branded
+                  ? es ? `${named} encontró algo` : `${named} found something`
+                  : es ? "Tu próximo paso" : "Your next step"}
+              </h2>
+              <Badge variant="secondary" className="text-xs">
+                {es ? "Recomendado" : "Recommended"}
+              </Badge>
+              {profile.isRetaker && (
+                <Badge variant="outline" className="text-xs">
+                  {es ? "Reintento" : "Retaker"}
+                </Badge>
+              )}
+            </div>
 
-        <h2 className="mt-3 text-lg font-bold leading-snug" data-testid="text-alexi-headline">
-          {rec.headline}
-        </h2>
-        <p className="mt-1.5 text-sm text-muted-foreground" data-testid="text-alexi-phrasing">
-          {phrasing}
-        </p>
+            <p className="mt-2.5 text-[0.95rem] leading-relaxed text-muted-foreground" data-testid="text-alexi-headline">
+              {phrasing}
+            </p>
 
-        <ul className="mt-4 space-y-1.5" data-testid="list-alexi-blocks">
-          {rec.blocks.map((b, i) => (
-            <li key={i} className="flex items-baseline gap-2 text-sm">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />
-              <span className="min-w-0">{b.label}</span>
-            </li>
-          ))}
-        </ul>
+            {blockSummary && (
+              <p className="mt-2 text-sm" data-testid="text-alexi-blocks">
+                <span className="font-semibold">
+                  {es
+                    ? `Sesión de ${rec.estimatedMinutes} min`
+                    : `${rec.estimatedMinutes}-minute session`}
+                </span>
+                <span className="text-primary"> · {blockSummary}</span>
+              </p>
+            )}
 
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Button asChild size="lg" data-testid="button-alexi-start">
-            <Link
-              href={blockHref(rec.mode, category)}
-              onClick={() =>
-                trackEvent("alexi_recommendation_started", {
-                  exam_type: category,
-                  mode: rec.mode,
-                  concept: rec.concept?.conceptId ?? null,
-                })
-              }
-            >
-              <Play className="mr-1.5 h-4 w-4" aria-hidden="true" />
-              {es ? `Comenzar sesión` : `Start ${named} Session`}
-            </Link>
-          </Button>
-          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-            <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-            {rec.estimatedMinutes} {es ? "min" : "min"}
-          </span>
+            <div className="mt-4 border-t pt-4">
+              <Button asChild size="lg" data-testid="button-alexi-start">
+                <Link
+                  href={blockHref(rec.mode, category)}
+                  onClick={() =>
+                    trackEvent("alexi_recommendation_started", {
+                      exam_type: category,
+                      mode: rec.mode,
+                      concept: rec.concept?.conceptId ?? null,
+                    })
+                  }
+                >
+                  <Play className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                  {es ? "Comenzar sesión" : `Start ${named} Session`}
+                </Link>
+              </Button>
+            </div>
+          </div>
         </div>
 
         {rec.suggestHumanHelp && (

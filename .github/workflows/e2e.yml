@@ -58,7 +58,6 @@ jobs:
       # Test-only value. The app refuses to start without one, and nothing
       # here is a real session.
       SESSION_SECRET: e2e-ci-session-secret-not-a-real-one
-      NODE_ENV: production
       PORT: "5000"
       # express-session declines to set a Secure cookie over plain HTTP, so a
       # production build here would issue no session cookie at all and every
@@ -98,9 +97,16 @@ jobs:
         run: npm run db:push
 
       - name: Build
+        env:
+          NODE_ENV: production
         run: npm run build
 
       - name: Start server
+        # NODE_ENV belongs to the server process only. Setting it at the job
+        # level made `npm ci` skip devDependencies, so drizzle-kit was not
+        # installed and the schema push died with "drizzle-kit: not found".
+        env:
+          NODE_ENV: production
         run: |
           node dist/index.cjs > /tmp/server.log 2>&1 &
           echo $! > /tmp/server.pid

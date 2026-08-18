@@ -30,6 +30,7 @@ import { pool } from "./db";
 import { buildNotebook, filterNotebook, notebookCounts, type NotebookFilter } from "./missedQuestions";
 import { buildSimulatorPaper } from "./simulatorPaper";
 import { buildTargetedPaper } from "./alexi/targetedPaper";
+import { auditBank, findThinTopics } from "./alexi/bankAudit";
 import { resolveTargetedPractice, TARGETED_PRACTICE_ENV } from "@shared/alexiFlags";
 import { EXAM_MODES, isRepresentativeSitting, questionCountFor, timeLimitFor } from "@shared/examMode";
 import { selectDueCards, scheduleNext, newCardState } from "./spacedRepetition";
@@ -74,6 +75,9 @@ const sessionAnswerSchema = z.object({
   questionId: z.string().min(1),
   answerIndex: z.number().int().min(0).max(9),
 });
+
+/** Findings returned by the content audit. The summary counts are unaffected. */
+const MAX_AUDIT_FINDINGS = 500;
 
 /** How far back a question counts as "recently seen" for targeted practice. */
 const RECENTLY_SEEN_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
@@ -3235,6 +3239,58 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching questions:", error);
       res.status(500).json({ message: "Failed to fetch questions" });
+    }
+  });
+
+  /**
+   * Quality audit of the live question bank.
+   *
+   * The validation pipeline only ever ran on generated candidates, so the
+   * hand-written bank students actually sit has never been checked against
+   * the same standard. This runs those checks over what is really stored.
+   *
+   * Read-only: it reports, it never edits or deactivates a question. What to
+   * do about a finding is a judgement call, and a bad one would delete
+   * material a paying student is studying from.
+   */
+  app.get("/api/admin/content-audit", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+
+      const categoryParam = req.query.category as string | undefined;
+      const category =
+        categoryParam && categoryParam !== "all" ? (categoryParam as ExamCategory) : undefined;
+      if (category && !examCategoryEnum.enumValues.includes(category)) {
+        return res.status(400).json({ message: "Unknown exam category" });
+      }
+
+      const bank = await storage.getQuestions(category);
+      const auditable = bank.map((q) => ({
+        id: q.id,
+        category: q.category,
+        topic: q.topic,
+        questionTextEn: q.questionTextEn,
+        questionTextEs: q.questionTextEs,
+        optionsEn: q.optionsEn,
+        optionsEs: q.optionsEs,
+        correctAnswer: q.correctAnswer,
+        explanationEn: q.explanationEn,
+        explanationEs: q.explanationEs,
+      }));
+
+      const report = auditBank(auditable);
+      res.json({
+        ...report,
+        // Capped: the summary counts are the point, and a bank with
+        // thousands of warnings would otherwise return a response no one can
+        // read and the browser struggles to render.
+        findings: report.findings.slice(0, MAX_AUDIT_FINDINGS),
+        findingsTruncated: report.findings.length > MAX_AUDIT_FINDINGS,
+        thinTopics: findThinTopics(auditable),
+      });
+    } catch (error) {
+      console.error("Error auditing content:", error);
+      res.status(500).json({ message: "Failed to audit content" });
     }
   });
 

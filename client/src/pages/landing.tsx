@@ -22,6 +22,8 @@ import {
   Users,
 } from "lucide-react";
 import { Navbar } from "@/components/navbar";
+import { AlexiMascot } from "@/components/alexi-mascot";
+import { STUDY_ASSISTANT } from "@/lib/studyAssistant";
 import { Footer } from "@/components/footer";
 import { trackEvent } from "@/lib/analytics";
 
@@ -105,6 +107,30 @@ export default function LandingPage() {
         ? "Aprende por temas con quizzes interactivos y seguimiento de progreso"
         : "Learn by topic with interactive quizzes and progress tracking",
       highlight: isSpanish ? "Por temas" : "By topic",
+    },
+  ];
+
+  const alexiOffering = [
+    {
+      icon: Target,
+      title: isSpanish ? "Sabe dónde fallas" : "Knows where you slip",
+      body: isSpanish
+        ? "Sigue tu precisión por tema y encuentra el que más te cuesta."
+        : "Tracks your accuracy by topic and finds the one costing you most.",
+    },
+    {
+      icon: ClipboardCheck,
+      title: isSpanish ? "Prepara la sesión" : "Builds the session",
+      body: isSpanish
+        ? "Explicación, tarjetas y preguntas dirigidas, en un plan que puedes hacer."
+        : "Explanation, flashcards and targeted questions, in one plan you can sit.",
+    },
+    {
+      icon: BookOpen,
+      title: isSpanish ? "Explica las respuestas" : "Explains the answers",
+      body: isSpanish
+        ? "Pregunta por qué fallaste y te lo explica con el material aprobado."
+        : "Ask why you got one wrong and it explains from approved material.",
     },
   ];
 
@@ -429,6 +455,71 @@ export default function LandingPage() {
           </div>
         </section>
 
+
+        {/*
+          Alexi as a service offering.
+
+          Every claim here describes something the product actually does today:
+          the engine picks a concept from real performance data, the session
+          runner runs it, and the tutor answers about a question the student has
+          already answered using that question's approved explanation. No pass
+          rates, no guarantees, and nothing about the assistant "knowing" Texas
+          law - it explains approved material, which is a different and honest
+          promise.
+        */}
+        <section className="py-12 md:py-16" id="alexi">
+          <div className="container mx-auto px-4 max-w-5xl">
+            <div className="grid items-center gap-8 md:grid-cols-[auto_1fr]">
+              <div className="mx-auto flex shrink-0 items-center justify-center rounded-full bg-primary/[0.07] p-4 md:mx-0">
+                <AlexiMascot size={168} animated label={STUDY_ASSISTANT.displayName} />
+              </div>
+
+              <div className="min-w-0 text-center md:text-left">
+                <Badge variant="secondary" className="mb-3">
+                  {isSpanish ? "Incluido en tu suscripción" : "Included with your subscription"}
+                </Badge>
+                <h2 className="text-2xl md:text-3xl font-bold">
+                  {isSpanish
+                    ? `Conoce a ${STUDY_ASSISTANT.displayName}, tu asistente de estudio`
+                    : `Meet ${STUDY_ASSISTANT.displayName}, your study assistant`}
+                </h2>
+                <p className="mt-3 text-muted-foreground text-lg">
+                  {isSpanish
+                    ? `${STUDY_ASSISTANT.displayName} revisa tu rendimiento real, elige el tema que más te está costando y prepara una sesión corta para ese tema. Nada de adivinar qué estudiar.`
+                    : `${STUDY_ASSISTANT.displayName} looks at how you are actually performing, picks the topic costing you the most marks, and builds a short session around it. No more guessing what to study.`}
+                </p>
+
+                <ul className="mt-5 grid gap-3 sm:grid-cols-3">
+                  {alexiOffering.map((item) => (
+                    <li key={item.title} className="flex items-start gap-2.5 text-left">
+                      <item.icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold">{item.title}</span>
+                        <span className="block text-sm text-muted-foreground">{item.body}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* The scope is stated plainly rather than left to be assumed:
+                    the assistant explains approved material, it does not answer
+                    open questions about Texas law. */}
+                <p className="mt-5 text-xs text-muted-foreground">
+                  {isSpanish
+                    ? `${STUDY_ASSISTANT.displayName} explica las preguntas que ya has respondido usando el material aprobado de cada pregunta.`
+                    : `${STUDY_ASSISTANT.displayName} explains questions you have already answered, using each question's approved study material.`}
+                </p>
+
+                <Button asChild size="lg" className="mt-5" data-testid="button-alexi-signup">
+                  <Link href="/signup">
+                    {isSpanish ? "Empezar gratis" : "Get started free"}
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Live Bootcamp */}
         <section className="py-12 md:py-16 bg-muted/30">

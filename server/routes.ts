@@ -32,6 +32,15 @@ import { studyAssistant } from "./alexi/studyAssistantService";
 import { TUTOR_INTENTS, MAX_STUDENT_MESSAGE_CHARS, type TutorIntent } from "./alexi/tutor";
 import { buildSessionPlan, type PlannableQuestion } from "./alexi/sessionPlan";
 import { keyPointsFor } from "./alexi/keyPoints";
+import {
+  buildGenerationRequest, parseGenerationResponse, buildValidationRequest,
+  interpretValidation, batchSizeFor, MAX_BATCH_SIZE, GENERATION_VERSION,
+  type SourceQuestion,
+} from "./alexi/questionGeneration";
+import { validateGeneratedQuestion } from "./alexi/questionValidation";
+import { conceptIdFor } from "@shared/concepts";
+import { getProvider } from "./ai";
+import { getAIConfig } from "./ai/config";
 
 const alexiTutorSchema = z.object({
   questionId: z.string().min(1),
@@ -40,6 +49,20 @@ const alexiTutorSchema = z.object({
   // how much attacker-controlled text can reach a prompt.
   message: z.string().max(MAX_STUDENT_MESSAGE_CHARS).optional(),
 });
+
+const approveDraftSchema = z.object({
+  questionTextEn: z.string().min(20).max(600),
+  questionTextEs: z.string().min(1).max(900),
+  optionsEn: z.array(z.string().min(1)).length(4),
+  optionsEs: z.array(z.string().min(1)).length(4),
+  correctAnswer: z.number().int().min(0).max(3),
+  explanationEn: z.string().max(2000).nullable().optional(),
+  explanationEs: z.string().max(2000).nullable().optional(),
+  topic: z.string().max(120).nullable().optional(),
+  note: z.string().max(500).optional(),
+});
+
+const rejectDraftSchema = z.object({ note: z.string().max(500).optional() });
 
 const sessionAnswerSchema = z.object({
   questionId: z.string().min(1),
@@ -1023,6 +1046,206 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error recording session answer:", error);
       res.status(500).json({ message: "Failed to record answer" });
+    }
+  });
+
+  // ---------------------------------------------------------------------
+  // Generated questions, and the review queue they must pass through.
+  //
+  // Nothing here can reach a student on its own. Drafts land in
+  // `generated_questions`, a table no student-facing query touches, and only
+  // an admin pressing Approve copies one into `questions`. The validator can
+  // reject a draft outright; it can never approve one.
+  // ---------------------------------------------------------------------
+  async function requireAdmin(req: any, res: any): Promise<string | null> {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getProfile(userId);
+    if (profile?.role !== "admin") {
+      res.status(403).json({ message: "Forbidden" });
+      return null;
+    }
+    return userId;
+  }
+
+  app.post("/api/admin/generate-questions/:category", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = await requireAdmin(req, res);
+      if (!adminId) return;
+
+      const { category } = req.params;
+      if (!examCategoryEnum.enumValues.includes(category as ExamCategory)) {
+        return res.status(400).json({ message: "Unknown exam category" });
+      }
+      const examCategory = category as ExamCategory;
+
+      const config = getAIConfig();
+      if (!config.flags.enabled || !config.flags.quizGenerationEnabled) {
+        return res.status(503).json({
+          message: "Question generation is switched off. Set ALEXI_QUIZ_GENERATION_ENABLED to use it.",
+        });
+      }
+
+      const wanted = Math.min(Math.max(Number(req.body?.count) || 5, 1), MAX_BATCH_SIZE);
+      const topic = typeof req.body?.topic === "string" ? req.body.topic : null;
+
+      const pool = await storage.getActiveQuestions(examCategory);
+      const onTopic = topic
+        ? pool.filter((q) => (q.topic ?? "").trim().toLowerCase() === topic.trim().toLowerCase())
+        : pool;
+      if (onTopic.length === 0) {
+        return res.status(404).json({ message: "No approved questions to ground generation in" });
+      }
+
+      // Variants are grounded in approved bank questions, so the sources are
+      // real questions with real explanations - never a bare topic name.
+      const sources: SourceQuestion[] = onTopic.slice(0, 6).map((q) => ({
+        id: q.id,
+        topic: q.topic,
+        questionText: q.questionTextEn,
+        options: q.optionsEn,
+        correctIndex: q.correctAnswer,
+        explanation: q.explanationEn,
+      }));
+
+      const conceptTopicName = topic ?? sources[0].topic ?? "General";
+      const generationInput = {
+        examId: examCategory,
+        conceptId: conceptIdFor(conceptTopicName),
+        sources,
+        count: batchSizeFor(wanted),
+        difficulty: "standard" as const,
+        language: "en" as const,
+      };
+      const generated = await getProvider().complete(buildGenerationRequest(generationInput));
+
+      // Parsing needs the same input the request was built from, so a response
+      // can be checked against what was actually asked for.
+      const candidates = parseGenerationResponse(generated.text, generationInput);
+      if (candidates.length === 0) {
+        return res.status(502).json({ message: "The generator returned nothing usable" });
+      }
+
+      const existingTexts = pool.map((q) => q.questionTextEn);
+      const drafts = [];
+      const discarded: string[] = [];
+
+      for (const candidate of candidates) {
+        // Gate 1: deterministic checks - shape, leakage, duplication.
+        const deterministic = validateGeneratedQuestion(candidate, {
+          validExamIds: [...examCategoryEnum.enumValues],
+          existingQuestions: existingTexts,
+          allowedSourceIds: sources.map((src) => src.id),
+        });
+        if (!deterministic.passed) {
+          discarded.push(deterministic.issues.map((i) => i.detail).join("; "));
+          continue;
+        }
+
+        // Gate 2: an independent model pass that may only reject.
+        const checked = await getProvider().complete(
+          buildValidationRequest(candidate, sources),
+        );
+        const verdict = interpretValidation(checked.text);
+        if (verdict.verdict !== "PASS") {
+          discarded.push(verdict.reason || "validator rejected");
+          continue;
+        }
+
+        drafts.push({
+          category: examCategory,
+          topic: candidate.topic ?? topic ?? null,
+          questionTextEn: candidate.question,
+          optionsEn: candidate.choices.map((c) => c.text),
+          // The generator names the answer by choice id ("A"); the bank stores
+          // an index. Convert once, here, rather than at every reader.
+          correctAnswer: Math.max(
+            0,
+            candidate.choices.findIndex((c) => c.id === candidate.correctAnswer),
+          ),
+          explanationEn: candidate.explanation,
+          sourceQuestionIds: candidate.sourceIds ?? sources.map((src) => src.id),
+          status: "pending" as const,
+          validationNotes: deterministic.issues.map((i) => `${i.severity}: ${i.detail}`),
+          validatorConfidenceBasisPoints: Math.round((verdict.confidence ?? 0) * 10000),
+          promptRef: GENERATION_VERSION,
+        });
+      }
+
+      const stored = await storage.createGeneratedQuestions(drafts);
+      res.json({
+        generated: candidates.length,
+        queuedForReview: stored,
+        discarded: discarded.length,
+        // Said plainly so nobody assumes these are live.
+        note: "Drafts are queued for review. None of them reach students until an admin approves them.",
+      });
+    } catch (error) {
+      console.error("Error generating questions:", error);
+      res.status(500).json({ message: "Failed to generate questions" });
+    }
+  });
+
+  app.get("/api/admin/generated-questions", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = await requireAdmin(req, res);
+      if (!adminId) return;
+      const status = ["pending", "approved", "rejected"].includes(String(req.query.status))
+        ? String(req.query.status)
+        : "pending";
+      res.json(await storage.listGeneratedQuestions(status));
+    } catch (error) {
+      console.error("Error listing generated questions:", error);
+      res.status(500).json({ message: "Failed to list generated questions" });
+    }
+  });
+
+  app.post("/api/admin/generated-questions/:id/approve", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = await requireAdmin(req, res);
+      if (!adminId) return;
+
+      const parsed = approveDraftSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid question", errors: parsed.error.errors });
+      }
+      const { note, ...edits } = parsed.data;
+
+      // The reviewer's edited text is what publishes, not the draft: someone
+      // who corrected the wording expects the correction to be what ships.
+      const result = await storage.approveGeneratedQuestion(req.params.id, adminId, {
+        questionTextEn: edits.questionTextEn,
+        questionTextEs: edits.questionTextEs,
+        optionsEn: edits.optionsEn,
+        optionsEs: edits.optionsEs,
+        correctAnswer: edits.correctAnswer,
+        explanationEn: edits.explanationEn ?? null,
+        explanationEs: edits.explanationEs ?? null,
+        topic: edits.topic ?? null,
+      }, note);
+
+      if (!result) {
+        return res.status(409).json({ message: "That draft has already been reviewed" });
+      }
+      res.json({ questionId: result.questionId });
+    } catch (error) {
+      console.error("Error approving generated question:", error);
+      res.status(500).json({ message: "Failed to approve question" });
+    }
+  });
+
+  app.post("/api/admin/generated-questions/:id/reject", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = await requireAdmin(req, res);
+      if (!adminId) return;
+      const parsed = rejectDraftSchema.safeParse(req.body ?? {});
+      const ok = await storage.rejectGeneratedQuestion(
+        req.params.id, adminId, parsed.success ? parsed.data.note : undefined,
+      );
+      if (!ok) return res.status(409).json({ message: "That draft has already been reviewed" });
+      res.json({ rejected: true });
+    } catch (error) {
+      console.error("Error rejecting generated question:", error);
+      res.status(500).json({ message: "Failed to reject question" });
     }
   });
 

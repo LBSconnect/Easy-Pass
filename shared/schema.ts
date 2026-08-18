@@ -80,6 +80,49 @@ export const questions = pgTable("questions", {
   index("idx_questions_topic").on(table.topic),
 ]);
 
+/**
+ * Draft questions awaiting human review.
+ *
+ * A SEPARATE TABLE ON PURPOSE.
+ *
+ * Nothing a model wrote may reach a student on this product, and the surest
+ * way to guarantee that is structural rather than procedural: generated
+ * questions never live in `questions`, so no query that serves a student can
+ * reach one however it is written. Approval copies the row into `questions`
+ * as a new record; that copy is the only path from draft to student, and it
+ * requires a person.
+ *
+ * The validator's own verdict is stored alongside, not acted on. It can reject
+ * outright, but it can never approve - only a reviewer does that.
+ */
+export const generatedQuestions = pgTable("generated_questions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  category: examCategoryEnum("category").notNull(),
+  topic: varchar("topic"),
+  questionTextEn: text("question_text_en").notNull(),
+  optionsEn: jsonb("options_en").notNull().$type<string[]>(),
+  correctAnswer: integer("correct_answer").notNull(),
+  explanationEn: text("explanation_en"),
+  /** Bank questions this variant was grounded in. */
+  sourceQuestionIds: jsonb("source_question_ids").notNull().$type<string[]>(),
+  /** pending | approved | rejected */
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  /** Deterministic + model validation notes, for the reviewer to read. */
+  validationNotes: jsonb("validation_notes").$type<string[]>(),
+  validatorConfidenceBasisPoints: integer("validator_confidence_basis_points"),
+  promptRef: varchar("prompt_ref", { length: 80 }),
+  /** Set when a reviewer acts. Null while pending. */
+  reviewedBy: varchar("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewNote: text("review_note"),
+  /** The `questions` row created on approval, so the link is auditable. */
+  publishedQuestionId: varchar("published_question_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_generated_questions_status").on(table.status),
+  index("idx_generated_questions_category").on(table.category),
+]);
+
 export const examSessions = pgTable("exam_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(),
@@ -538,6 +581,8 @@ export const insertAiUsageEventSchema = createInsertSchema(aiUsageEvents).omit({
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
+export type GeneratedQuestionRow = typeof generatedQuestions.$inferSelect;
+export type InsertGeneratedQuestion = typeof generatedQuestions.$inferInsert;
 export type Question = typeof questions.$inferSelect;
 export type InsertExamSession = z.infer<typeof insertExamSessionSchema>;
 export type ExamSession = typeof examSessions.$inferSelect;

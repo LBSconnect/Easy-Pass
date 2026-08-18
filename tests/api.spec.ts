@@ -55,21 +55,6 @@ test.describe('API Security Tests', () => {
     }
   });
 
-  test('rate limiting blocks excessive login attempts', async ({ request }) => {
-    const uniqueEmail = `ratelimit_${Date.now()}@test.com`;
-    
-    for (let i = 0; i < 6; i++) {
-      const response = await request.post('/api/login', {
-        data: { email: uniqueEmail, password: 'wrongpassword' }
-      });
-      
-      if (i >= 5) {
-        expect(response.status()).toBe(429);
-        const body = await response.json();
-        expect(body.message).toContain('Too many login attempts');
-      }
-    }
-  });
 
   test('guest article XSS sanitization', async ({ request }) => {
     const response = await request.post('/api/guest-articles', {

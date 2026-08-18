@@ -1,4 +1,5 @@
 import type { Request } from "express";
+import { resolveRateLimitScale } from "@shared/rateLimitConfig";
 
 interface RateLimitEntry {
   count: number;
@@ -22,7 +23,18 @@ export function getClientIp(req: Request): string {
   return req.ip || req.socket?.remoteAddress || 'unknown';
 }
 
+/**
+ * Scales every cap below together.
+ *
+ * 1 in production and by default. Raised only for a test run, where every
+ * request arrives from one IP and a cap meant to describe one person's
+ * behaviour describes the whole suite instead. Read once at startup: these
+ * limits should not change under a running process.
+ */
+const SCALE = resolveRateLimitScale(process.env.RATE_LIMIT_SCALE);
+
 export function rateLimit(key: string, maxAttempts: number, windowMs: number): { allowed: boolean; remaining: number; resetIn: number } {
+  maxAttempts = maxAttempts * SCALE;
   const now = Date.now();
   const entry = rateLimitStore.get(key);
   

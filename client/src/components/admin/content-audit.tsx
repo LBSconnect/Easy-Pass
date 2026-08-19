@@ -76,15 +76,43 @@ function label(code: string): string {
   return CODE_LABELS[code] ?? code;
 }
 
+/**
+ * Read the payload without trusting its shape.
+ *
+ * A 200 whose body is missing `byCode` is not hypothetical - an object is
+ * truthy even when every field in it is undefined, so `data.byCode.length`
+ * threw and took the whole Review Queue tab down with it, generation console
+ * and all. Normalising here means a partial body degrades to an empty report
+ * instead of a blank page.
+ */
+function normalise(raw: unknown): AuditReport | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Partial<AuditReport>;
+  const count = (value: unknown) => (typeof value === "number" && Number.isFinite(value) ? value : 0);
+
+  return {
+    total: count(r.total),
+    criticalCount: count(r.criticalCount),
+    warningCount: count(r.warningCount),
+    cleanCount: count(r.cleanCount),
+    findings: Array.isArray(r.findings) ? r.findings : [],
+    findingsTruncated: r.findingsTruncated === true,
+    byCode: Array.isArray(r.byCode) ? r.byCode : [],
+    thinTopics: Array.isArray(r.thinTopics) ? r.thinTopics : [],
+  };
+}
+
 export function ContentAudit() {
   const [category, setCategory] = useState("all");
 
-  const { data, isLoading, isError, refetch, isFetching } = useQuery<AuditReport>({
+  const { data: raw, isLoading, isError, refetch, isFetching } = useQuery<unknown>({
     queryKey: [`/api/admin/content-audit?category=${category}`],
     // The audit reads the whole bank, so it is not something to re-run on
     // every focus change.
     staleTime: 5 * 60 * 1000,
   });
+
+  const data = normalise(raw);
 
   return (
     <Card data-testid="card-content-audit">

@@ -51,14 +51,14 @@ const BUILDERS: Record<
             ? "Tu examen es hoy."
             : `Tu examen es en ${days} ${plural(days, "día", "días")}.`,
         action: "Repasa las preguntas que fallaste antes de presentarte.",
-        href: "/notebook",
+        href: "/missed-questions",
         linkLabel: "Repasar",
       };
     }
     return {
       title: days === 0 ? "Your exam is today." : `Your exam is in ${days} ${plural(days, "day", "days")}.`,
       action: "Review the questions you have got wrong before you sit it.",
-      href: "/notebook",
+      href: "/missed-questions",
       linkLabel: "Review",
     };
   },
@@ -129,14 +129,14 @@ const BUILDERS: Record<
       return {
         title: `Tienes ${count} preguntas falladas en tu cuaderno.`,
         action: "Repasarlas es la forma más rápida de subir tu puntaje.",
-        href: "/notebook",
+        href: "/missed-questions",
         linkLabel: "Abrir cuaderno",
       };
     }
     return {
       title: `${count} questions you got wrong are waiting in your notebook.`,
       action: "Working through them is the fastest way to move your score.",
-      href: "/notebook",
+      href: "/missed-questions",
       linkLabel: "Open notebook",
     };
   },

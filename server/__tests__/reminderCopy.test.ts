@@ -7,6 +7,8 @@
  * days left to pass!" quietly breaks that in a place nobody thinks to check.
  */
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { reminderCopy, type ReminderLanguage } from "@shared/reminderCopy";
 import { buildReminders, type Reminder, type ReminderCode } from "@shared/studyReminders";
 
@@ -64,6 +66,7 @@ describe("every reminder can be said in both languages", () => {
         // Relative, so a reminder can never point a student off the site.
         expect(copy.href.startsWith("/")).toBe(true);
         expect(copy.href.startsWith("//")).toBe(false);
+        // And a real page. See the route check below for why.
       }
     });
   }
@@ -143,4 +146,44 @@ describe("the numbers in the sentence", () => {
     expect(reminderCopy(one, "en").title).toBe("Your exam is in 1 day.");
     expect(reminderCopy(one, "es").title).toBe("Tu examen es en 1 día.");
   });
+});
+
+describe("every reminder points at a page that exists", () => {
+  /**
+   * A reminder whose link 404s is worse than no reminder: the student is told
+   * something true, acts on it, and lands on an error.
+   *
+   * This shipped once - the copy linked to "/notebook", which was never a
+   * route; the page is "/missed-questions". Nothing caught it, because the
+   * only assertion was that the path started with a slash.
+   *
+   * The router is the source of truth, so it is read rather than duplicated -
+   * a hand-kept list here would drift the same way the link did.
+   */
+  const routes = (() => {
+    const source = readFileSync(
+      resolve(__dirname, "../../client/src/App.tsx"),
+      "utf8",
+    );
+    const found = Array.from(source.matchAll(/<Route\s+path="([^"]+)"/g)).map((m) => m[1]);
+    return new Set(found);
+  })();
+
+  it("found the router to check against", () => {
+    // If this fails the parsing broke, and every assertion below is worthless.
+    expect(routes.size).toBeGreaterThan(10);
+    expect(routes.has("/dashboard")).toBe(true);
+  });
+
+  for (const lang of LANGS) {
+    it(`links to real routes (${lang})`, () => {
+      for (const reminder of samples) {
+        const { href } = reminderCopy(reminder, lang);
+        expect(
+          routes.has(href),
+          `${reminder.code} (${lang}) links to ${href}, which is not a route in App.tsx`,
+        ).toBe(true);
+      }
+    });
+  }
 });

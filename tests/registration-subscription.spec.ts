@@ -204,9 +204,19 @@ test.describe('Public Pages Load Correctly', () => {
   });
 
   test('pricing page loads', async ({ page }) => {
-    await page.goto('/pricing');
-    const response = await page.waitForResponse(resp => resp.url().includes('/pricing') || resp.status() === 200);
-    expect(response.status()).toBeLessThan(500);
+    // page.goto already returns the navigation response. Waiting for another
+    // one afterwards waits for a *later* request, so this asserted on
+    // whichever unrelated call happened to arrive first - and passed or timed
+    // out depending on which one did. In CI, where Stripe is unconfigured and
+    // /api/stripe/prices returns 500, often nothing matched at all and the
+    // spec timed out on a page that had loaded perfectly well.
+    const response = await page.goto('/pricing');
+    expect(response?.status()).toBeLessThan(500);
+
+    // And it is a real page rather than an empty shell, the same check the
+    // other public pages here make.
+    const content = await page.textContent('body');
+    expect(content?.length).toBeGreaterThan(100);
   });
 
   test('FAQ page loads', async ({ page }) => {

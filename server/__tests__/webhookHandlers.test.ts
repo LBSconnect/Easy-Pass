@@ -340,6 +340,9 @@ describe('WebhookHandlers.processWebhook', () => {
     expect(mockStorage.createPaymentHistory).toHaveBeenCalledWith({
       userId: 'user_7',
       stripePaymentId: 'pi_paid_123',
+      // Recorded so Total Revenue can be audited back to a subscription
+      // rather than resting on an assumption about what is in this table.
+      stripeSubscriptionId: 'sub_inv',
       amount: 1999,
       currency: 'usd',
       status: 'succeeded',
@@ -405,6 +408,158 @@ describe('WebhookHandlers.processWebhook', () => {
     expect(mockStorage.createPaymentHistory).not.toHaveBeenCalled();
 
     process.env.NODE_ENV = originalEnv;
+  });
+
+  /**
+   * What Total Revenue is allowed to count.
+   *
+   * The figure is read as "what this site earned", and payment_history is its
+   * only source. So the scope has to be enforced where rows are written - a
+   * filter added later on the read side cannot recover what the write side
+   * threw away, and cannot un-count what it wrongly let in.
+   */
+  describe('scoping payment history to this site\'s subscriptions', () => {
+    beforeEach(() => {
+      process.env.NODE_ENV = 'development';
+      mockGetStripeClient.mockResolvedValue({
+        webhooks: { constructEvent: vi.fn() },
+        subscriptions: { retrieve: vi.fn() },
+      } as any);
+      mockStorage.getPaymentByStripeId.mockResolvedValue(undefined);
+      mockStorage.createPaymentHistory.mockResolvedValue({} as any);
+    });
+
+    const invoicePaid = (object: Record<string, unknown>) =>
+      Buffer.from(JSON.stringify({ type: 'invoice.paid', data: { object } }));
+
+    const subscriptionWith = (metadata: Record<string, string>) => ({
+      id: 'sub_x',
+      status: 'active',
+      items: {
+        data: [{
+          price: {
+            recurring: { interval: 'month' },
+            metadata: { subscription_type: 'single', allowed_categories: 'general_lines' },
+            product: 'prod_x',
+          },
+        }],
+      },
+      current_period_end: Math.floor(Date.now() / 1000) + 2592000,
+      metadata,
+    });
+
+    it('does not count a one-off invoice as subscription revenue', async () => {
+      // This app only ever creates mode:"subscription" checkouts against
+      // recurring prices, so an invoice with no subscription did not come
+      // from here - it came from something else on the same Stripe account.
+      mockStorage.getAllUsers.mockResolvedValue([
+        { id: 'user_9', email: 'a@test.com', profile: { stripeCustomerId: 'cus_one_off' } },
+      ] as any);
+
+      await WebhookHandlers.processWebhook(
+        invoicePaid({
+          id: 'inv_one_off',
+          customer: 'cus_one_off',
+          payment_intent: 'pi_one_off',
+          amount_paid: 4900,
+          currency: 'usd',
+        }),
+        'sig',
+      );
+
+      expect(mockStorage.createPaymentHistory).not.toHaveBeenCalled();
+    });
+
+    it("does not count a subscription stamped for a different user", async () => {
+      // Checkout stamps metadata.userId on every subscription it creates. One
+      // naming someone other than the user this customer resolves to belongs
+      // to another product sharing the Stripe account.
+      mockGetStripeClient.mockResolvedValue({
+        webhooks: { constructEvent: vi.fn() },
+        subscriptions: {
+          retrieve: vi.fn().mockResolvedValue(subscriptionWith({ userId: 'someone_else' })),
+        },
+      } as any);
+      mockStorage.getAllUsers.mockResolvedValue([
+        { id: 'user_10', email: 'b@test.com', profile: { stripeCustomerId: 'cus_shared' } },
+      ] as any);
+      mockStorage.updateProfile.mockResolvedValue({} as any);
+
+      await WebhookHandlers.processWebhook(
+        invoicePaid({
+          id: 'inv_shared',
+          customer: 'cus_shared',
+          subscription: 'sub_x',
+          payment_intent: 'pi_shared',
+          amount_paid: 9900,
+          currency: 'usd',
+        }),
+        'sig',
+      );
+
+      expect(mockStorage.createPaymentHistory).not.toHaveBeenCalled();
+    });
+
+    it('still counts a subscription created before checkout stamped metadata', async () => {
+      // Absent metadata is not a mismatch. These subscriptions are genuine and
+      // the customer match already ties them to a user here; dropping them
+      // would silently under-report real income.
+      mockGetStripeClient.mockResolvedValue({
+        webhooks: { constructEvent: vi.fn() },
+        subscriptions: {
+          retrieve: vi.fn().mockResolvedValue(subscriptionWith({})),
+        },
+      } as any);
+      mockStorage.getAllUsers.mockResolvedValue([
+        { id: 'user_11', email: 'c@test.com', profile: { stripeCustomerId: 'cus_legacy' } },
+      ] as any);
+      mockStorage.updateProfile.mockResolvedValue({} as any);
+
+      await WebhookHandlers.processWebhook(
+        invoicePaid({
+          id: 'inv_legacy',
+          customer: 'cus_legacy',
+          subscription: 'sub_x',
+          payment_intent: 'pi_legacy',
+          amount_paid: 2999,
+          currency: 'usd',
+        }),
+        'sig',
+      );
+
+      expect(mockStorage.createPaymentHistory).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'user_11', stripeSubscriptionId: 'sub_x', amount: 2999 }),
+      );
+    });
+
+    it('counts a subscription stamped for the matching user', async () => {
+      mockGetStripeClient.mockResolvedValue({
+        webhooks: { constructEvent: vi.fn() },
+        subscriptions: {
+          retrieve: vi.fn().mockResolvedValue(subscriptionWith({ userId: 'user_12' })),
+        },
+      } as any);
+      mockStorage.getAllUsers.mockResolvedValue([
+        { id: 'user_12', email: 'd@test.com', profile: { stripeCustomerId: 'cus_ours' } },
+      ] as any);
+      mockStorage.updateProfile.mockResolvedValue({} as any);
+
+      await WebhookHandlers.processWebhook(
+        invoicePaid({
+          id: 'inv_ours',
+          customer: 'cus_ours',
+          subscription: 'sub_x',
+          payment_intent: 'pi_ours',
+          amount_paid: 2999,
+          currency: 'usd',
+        }),
+        'sig',
+      );
+
+      expect(mockStorage.createPaymentHistory).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'user_12', stripeSubscriptionId: 'sub_x' }),
+      );
+    });
   });
 
   it('handles checkout.session.completed without userId gracefully', async () => {

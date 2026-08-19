@@ -241,9 +241,20 @@ export const paymentHistory = pgTable("payment_history", {
   currency: varchar("currency").default("usd").notNull(),
   status: varchar("status").notNull(),
   description: varchar("description"),
+  /**
+   * The Stripe subscription this invoice was for.
+   *
+   * Recorded so a revenue figure can be audited back to a subscription rather
+   * than resting on the assumption that everything in this table came from
+   * one. Null on rows written before the column existed - see
+   * getAdminStats for how those are treated.
+   */
+  stripeSubscriptionId: varchar("stripe_subscription_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_payment_history_user").on(table.userId),
+  // Revenue is read as "this month", so the scan is by date.
+  index("idx_payment_history_created").on(table.createdAt),
 ]);
 
 export const subscriptions = pgTable("subscriptions", {

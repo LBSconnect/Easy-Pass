@@ -300,6 +300,20 @@ const STEPS: Step[] = [
             ON user_profiles (last_seen_at)
             WHERE last_seen_at IS NOT NULL;`,
   },
+
+  // --- Revenue that can be audited back to a subscription ------------------
+  //
+  // Total Revenue is read as "this site's subscription income this month".
+  // Without the subscription id that claim rested on an implicit property of
+  // the recorder rather than on anything you could query. The index is on
+  // created_at because the figure is now month-to-date and scans by date.
+  {
+    name: "payment_history subscription and date index",
+    sql: `ALTER TABLE payment_history
+            ADD COLUMN IF NOT EXISTS stripe_subscription_id varchar;
+          CREATE INDEX IF NOT EXISTS idx_payment_history_created
+            ON payment_history (created_at);`,
+  },
 ];
 
 export interface MigrationResult {
@@ -373,6 +387,7 @@ export async function checkSchemaHealth(): Promise<{
     ["user_profiles", "email_reminders_opt_in"],
     ["user_profiles", "unsubscribe_token"],
     ["user_profiles", "last_seen_at"],
+    ["payment_history", "stripe_subscription_id"],
   ];
 
   const tables = await pool.query(

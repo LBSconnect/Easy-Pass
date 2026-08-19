@@ -106,6 +106,7 @@ import {
 } from "lucide-react";
 import type { Question, ExamCategory, QuestionFeedback } from "@shared/schema";
 import { centsToUsd, formatUsd } from "@shared/money";
+import { revenuePeriodNote } from "@shared/revenuePeriod";
 
 const questionFormSchema = z.object({
   category: z.enum(["real_estate", "property_casualty", "life_insurance", "general_lines"]),
@@ -123,8 +124,13 @@ type QuestionFormValues = z.infer<typeof questionFormSchema>;
 interface AdminStats {
   totalUsers: number;
   activeSubscriptions: number;
-  /** Dollars, already converted from Stripe cents by the stats endpoint. */
-  totalRevenue: number;
+  /**
+   * This site's subscription income for the current month, in dollars,
+   * already converted from Stripe cents by the stats endpoint.
+   */
+  monthRevenue?: number;
+  /** ISO instant the counted month began, for naming the period. */
+  revenuePeriodStart?: string;
   passRate: number;
   /** Students who made a request inside the window below. */
   onlineNow?: number;
@@ -872,10 +878,14 @@ export default function AdminPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            {/* Revenue is month-to-date, not all-time, and covers only this
+                site's subscriptions. The card names the month underneath
+                rather than leaving a reader to assume otherwise - a figure
+                whose scope is not stated gets read as the widest one. */}
+            <Card data-testid="card-month-revenue">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">
-                  {t("admin.totalRevenue")}
+                  {t("admin.monthRevenue")}
                 </CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -883,9 +893,14 @@ export default function AdminPage() {
                 {statsLoading ? (
                   <Skeleton className="h-8 w-16" />
                 ) : (
-                  <div className="text-2xl font-bold">
-                    {formatUsd(stats?.totalRevenue)}
-                  </div>
+                  <>
+                    <div className="text-2xl font-bold" data-testid="stat-month-revenue">
+                      {formatUsd(stats?.monthRevenue)}
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {revenuePeriodNote(stats?.revenuePeriodStart, es ? "es" : "en")}
+                    </p>
+                  </>
                 )}
               </CardContent>
             </Card>

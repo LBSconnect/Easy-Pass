@@ -109,24 +109,64 @@ async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
   const customerId = invoice.customer as string;
   const subscriptionId = (invoice as any).subscription as string;
 
+  let subscription: Stripe.Subscription | null = null;
   if (subscriptionId) {
     const stripe = await getCachedStripeClient();
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    subscription = await stripe.subscriptions.retrieve(subscriptionId);
     await updateSubscriptionByCustomerId(customerId, subscription);
   }
 
-  await recordPaymentHistory(invoice, customerId);
+  await recordPaymentHistory(invoice, customerId, subscriptionId, subscription);
 }
 
-// Records a successful payment so admin revenue stats/analytics (which read
-// from payment_history - see getAdminStats/getAdminAnalytics) reflect real
-// Stripe activity. Keyed on Stripe's own payment identifier so a redelivered
-// invoice.paid webhook (Stripe retries on any non-2xx/timeout response)
-// never creates a second row for the same payment.
-async function recordPaymentHistory(invoice: Stripe.Invoice, customerId: string): Promise<void> {
+/**
+ * Record a successful payment, if it is one of this site's subscriptions.
+ *
+ * WHAT THIS TABLE IS FOR
+ *
+ * payment_history is the only source of the admin Total Revenue figure (see
+ * getAdminStats). That figure is read as "what this site earned", so what gets
+ * written here is the definition of that claim - a filter added later on the
+ * read side cannot recover information the write side threw away.
+ *
+ * WHAT COUNTS
+ *
+ * Two things, both checked here rather than assumed:
+ *
+ * The invoice must be for a subscription. This app only ever creates
+ * `mode: "subscription"` checkouts against recurring prices, so a one-off
+ * invoice on this Stripe account did not come from this site.
+ *
+ * The subscription must be this site's. Checkout stamps `metadata.userId` on
+ * every subscription it creates, so a subscription naming a different user
+ * than the one the customer id resolves to belongs to something else on the
+ * same Stripe account and is not this site's income. Missing metadata is not
+ * treated as a mismatch: subscriptions created before checkout stamped it are
+ * genuine, and the customer match already ties them to a user here.
+ *
+ * IDEMPOTENCE
+ *
+ * Keyed on Stripe's own payment identifier, so a redelivered invoice.paid
+ * webhook (Stripe retries on any non-2xx or timeout) never doubles a payment.
+ */
+async function recordPaymentHistory(
+  invoice: Stripe.Invoice,
+  customerId: string,
+  subscriptionId: string | null,
+  subscription: Stripe.Subscription | null,
+): Promise<void> {
   const stripePaymentId = ((invoice as any).payment_intent as string) || invoice.id;
   if (!stripePaymentId) {
     console.error("Invoice has no id/payment_intent to key payment history on:", invoice.id);
+    return;
+  }
+
+  if (!subscriptionId) {
+    // Not an error - just not this site's revenue. Logged at info so an
+    // operator wondering why a payment is missing from the total can see why.
+    console.log(
+      `Invoice ${invoice.id} is not for a subscription; not counted as site revenue`,
+    );
     return;
   }
 
@@ -134,6 +174,15 @@ async function recordPaymentHistory(invoice: Stripe.Invoice, customerId: string)
   const user = allUsers.find((u) => u.profile?.stripeCustomerId === customerId);
   if (!user) {
     console.error("No user found with customerId for payment history:", customerId);
+    return;
+  }
+
+  const stampedUserId = subscription?.metadata?.userId;
+  if (stampedUserId && stampedUserId !== user.id) {
+    console.error(
+      `Subscription ${subscriptionId} is stamped for user ${stampedUserId} but ` +
+      `customer ${customerId} resolves to ${user.id}; not counted as site revenue`,
+    );
     return;
   }
 
@@ -146,6 +195,7 @@ async function recordPaymentHistory(invoice: Stripe.Invoice, customerId: string)
   await storage.createPaymentHistory({
     userId: user.id,
     stripePaymentId,
+    stripeSubscriptionId: subscriptionId,
     amount: invoice.amount_paid ?? 0,
     currency: invoice.currency || "usd",
     status: "succeeded",

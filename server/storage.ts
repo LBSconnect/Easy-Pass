@@ -64,6 +64,7 @@ import { users, type User } from "@shared/models/auth";
 import { parseExamMode, type ExamMode } from "@shared/examMode";
 import { ONLINE_WINDOW_MS } from "@shared/onlinePresence";
 import { centsToUsd } from "@shared/money";
+import { startOfMonth } from "@shared/revenuePeriod";
 import { db, pool } from "./db";
 
 /**
@@ -136,11 +137,15 @@ export interface IStorage {
   getPaymentByStripeId(stripePaymentId: string): Promise<PaymentHistory | undefined>;
   
   getAllUsers(): Promise<Array<User & { profile?: UserProfile; examCount: number; lastExamAt: Date | null }>>;
-  getAdminStats(): Promise<{
+  getAdminStats(now?: Date): Promise<{
     totalUsers: number;
     activeSubscriptions: number;
-    totalRevenue: number;
+    /** This site's subscription income for the current month, in dollars. */
+    monthRevenue: number;
+    revenuePeriodStart: string;
     passRate: number;
+    onlineNow: number;
+    onlineWindowMinutes: number;
   }>;
   getAdminAnalytics(): Promise<{
     examsByCategory: Array<{ category: string; attempts: number; avgScore: number; passRate: number }>;
@@ -507,19 +512,47 @@ export class DatabaseStorage implements IStorage {
       };
     });
   }
-  async getAdminStats(): Promise<{
+  async getAdminStats(now = new Date()): Promise<{
     totalUsers: number;
     activeSubscriptions: number;
-    totalRevenue: number;
+    /**
+     * This site's subscription income for the current month, in dollars.
+     *
+     * Three scopes, all deliberate, and the card says so rather than leaving
+     * a reader to assume it is an all-time total:
+     *
+     * Current month, on America/Chicago - the month the business banks in,
+     * not the server's UTC one. See shared/revenuePeriod.ts.
+     *
+     * This site's subscriptions only - payment_history is written solely by
+     * the invoice.paid webhook, and only for subscription invoices whose
+     * customer resolves to a user here (see recordPaymentHistory). A one-off
+     * invoice, or another product sharing this Stripe account, never reaches
+     * this table.
+     *
+     * Payments this deployment actually received. A webhook Stripe could not
+     * deliver leaves no row, so this is the app's record rather than a mirror
+     * of the Stripe dashboard - check Stripe for the authoritative figure.
+     */
+    monthRevenue: number;
+    /** When the counted month began, so the UI can name the period. */
+    revenuePeriodStart: string;
     passRate: number;
     /** Students who made a request inside the presence window. */
     onlineNow: number;
     /** The window that figure covers, so the UI can say what it means. */
     onlineWindowMinutes: number;
   }> {
+    const periodStart = startOfMonth(now);
+
     const allUsers = await db.select().from(users);
     const allResults = await db.select().from(examResults);
-    const allPayments = await db.select().from(paymentHistory);
+    // Scanned by date rather than pulled whole - the table only grows, and
+    // the figure only ever asks about one month.
+    const monthPayments = await db
+      .select()
+      .from(paymentHistory)
+      .where(gte(paymentHistory.createdAt, periodStart));
 
     // Count active subscriptions from user_profiles
     const activeProfiles = await db
@@ -527,7 +560,7 @@ export class DatabaseStorage implements IStorage {
       .from(userProfiles)
       .where(sql`subscription_status = 'active'`);
 
-    const totalRevenue = allPayments
+    const monthRevenueCents = monthPayments
       .filter(p => p.status === "succeeded")
       .reduce((sum, p) => sum + p.amount, 0);
 
@@ -542,7 +575,8 @@ export class DatabaseStorage implements IStorage {
       activeSubscriptions: activeProfiles.length,
       // Dollars from here on. The single conversion for this figure - see
       // shared/money.ts for why converting again downstream is the bug.
-      totalRevenue: centsToUsd(totalRevenue),
+      monthRevenue: centsToUsd(monthRevenueCents),
+      revenuePeriodStart: periodStart.toISOString(),
       passRate,
       onlineNow,
       onlineWindowMinutes: Math.round(ONLINE_WINDOW_MS / 60000),

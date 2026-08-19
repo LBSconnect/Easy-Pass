@@ -22,10 +22,18 @@ const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.png`;
 const DEFAULT_ROBOTS = "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1";
 const MANAGED_ATTR = "data-seo-managed";
 
-const SPANISH_INSURANCE_ALTERNATES: Record<string, string> = {
+const SPANISH_ALTERNATES: Record<string, string> = {
   [`${BASE_URL}/texas-property-casualty-exam-prep`]: `${BASE_URL}/es/preparacion-examen-seguros-propiedad-accidentes-texas`,
   [`${BASE_URL}/texas-life-insurance-exam-prep`]: `${BASE_URL}/es/preparacion-examen-seguros-vida-texas`,
   [`${BASE_URL}/texas-general-lines-exam-prep`]: `${BASE_URL}/es/preparacion-examen-seguros-lineas-generales-texas`,
+  [`${BASE_URL}/texas-insurance-exam/deductible`]: `${BASE_URL}/es/concepto-deducible-texas`,
+  [`${BASE_URL}/texas-insurance-exam/indemnity`]: `${BASE_URL}/es/concepto-indemnizacion-texas`,
+  [`${BASE_URL}/texas-insurance-exam/subrogation`]: `${BASE_URL}/es/concepto-subrogacion-texas`,
+  [`${BASE_URL}/texas-life-health-exam/premium`]: `${BASE_URL}/es/concepto-prima-texas`,
+  [`${BASE_URL}/texas-life-health-exam/beneficiary`]: `${BASE_URL}/es/concepto-beneficiario-texas`,
+  [`${BASE_URL}/texas-life-health-exam/grace-period`]: `${BASE_URL}/es/concepto-periodo-de-gracia-texas`,
+  [`${BASE_URL}/texas-real-estate-exam/agency`]: `${BASE_URL}/es/concepto-agencia-texas`,
+  [`${BASE_URL}/texas-real-estate-exam/deed-vs-title`]: `${BASE_URL}/es/concepto-escritura-vs-titulo-texas`,
 };
 
 type RestoreFn = () => void;
@@ -95,14 +103,13 @@ function setMetaByProperty(property: string, content: string): RestoreFn {
 }
 
 /**
- * The original exam-landing pairing is intentionally generic because the
- * Spanish insurance hub covers multiple categories. Once category-specific
- * Spanish pages exist, replace only the Spanish alternate for the three
- * matching English insurance canonicals so each language pair is one-to-one.
+ * Apply exact Spanish alternates for English pages that have a dedicated
+ * Spanish counterpart. This keeps hreflang reciprocal without forcing every
+ * individual page component to duplicate the pairing map.
  */
 function normalizeHreflang(options: SEOOptions): { lang: string; url: string }[] {
   const alternates = [...(options.hreflang ?? [])];
-  const spanishOverride = SPANISH_INSURANCE_ALTERNATES[options.canonicalUrl];
+  const spanishOverride = SPANISH_ALTERNATES[options.canonicalUrl];
 
   if (!spanishOverride) return alternates;
 

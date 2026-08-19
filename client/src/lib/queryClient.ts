@@ -1,10 +1,15 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { apiErrorFrom } from "./apiError";
 
+/**
+ * Fail with something a person can read.
+ *
+ * This used to throw `${status}: ${rawBody}`, which around thirty toasts in
+ * the app then showed verbatim - so a student who reused an email address was
+ * told `400: {"message":"Email already registered"}`. See lib/apiError.ts.
+ */
 async function throwIfResNotOk(res: Response) {
-  if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
-  }
+  if (!res.ok) throw await apiErrorFrom(res);
 }
 
 export async function apiRequest(

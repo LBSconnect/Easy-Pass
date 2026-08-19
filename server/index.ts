@@ -2,7 +2,8 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import cors from 'cors';
 import { buildAllowedOrigins } from '@shared/corsOrigins';
-import { resolveApiRateLimit, resolveAuthRateLimit } from '@shared/rateLimitConfig';
+import { resolveApiRateLimit, resolveAuthRateLimit, resolveRegisterRateLimit } from '@shared/rateLimitConfig';
+import { countsTowardSignupLimit, SIGNUP_ABUSE_FLAG } from '@shared/signupLimit';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
@@ -113,6 +114,44 @@ const apiLimiter = rateLimit({
   },
 });
 
+/**
+ * Sign-ups, which is a different problem from logins.
+ *
+ * The auth limiter below is a brute-force control: five failures and you wait.
+ * That is right for a password field and wrong for a sign-up form, where most
+ * failures are someone mistyping. Applying it to /api/register meant five
+ * short passwords locked an IP - an office, a classroom, a carrier NAT - out
+ * of registering for fifteen minutes, over the message "Too many login
+ * attempts".
+ *
+ * So registration counts only what is worth counting (see
+ * shared/signupLimit.ts): accounts actually created, and addresses that came
+ * back already registered. Typos are free.
+ */
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: resolveRegisterRateLimit(process.env.REGISTER_RATE_LIMIT_MAX),
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Reads backwards: express-rate-limit skips whatever this calls
+  // "successful", which here means "not an abuse signal".
+  skipSuccessfulRequests: true,
+  requestWasSuccessful: (_req, res) =>
+    !countsTowardSignupLimit(res.statusCode, Boolean(res.locals?.[SIGNUP_ABUSE_FLAG])),
+  handler: (req, res) => {
+    console.warn(`[Rate Limit] IP ${req.ip} exceeded sign-up limit`);
+    res.status(429).json({
+      error: 'Too many sign-ups',
+      // Says what actually happened. The old copy told people trying to
+      // create an account that they had made too many login attempts.
+      message:
+        'A lot of accounts have been created from this network recently. ' +
+        'Please try again later, or sign in if you already have an account.',
+      retryAfter: 3600,
+    });
+  },
+});
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   // Configurable only so the specs that prove this limiter works can run on
@@ -209,7 +248,8 @@ async function initStripe() {
   // Apply rate limiters
   app.use('/api/', apiLimiter);
   app.use('/api/login', authLimiter);
-  app.use('/api/register', authLimiter);
+  // Deliberately NOT authLimiter - see registerLimiter above.
+  app.use('/api/register', registerLimiter);
   // /api/reset-password and /api/reset-password/verify have their own route-level
   // rate limiters with correct thresholds (10 and 20 req/15min respectively),
   // so we don't apply the tighter authLimiter (5 req/15min) here.

@@ -39,6 +39,78 @@ test('rate limiting blocks excessive login attempts', async ({ request }) => {
 });
 
 
+/**
+ * Sign-up is not login, and used to be limited as though it were.
+ *
+ * Both endpoints shared one control: five failures per IP per fifteen minutes.
+ * On login that is brute-force protection. On a sign-up form it counted people
+ * mistyping - a password under eight characters was enough - so five typos
+ * locked the address out of registering, and told the person "Too many login
+ * attempts", which is not what they were doing.
+ *
+ * An address is a whole office, school or carrier NAT, so one student fumbling
+ * the form could stop the rest of the room from signing up. That is the failure
+ * these specs exist to prevent coming back.
+ *
+ * This server runs with REGISTER_RATE_LIMIT_MAX small, so the cap can be
+ * reached in a handful of requests rather than forty.
+ */
+test.describe('sign-up limiting', () => {
+  // One test, deliberately, because both halves spend the same per-IP hourly
+  // budget - and no retries, because a retry would run against a budget the
+  // first attempt already consumed and fail for a reason that has nothing to
+  // do with the code. A misleading second failure is worse than one honest
+  // first one. Nothing else in this file may register while this runs.
+  test.describe.configure({ retries: 0 });
+
+  const cap = Number(process.env.REGISTER_RATE_LIMIT_MAX_EXPECTED || '5');
+
+  test('typos are free, but creating accounts in bulk is still capped', async ({ request }) => {
+    // Comfortably more rejections than the cap, none of them an attack.
+    for (let i = 0; i < cap + 3; i++) {
+      const rejected = await request.post('/api/register', {
+        data: { email: `typo-${Date.now()}-${i}@test.com`, password: 'short' },
+      });
+      expect(rejected.status(), 'a mistyped form must never spend the budget').toBe(400);
+    }
+
+    // The student on the next desk, who typed it correctly.
+    const created = await request.post('/api/register', {
+      data: {
+        email: `classmate-${Date.now()}@test.com`,
+        password: 'TestPassword123!',
+        firstName: 'Class',
+        lastName: 'Mate',
+      },
+    });
+    expect(created.status(), 'a valid sign-up after typos must still work').toBe(200);
+
+    // The control has to survive being made kinder. That first account counts,
+    // so the rest of the budget is a few more.
+    let blocked = false;
+    for (let i = 0; i < cap + 2; i++) {
+      const response = await request.post('/api/register', {
+        data: {
+          email: `bulk-${Date.now()}-${i}@test.com`,
+          password: 'TestPassword123!',
+          firstName: 'Bulk',
+          lastName: 'Signup',
+        },
+      });
+      if (response.status() === 429) {
+        const body = await response.json();
+        // And it says what actually happened, rather than talking about logins.
+        expect(body.message).toContain('accounts have been created');
+        blocked = true;
+        break;
+      }
+      expect(response.status()).toBe(200);
+    }
+
+    expect(blocked, 'bulk sign-up must still hit the cap').toBe(true);
+  });
+});
+
 test.describe('Rate Limiting', () => {
 
     test('rate limits forgot-password after 5 requests from same IP', async ({ request }) => {

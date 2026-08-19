@@ -92,8 +92,10 @@ export function Navbar() {
                 data-analytics="header-cta-start"
               >
                 <Link href="/signup">
-                  <span className="hidden sm:inline">Start Practicing</span>
-                  <span className="sm:hidden">Start</span>
+                  <span className="hidden sm:inline">
+                    {t("nav.startPracticing", "Start Practicing")}
+                  </span>
+                  <span className="sm:hidden">{t("nav.start", "Start")}</span>
                 </Link>
               </Button>
               <Button
@@ -208,7 +210,7 @@ export function Navbar() {
                       data-testid="cta-mobile-start"
                       data-analytics="mobile-cta-start"
                     >
-                      <Link href="/signup">Start Practicing</Link>
+                      <Link href="/signup">{t("nav.startPracticing", "Start Practicing")}</Link>
                     </Button>
                     <Button 
                       variant="outline" 

@@ -52,6 +52,25 @@ export function resolveAuthRateLimit(raw: string | undefined): number {
 }
 
 /**
+ * Sign-ups per IP per hour.
+ *
+ * Registration used to share the auth cap above, which is a brute-force
+ * control for login and the wrong instrument entirely for a sign-up form:
+ * five mistyped passwords locked an address out for fifteen minutes, and an
+ * address is a whole office or classroom. See shared/signupLimit.ts for what
+ * is counted and why typos no longer are.
+ *
+ * Forty an hour is set where a real room full of students cannot reach it and
+ * a script still can. The asymmetry is deliberate - too high costs some junk
+ * accounts, too low stops paying customers' students from signing up.
+ */
+export const DEFAULT_REGISTER_RATE_LIMIT = 40;
+
+export function resolveRegisterRateLimit(raw: string | undefined): number {
+  return resolvePositiveInt(raw, DEFAULT_REGISTER_RATE_LIMIT);
+}
+
+/**
  * Multiplier for the in-process per-IP limiters in server/rateLimit.ts.
  *
  * Those guard the public endpoints - guest articles, the diagnostic,

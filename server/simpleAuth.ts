@@ -9,6 +9,7 @@ import { sanitizeHtml } from "./sanitize";
 import { rateLimit } from "./rateLimit";
 import { resolveSecureCookie } from "@shared/sessionCookie";
 import { recordPresence } from "./presence";
+import { SIGNUP_ABUSE_FLAG } from "@shared/signupLimit";
 
 export function getSession() {
   if (!process.env.SESSION_SECRET) {
@@ -95,6 +96,11 @@ export async function setupAuth(app: Express) {
 
       const existingUser = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
       if (existingUser.length > 0) {
+        // Flagged for the sign-up limiter: repeated from one address this is
+        // someone probing which emails have accounts, which is worth counting.
+        // A mistyped password, a few lines above, is not. See
+        // shared/signupLimit.ts.
+        res.locals[SIGNUP_ABUSE_FLAG] = true;
         return res.status(400).json({ message: "Email already registered" });
       }
 

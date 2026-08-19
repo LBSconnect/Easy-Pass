@@ -5,7 +5,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 vi.useFakeTimers();
 
 // Dynamic import to get the module after timer mocking
-const { rateLimit, getClientIp } = await import('../rateLimit');
+const { rateLimit, clearRateLimit, getClientIp } = await import('../rateLimit');
 
 describe('rateLimit', () => {
   beforeEach(() => {
@@ -140,5 +140,40 @@ describe('getClientIp', () => {
       socket: { remoteAddress: '127.0.0.1' },
     } as any;
     expect(getClientIp(req)).toBe('1.1.1.1');
+  });
+});
+
+/**
+ * Signing in successfully must not cost the student anything.
+ *
+ * The login limiter is consumed before the password is checked - it has to be,
+ * or guessing would be free - so a successful sign-in spent budget too. Six
+ * sign-ins in fifteen minutes and a student was told "Too many login attempts"
+ * for using a second device or losing a session cookie.
+ */
+describe('clearRateLimit', () => {
+  it('gives the budget back after a success', () => {
+    const key = 'login:1.2.3.4:student@example.com';
+    for (let i = 0; i < 5; i++) expect(rateLimit(key, 5, 60000).allowed).toBe(true);
+    expect(rateLimit(key, 5, 60000).allowed).toBe(false);
+
+    clearRateLimit(key);
+
+    expect(rateLimit(key, 5, 60000).allowed).toBe(true);
+  });
+
+  it('leaves other people alone', () => {
+    // Keyed per IP and address; clearing one must not reset anyone else.
+    const mine = 'login:1.2.3.4:me@example.com';
+    const theirs = 'login:1.2.3.4:someone@example.com';
+    for (let i = 0; i < 5; i++) rateLimit(theirs, 5, 60000);
+
+    clearRateLimit(mine);
+
+    expect(rateLimit(theirs, 5, 60000).allowed).toBe(false);
+  });
+
+  it('is harmless on a key that was never counted', () => {
+    expect(() => clearRateLimit('never-seen')).not.toThrow();
   });
 });

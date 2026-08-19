@@ -181,9 +181,34 @@ export function composeSession(
       ];
     }
     case "review": {
-      const questions = Math.max(5, Math.round(minutes * 0.9));
+      // Review used to be a single block, and the only mode that skipped the
+      // mastery check this module says every session ends with. It was also
+      // the mode chosen for a student with no weak concept and for the final
+      // days before an exam - so the sessions that mattered most had no
+      // measurement in them at all, and consisted of reading old mistakes
+      // back with the answers already showing. That is the notebook page.
+      //
+      // The shape now is warm up, recall, check. The middle block asks rather
+      // than tells (see shared/retrievalReview.ts); the cards ahead of it are
+      // a low-stakes way back into the material, and the check at the end is
+      // what lets the next recommendation know whether any of it worked.
+      const warmUp = Math.max(4, Math.round(minutes * 0.35));
+      const recall = Math.max(5, Math.round(minutes * 0.6));
+      const check = Math.max(3, Math.round(minutes * 0.2));
+
+      const warmUpMinutes = Math.round(minutes * 0.25);
+      const checkMinutes = Math.round(minutes * 0.25);
       return [
-        { mode: "review", itemCount: questions, estimatedMinutes: minutes, label: `${questions}-question mixed review` },
+        { mode: "flashcards", itemCount: warmUp, estimatedMinutes: warmUpMinutes, label: `${warmUp}-card warm-up` },
+        {
+          mode: "review",
+          itemCount: recall,
+          // Whatever is left after the two shorter blocks, so the three still
+          // add up to the time the student was promised.
+          estimatedMinutes: minutes - warmUpMinutes - checkMinutes,
+          label: `${recall} questions from memory`,
+        },
+        { mode: "practice", itemCount: check, estimatedMinutes: checkMinutes, label: `${check}-question mastery check` },
       ];
     }
     case "mock_exam":

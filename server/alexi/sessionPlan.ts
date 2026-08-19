@@ -21,6 +21,8 @@
  * something we can stand behind.
  */
 
+import { selectRetrieval, type Exposure } from "@shared/retrievalReview";
+
 export type SessionBlockMode =
   | "teach"
   | "flashcards"
@@ -44,10 +46,18 @@ export interface PlanInput {
   blocks: Array<{ mode: SessionBlockMode; itemCount: number; estimatedMinutes: number; label: string }>;
   /** Active questions for the category, already scoped. */
   pool: PlannableQuestion[];
-  /** Question ids this student has previously answered incorrectly, newest first. */
-  missedQuestionIds: string[];
+  /**
+   * Everything this student has answered in this category.
+   *
+   * Review selection reads history rather than a pre-filtered list of misses:
+   * how long ago an item was last seen is as important as whether it was got
+   * wrong, and a list of ids cannot say. See shared/retrievalReview.ts.
+   */
+  exposures: Exposure[];
   /** Question ids the student has answered at all. */
   answeredQuestionIds: Set<string>;
+  /** Injected so a session is reproducible under test. */
+  now?: Date;
   /** The concept the recommendation named, matched against question topics. */
   conceptTopic: string | null;
   /** Resolved by the caller: authored if the config has them, else distilled. */
@@ -96,17 +106,28 @@ export interface QuestionBlock {
   }>;
 }
 
+/**
+ * Retrieval practice.
+ *
+ * Shaped like a question block rather than a reading list, and deliberately
+ * so. This used to carry `correctIndex` and `explanation` for every item and
+ * the client rendered them immediately - the student read their own mistakes
+ * back with the answers showing, which is both the weakest way to study and
+ * the same content as the notebook page. The answer key also travelled to the
+ * browser for questions that had not been asked yet.
+ *
+ * Now the student answers first and the existing answer endpoint returns the
+ * verdict, exactly as it does for practice.
+ */
 export interface ReviewBlock {
   mode: "review";
   label: string;
   estimatedMinutes: number;
-  items: Array<{
+  questions: Array<{
     questionId: string;
     topic: string;
     questionText: string;
     options: string[];
-    correctIndex: number;
-    explanation: string | null;
   }>;
 }
 
@@ -175,7 +196,7 @@ export function resolveBlock(
   block: PlanInput["blocks"][number],
   input: PlanInput,
 ): ResolvedBlock | null {
-  const { pool, missedQuestionIds, answeredQuestionIds, conceptTopic } = input;
+  const { pool, answeredQuestionIds, conceptTopic } = input;
   const count = Math.max(1, block.itemCount);
   const ordered = byConceptFirst(pool, conceptTopic);
 
@@ -241,29 +262,31 @@ export function resolveBlock(
     }
 
     case "review": {
-      // Review means "questions you got wrong", so it is driven by history
-      // rather than the pool order. With no misses there is nothing to review
-      // and the block is dropped - inventing a review out of unseen questions
-      // would make "review" mean "practice".
+      // Driven by what the student has actually answered, not by pool order
+      // and not by a bare list of misses. Priority weighs the outcome, how
+      // long ago it was last seen, and how weak the surrounding concept is;
+      // the result is then interleaved so no two consecutive questions share
+      // a topic. See shared/retrievalReview.ts for why each of those matters.
+      //
+      // Still dropped when the student has answered nothing worth recalling.
+      // Building a "review" out of questions they have never seen would make
+      // review mean practice, and the session keeps its other blocks anyway.
       const byId = new Map(pool.map((q) => [q.id, q]));
-      const items = missedQuestionIds
-        .map((id) => byId.get(id))
+      const questions = selectRetrieval(input.exposures, count, input.now ?? new Date())
+        .map((pick) => byId.get(pick.questionId))
         .filter((q): q is PlannableQuestion => Boolean(q))
-        .slice(0, count)
         .map((q) => ({
           questionId: q.id,
           topic: q.topic,
           questionText: q.questionText,
           options: q.options,
-          correctIndex: q.correctAnswer,
-          explanation: q.explanation,
         }));
-      if (items.length === 0) return null;
+      if (questions.length === 0) return null;
       return {
         mode: "review",
-        label: reconcileLabel(block.label, items.length),
+        label: reconcileLabel(block.label, questions.length),
         estimatedMinutes: block.estimatedMinutes,
-        items,
+        questions,
       };
     }
 
@@ -308,9 +331,13 @@ export function buildSessionPlan(input: PlanInput): SessionPlan {
     .map((b) => resolveBlock(b, input))
     .filter((b): b is ResolvedBlock => b !== null);
 
+  // Review questions are answered now, so they are graded like any other
+  // answered question. Leaving them out meant a student could retrieve twelve
+  // items and have none of it reach their mastery - the measurement the whole
+  // adapt loop runs on.
   const questionIds: string[] = [];
   for (const b of blocks) {
-    if (b.mode === "practice" || b.mode === "scenarios") {
+    if (b.mode === "practice" || b.mode === "scenarios" || b.mode === "review") {
       questionIds.push(...b.questions.map((q) => q.questionId));
     }
   }

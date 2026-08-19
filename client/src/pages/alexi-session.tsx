@@ -59,16 +59,12 @@ interface PracticeQuestion {
   questionText: string;
   options: string[];
 }
-interface ReviewItem extends PracticeQuestion {
-  correctIndex: number;
-  explanation: string | null;
-}
 
 type Block =
   | { mode: "teach"; label: string; estimatedMinutes: number; keyPoints: string[]; examples: TeachExample[] }
   | { mode: "flashcards"; label: string; estimatedMinutes: number; cards: Flashcard[] }
   | { mode: "practice" | "scenarios"; label: string; estimatedMinutes: number; questions: PracticeQuestion[] }
-  | { mode: "review"; label: string; estimatedMinutes: number; items: ReviewItem[] }
+  | { mode: "review"; label: string; estimatedMinutes: number; questions: PracticeQuestion[] }
   | { mode: "mock_exam"; label: string; estimatedMinutes: number };
 
 interface SessionPayload {
@@ -331,9 +327,12 @@ export default function AlexiSessionPage() {
             <FlashcardStep es={es} block={current} onDone={advance} />
           )}
           {(current.mode === "practice" || current.mode === "scenarios") && (
-            <PracticeStep
+            <QuestionStep
               es={es}
               block={current}
+              icon={Target}
+              hint={es ? "Elige la mejor respuesta" : "Choose the best answer"}
+              testId="step-practice"
               answers={answers}
               pending={answer.isPending}
               onAnswer={(questionId, answerIndex) => answer.mutate({ questionId, answerIndex })}
@@ -341,7 +340,25 @@ export default function AlexiSessionPage() {
             />
           )}
           {current.mode === "review" && (
-            <ReviewStep es={es} block={current} onDone={advance} />
+            <QuestionStep
+              es={es}
+              block={current}
+              icon={RotateCcw}
+              /* Says what this step is for. These are questions the student has
+                 met before, deliberately mixed across topics - answering from
+                 memory is the work, so the framing has to ask for that rather
+                 than invite recognition. */
+              hint={
+                es
+                  ? "Desde la memoria - sin mirar atrás"
+                  : "From memory - no looking back"
+              }
+              testId="step-review"
+              answers={answers}
+              pending={answer.isPending}
+              onAnswer={(questionId, answerIndex) => answer.mutate({ questionId, answerIndex })}
+              onDone={advance}
+            />
           )}
           {current.mode === "mock_exam" && (
             <MockExamStep es={es} block={current} category={category} onSkip={advance} />
@@ -526,16 +543,31 @@ function FlashcardStep({
   );
 }
 
-function PracticeStep({
+/**
+ * Asking a question and revealing the verdict.
+ *
+ * Shared by the practice blocks and the retrieval block, which differ in what
+ * they select and how they are framed, not in how a question is asked. They
+ * were briefly separate components and immediately drifted - the retrieval one
+ * was the one that showed the answer without asking.
+ */
+function QuestionStep({
   es,
   block,
+  icon,
+  hint,
+  testId,
   answers,
   pending,
   onAnswer,
   onDone,
 }: {
   es: boolean;
-  block: Extract<Block, { mode: "practice" | "scenarios" }>;
+  block: { label: string; questions: PracticeQuestion[] };
+  icon: typeof Target;
+  /** Framing line under the title, saying what this step is asking for. */
+  hint: string;
+  testId: string;
   answers: Record<string, AnswerResult>;
   pending: boolean;
   onAnswer: (questionId: string, answerIndex: number) => void;
@@ -556,10 +588,10 @@ function PracticeStep({
 
   return (
     <StepCard
-      icon={Target}
+      icon={icon}
       title={block.label}
-      hint={`${index + 1} / ${block.questions.length}`}
-      testId="step-practice"
+      hint={`${hint} - ${index + 1} / ${block.questions.length}`}
+      testId={testId}
     >
       <Badge variant="secondary" className="mt-4 text-xs">{question.topic}</Badge>
       <p className="mt-2 text-base font-medium" data-testid="text-session-question">
@@ -635,51 +667,6 @@ function PracticeStep({
           </Button>
         </div>
       )}
-    </StepCard>
-  );
-}
-
-function ReviewStep({
-  es,
-  block,
-  onDone,
-}: {
-  es: boolean;
-  block: Extract<Block, { mode: "review" }>;
-  onDone: () => void;
-}) {
-  return (
-    <StepCard
-      icon={RotateCcw}
-      title={block.label}
-      hint={es ? "Preguntas que fallaste antes" : "Questions you got wrong before"}
-      testId="step-review"
-    >
-      <ul className="mt-4 space-y-4">
-        {block.items.map((item) => (
-          <li key={item.questionId} className="rounded-lg border p-4">
-            <Badge variant="secondary" className="text-xs">{item.topic}</Badge>
-            <p className="mt-2 text-sm font-medium">{item.questionText}</p>
-            <p className="mt-2 rounded-md bg-emerald-500/10 px-3 py-2 text-sm">
-              <span className="font-semibold text-emerald-700 dark:text-emerald-400">
-                {es ? "Respuesta correcta: " : "Correct answer: "}
-              </span>
-              {item.options[item.correctIndex]}
-            </p>
-            {item.explanation && (
-              <p className="mt-2 border-l-2 border-primary/40 pl-3 text-sm text-muted-foreground">
-                {item.explanation}
-              </p>
-            )}
-            <AskAlexi questionId={item.questionId} answeredIncorrectly topic={item.topic} />
-          </li>
-        ))}
-      </ul>
-
-      <Button className="mt-5 w-full sm:w-auto" onClick={onDone} data-testid="button-step-done">
-        {es ? "Siguiente paso" : "Next step"}
-        <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
-      </Button>
     </StepCard>
   );
 }

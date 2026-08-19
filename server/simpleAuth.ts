@@ -6,7 +6,7 @@ import { db } from "./db";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { sanitizeHtml } from "./sanitize";
-import { rateLimit } from "./rateLimit";
+import { rateLimit, clearRateLimit } from "./rateLimit";
 import { resolveSecureCookie } from "@shared/sessionCookie";
 import { recordPresence } from "./presence";
 import { SIGNUP_ABUSE_FLAG } from "@shared/signupLimit";
@@ -163,6 +163,12 @@ export async function setupAuth(app: Express) {
       if (!isValid) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
+
+      // Signing in successfully clears the attempt counter. It is consumed
+      // above, before the password is checked, so without this a student who
+      // signs in on a second device or loses a session cookie spends the same
+      // budget as someone guessing - and is locked out on the sixth try.
+      clearRateLimit(rateLimitKey);
 
       req.session.userId = user.id;
       req.session.email = user.email!;

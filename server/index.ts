@@ -13,6 +13,7 @@ import { getWebhookUrl } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
 import { initializeStripePrices } from "./initializeStripePrices";
 import { runMigrations } from "./migrations";
+import { repairContentOnBoot } from "./contentRepair";
 import { scheduleSubscriptionReconciliation } from "./subscriptionReconciliation";
 
 const app = express();
@@ -194,6 +195,11 @@ async function initStripe() {
   } catch (error: any) {
     console.error("[migrate] migration runner failed:", error?.message ?? error);
   }
+
+  // Punctuation in questions already stored. Separate from the migration
+  // runner above on purpose - that file is additive only, and this rewrites
+  // data. See server/contentRepair.ts.
+  await repairContentOnBoot();
 
   try {
     console.log("Initializing Stripe prices...");

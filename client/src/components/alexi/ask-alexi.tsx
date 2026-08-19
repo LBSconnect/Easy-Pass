@@ -30,7 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest } from "@/lib/queryClient";
 import { AlexiMascot } from "@/components/alexi-mascot";
-import { CircleHelp, Lightbulb, Brain, MessageSquareText } from "lucide-react";
+import { CircleHelp, Lightbulb, Brain, MessageSquareText, Send } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 import { STUDY_ASSISTANT, useStudyAssistantConfig } from "@/lib/studyAssistant";
 
@@ -158,6 +158,14 @@ export function AskAlexi({ questionId, answeredIncorrectly = false, topic }: Pro
           maxLength={MAX_MESSAGE_CHARS}
           rows={2}
           onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={(e) => {
+            // Plain Enter must still insert a newline in a textarea, so the
+            // shortcut is the usual modifier pair.
+            if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && message.trim() && !ask.isPending) {
+              e.preventDefault();
+              ask.mutate("explain_more");
+            }
+          }}
           placeholder={
             es
               ? "Ej.: no entiendo la diferencia entre las opciones B y C"
@@ -166,9 +174,23 @@ export function AskAlexi({ questionId, answeredIncorrectly = false, topic }: Pro
           className="mt-1.5 bg-background text-sm"
           data-testid="input-ask-message"
         />
-        <p className="mt-1 text-right text-xs text-muted-foreground" aria-live="polite">
-          {message.length}/{MAX_MESSAGE_CHARS}
-        </p>
+        <div className="mt-1 flex items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground" aria-live="polite">
+            {message.length}/{MAX_MESSAGE_CHARS}
+          </p>
+          {/* A labelled box with no way to submit is a dead end: a student
+              types a question and then has to guess that one of the buttons
+              above will carry it. This sends what they actually asked. */}
+          <Button
+            size="sm"
+            disabled={ask.isPending || !message.trim()}
+            onClick={() => ask.mutate("explain_more")}
+            data-testid="button-ask-message"
+          >
+            <Send className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+            {es ? "Preguntar" : "Ask"}
+          </Button>
+        </div>
       </div>
 
       {ask.isPending && (

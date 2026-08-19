@@ -245,6 +245,8 @@ export interface AiUsageSummary {
     outputTokens: number;
     costUsd: number;
     avgLatencyMs: number;
+    /** Why the most recent non-success call failed, when there was one. */
+    reason: string | null;
   }>;
 }
 
@@ -1260,6 +1262,16 @@ export class DatabaseStorage implements IStorage {
         outputTokens: sql<number>`coalesce(sum(${aiUsageEvents.outputTokens}), 0)::int`,
         costMicros: sql<number>`coalesce(sum(${aiUsageEvents.estimatedCostMicros}), 0)::bigint`,
         avgLatencyMs: sql<number>`coalesce(avg(${aiUsageEvents.latencyMs}), 0)::int`,
+        // The most common reason behind a non-success outcome. Every failed
+        // call already stored why it failed; without surfacing it the panel
+        // could say "the assistant is not reaching students" and nothing
+        // about the cause, leaving an operator to guess at a rejected key,
+        // a rate limit or a timeout. Aggregated rather than listed: one
+        // representative reason per row is what makes it actionable.
+        topReason: sql<string | null>`(
+          array_agg(${aiUsageEvents.reason} ORDER BY ${aiUsageEvents.createdAt} DESC)
+            FILTER (WHERE ${aiUsageEvents.reason} IS NOT NULL)
+        )[1]`,
       })
       .from(aiUsageEvents)
       .where(gte(aiUsageEvents.createdAt, since))
@@ -1273,6 +1285,7 @@ export class DatabaseStorage implements IStorage {
       outputTokens: Number(r.outputTokens),
       costUsd: Number(r.costMicros) / 1_000_000,
       avgLatencyMs: Number(r.avgLatencyMs),
+      reason: r.topReason ?? null,
     }));
 
     const totalCalls = byOperation.reduce((sum, r) => sum + r.calls, 0);

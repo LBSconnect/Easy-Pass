@@ -19,6 +19,28 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SectionHeading } from "@/components/page-shell";
 import { TriangleAlert, TrendingUp } from "lucide-react";
 
+/**
+ * What a failure reason means, and what to do about it.
+ *
+ * The stored codes come from the provider taxonomy in server/ai/provider.ts.
+ * They are precise but not actionable to read: an operator seeing
+ * "not_configured" against 25 fallbacks needs to know that their API key was
+ * rejected, not that a config file is missing.
+ */
+const REASON_LABELS: Record<string, string> = {
+  not_configured: "API key missing or rejected",
+  rate_limited: "Provider rate limit",
+  timeout: "Provider timed out",
+  invalid_response: "Provider returned nothing usable",
+  provider_error: "Provider request failed",
+  unknown: "Unrecognised failure",
+};
+
+function reasonLabel(reason: string | null): string {
+  if (!reason) return "—";
+  return REASON_LABELS[reason] ?? reason;
+}
+
 interface UsageRow {
   operation: string;
   outcome: string;
@@ -27,6 +49,7 @@ interface UsageRow {
   outputTokens: number;
   costUsd: number;
   avgLatencyMs: number;
+  reason: string | null;
 }
 
 interface UsageSummary {
@@ -161,6 +184,7 @@ export function AiUsagePanel() {
                   <tr className="border-b text-left text-xs text-muted-foreground">
                     <th scope="col" className="pb-2 font-medium">Operation</th>
                     <th scope="col" className="pb-2 font-medium">Outcome</th>
+                    <th scope="col" className="pb-2 font-medium">Why</th>
                     <th scope="col" className="pb-2 text-right font-medium">Calls</th>
                     <th scope="col" className="pb-2 text-right font-medium">Cost</th>
                     <th scope="col" className="pb-2 text-right font-medium">Avg ms</th>
@@ -176,6 +200,7 @@ export function AiUsagePanel() {
                         <td className="py-2">
                           <span className={OUTCOME_TONE[row.outcome] ?? ""}>{row.outcome}</span>
                         </td>
+                        <td className="py-2 text-muted-foreground">{reasonLabel(row.reason)}</td>
                         <td className="py-2 text-right tabular-nums">{row.calls}</td>
                         <td className="py-2 text-right tabular-nums">
                           ${row.costUsd.toFixed(4)}

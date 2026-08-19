@@ -121,6 +121,24 @@ export interface TutorResult {
   source: "grounded" | "fallback" | "refused";
 }
 
+/**
+ * What to record when a call fails.
+ *
+ * The kind alone is a category; the provider's message says which thing
+ * inside that category went wrong. Both, because an operator staring at
+ * "100% fallback" needs to know whether the key is rejected, the model name
+ * is wrong, or the provider is having a bad day - and those look identical
+ * without it.
+ */
+function failureReason(error: unknown): string {
+  if (!(error instanceof AIError)) return "unknown";
+  const detail = error.message?.trim();
+  if (!detail || detail === error.kind) return error.kind;
+  // The column is short, and the useful part of a provider message is the
+  // start of it.
+  return `${error.kind}: ${detail}`.slice(0, 120);
+}
+
 export class StudyAssistantService {
   /** What the browser is allowed to know. No provider or model names. */
   getConfig(): StudyAssistantConfig {
@@ -323,7 +341,7 @@ export class StudyAssistantService {
         latencyMs: Date.now() - started,
         category,
         userId,
-        reason: error instanceof AIError ? error.kind : "unknown",
+        reason: failureReason(error),
       });
       // Deterministic copy is genuinely good enough; this is not an error the
       // student needs to know about.
@@ -484,7 +502,7 @@ export class StudyAssistantService {
         latencyMs: Date.now() - started,
         category: question.category,
         userId,
-        reason: error instanceof AIError ? error.kind : "unknown",
+        reason: failureReason(error),
       });
       // The approved explanation is still a correct answer to the student's
       // question. They lose the rephrasing, not the help.

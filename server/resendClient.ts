@@ -17,7 +17,7 @@ export async function getResendClient() {
   const credentials = await getCredentials();
 
   if (!credentials) {
-    console.log('[Email] Resend not available — set RESEND_API_KEY env var to enable');
+    console.log('[Email] Resend not available, set RESEND_API_KEY env var to enable');
     return null;
   }
   

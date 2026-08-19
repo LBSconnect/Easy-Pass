@@ -132,7 +132,7 @@ export function MasteryHeatmap({ category }: { category: ExamCategory }) {
                 <Progress
                   value={topic.accuracy}
                   className={`mt-1.5 h-1.5 ${tier.bar}`}
-                  aria-label={`${topic.topic}: ${topic.accuracy}% — ${tierLabel}`}
+                  aria-label={`${topic.topic}: ${topic.accuracy}%, ${tierLabel}`}
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
                   {topic.correct}/{topic.answered}{" "}

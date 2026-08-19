@@ -92,7 +92,7 @@ export function ReadinessRing({
           className={cn("font-bold leading-none", tone ?? toneFor(value))}
           style={{ fontSize: size * 0.28 }}
         >
-          {value === null ? "—" : clamped}
+          {value === null ? "-" : clamped}
         </span>
         {caption && (
           <span className="mt-0.5 text-muted-foreground" style={{ fontSize: size * 0.12 }}>

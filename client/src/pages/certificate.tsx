@@ -64,8 +64,8 @@ export default function CertificatePage() {
   useSEO({
     title: certificate
       ? (language === "es"
-          ? `Certificado de ${categoryLabel} — ${certificate.recipientName} | MyEasyPass`
-          : `${categoryLabel} Exam Certificate — ${certificate.recipientName} | MyEasyPass`)
+          ? `Certificado de ${categoryLabel} para ${certificate.recipientName} | MyEasyPass`
+          : `${categoryLabel} Exam Certificate for ${certificate.recipientName} | MyEasyPass`)
       : "Exam Certificate | MyEasyPass",
     description: certificate
       ? (language === "es"

@@ -116,7 +116,7 @@ export function MasteryCard({ category }: { category: ExamCategory }) {
                     aria-valuenow={t.accuracy}
                     aria-valuemin={0}
                     aria-valuemax={100}
-                    aria-label={`${t.topic}: ${t.accuracy}% — ${tier.word}`}
+                    aria-label={`${t.topic}: ${t.accuracy}%, ${tier.word}`}
                   >
                     <div
                       className={`h-full rounded-full ${tier.bar}`}

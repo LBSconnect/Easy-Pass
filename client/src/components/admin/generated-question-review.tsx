@@ -230,7 +230,7 @@ export function GeneratedQuestionReview() {
 
                 <div className="min-w-0 space-y-3">
                   <p className="text-xs font-semibold uppercase text-muted-foreground">
-                    Spanish — required before publishing
+                    Spanish (required before publishing)
                   </p>
                   <Textarea
                     value={e.questionTextEs}

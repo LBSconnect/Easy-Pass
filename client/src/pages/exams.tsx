@@ -544,7 +544,7 @@ function ExamSession() {
                           ? `${Math.floor(Number(result.timeTaken) / 60)}:${String(
                               Number(result.timeTaken) % 60,
                             ).padStart(2, "0")}`
-                          : "—"}
+                          : "-"}
                       </div>
                       <div className="text-sm text-muted-foreground">
                         {t("exam.results.timeTaken")}

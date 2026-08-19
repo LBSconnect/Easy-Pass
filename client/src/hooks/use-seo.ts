@@ -10,81 +10,137 @@ export interface SEOOptions {
   description: string;
   canonicalUrl: string;
   ogImage?: string;
+  ogType?: string;
+  ogLocale?: string;
+  robots?: string;
   hreflang?: { lang: string; url: string }[];
   jsonLd?: Record<string, unknown>[];
 }
 
 const BASE_URL = "https://www.myeasypass.net";
-
-function setMetaByName(name: string, content: string) {
-  let el = document.querySelector(`meta[name="${name}"]`);
-  if (!el) {
-    el = document.createElement("meta");
-    el.setAttribute("name", name);
-    document.head.appendChild(el);
-  }
-  el.setAttribute("content", content);
-  return el;
-}
-
-function setMetaByProperty(property: string, content: string) {
-  let el = document.querySelector(`meta[property="${property}"]`);
-  if (!el) {
-    el = document.createElement("meta");
-    el.setAttribute("property", property);
-    document.head.appendChild(el);
-  }
-  el.setAttribute("content", content);
-  return el;
-}
-
+const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.png`;
+const DEFAULT_ROBOTS = "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1";
 const MANAGED_ATTR = "data-seo-managed";
+
+type RestoreFn = () => void;
+
+/**
+ * Update one head element without leaking the new value into the next SPA
+ * route. If the element already existed (for example from index.html), its
+ * original value is restored on cleanup. If this hook created it, cleanup
+ * removes it entirely.
+ */
+function setHeadAttribute(
+  selector: string,
+  createElement: () => Element,
+  attribute: string,
+  value: string,
+): RestoreFn {
+  let element = document.querySelector(selector);
+  const created = !element;
+
+  if (!element) {
+    element = createElement();
+    element.setAttribute(MANAGED_ATTR, "true");
+    document.head.appendChild(element);
+  }
+
+  const previousValue = element.getAttribute(attribute);
+  element.setAttribute(attribute, value);
+
+  return () => {
+    if (created) {
+      element?.remove();
+      return;
+    }
+
+    if (previousValue === null) {
+      element?.removeAttribute(attribute);
+    } else {
+      element?.setAttribute(attribute, previousValue);
+    }
+  };
+}
+
+function setMetaByName(name: string, content: string): RestoreFn {
+  return setHeadAttribute(
+    `meta[name="${name}"]`,
+    () => {
+      const el = document.createElement("meta");
+      el.setAttribute("name", name);
+      return el;
+    },
+    "content",
+    content,
+  );
+}
+
+function setMetaByProperty(property: string, content: string): RestoreFn {
+  return setHeadAttribute(
+    `meta[property="${property}"]`,
+    () => {
+      const el = document.createElement("meta");
+      el.setAttribute("property", property);
+      return el;
+    },
+    "content",
+    content,
+  );
+}
 
 /**
  * Manages document title, meta description, canonical link, Open Graph tags,
- * hreflang alternates, and JSON-LD structured data for a single page. This is
- * a client-side-rendered SPA (no head-management library like react-helmet),
- * so this hook writes directly to document.head and cleans up its own tags
- * on unmount so they don't leak onto the next page.
+ * hreflang alternates, robots directives, and JSON-LD for a single SPA route.
+ *
+ * The cleanup behavior matters for SEO. A client-side route change must not
+ * leave the previous page's title, canonical, hreflang, or social metadata in
+ * the document head. Static homepage values from index.html are restored when
+ * the visitor navigates back home.
  */
 export function useSEO(options: SEOOptions) {
   useEffect(() => {
     const previousTitle = document.title;
     document.title = options.title;
 
-    const managedEls: Element[] = [];
+    const restore: RestoreFn[] = [];
+    const ogImage = options.ogImage ?? DEFAULT_OG_IMAGE;
 
-    managedEls.push(setMetaByName("description", options.description));
-    managedEls.push(setMetaByProperty("og:title", options.title));
-    managedEls.push(setMetaByProperty("og:description", options.description));
-    managedEls.push(setMetaByProperty("og:url", options.canonicalUrl));
-    managedEls.push(setMetaByProperty("og:type", "website"));
-    if (options.ogImage) {
-      managedEls.push(setMetaByProperty("og:image", options.ogImage));
-      managedEls.push(setMetaByName("twitter:image", options.ogImage));
-    }
-    managedEls.push(setMetaByName("twitter:title", options.title));
-    managedEls.push(setMetaByName("twitter:description", options.description));
+    restore.push(setMetaByName("description", options.description));
+    restore.push(setMetaByName("robots", options.robots ?? DEFAULT_ROBOTS));
+    restore.push(setMetaByProperty("og:title", options.title));
+    restore.push(setMetaByProperty("og:description", options.description));
+    restore.push(setMetaByProperty("og:url", options.canonicalUrl));
+    restore.push(setMetaByProperty("og:type", options.ogType ?? "website"));
+    restore.push(setMetaByProperty("og:site_name", "MyEasyPass"));
+    restore.push(setMetaByProperty("og:locale", options.ogLocale ?? "en_US"));
+    restore.push(setMetaByProperty("og:image", ogImage));
+    restore.push(setMetaByName("twitter:card", "summary_large_image"));
+    restore.push(setMetaByName("twitter:title", options.title));
+    restore.push(setMetaByName("twitter:description", options.description));
+    restore.push(setMetaByName("twitter:image", ogImage));
 
-    let canonical = document.querySelector('link[rel="canonical"]');
-    const canonicalExisted = !!canonical;
-    if (!canonical) {
-      canonical = document.createElement("link");
-      canonical.setAttribute("rel", "canonical");
-      document.head.appendChild(canonical);
-    }
-    canonical.setAttribute("href", options.canonicalUrl);
+    restore.push(
+      setHeadAttribute(
+        'link[rel="canonical"]',
+        () => {
+          const el = document.createElement("link");
+          el.setAttribute("rel", "canonical");
+          return el;
+        },
+        "href",
+        options.canonicalUrl,
+      ),
+    );
 
-    // index.html ships a static hreflang set for the initial ("/") route, and
-    // this hook only ever tracks/removes the elements *it* created. Without
-    // this, the very first client-side navigation away from a page that
-    // doesn't call useSEO (e.g. the homepage) leaves those stale tags in
-    // place forever, so the next page's hreflang set gets layered on top
-    // instead of replacing it - two conflicting URLs per language, which
-    // search engines treat as invalid and ignore. Clear any hreflang
-    // alternates already in the document (static or otherwise) before adding
-    // this page's own, so only one page's set is ever present at a time.
-    document.querySelectorAll('link[rel="alternate"][hreflang]').forEach((el) => el.remove());
+    // index.html provides the homepage language alternates. Temporarily move
+    // them out while another route owns the head, then restore them when that
+    // route unmounts. This prevents duplicate/conflicting hreflang entries and
+    // also fixes the old behavior where returning home permanently lost its
+    // static hreflang tags.
+    const displacedHreflang = Array.from(
+      document.querySelectorAll('link[rel="alternate"][hreflang]'),
+    );
+    displacedHreflang.forEach((el) => el.remove());
 
     const hreflangEls: Element[] = [];
     for (const alt of options.hreflang ?? []) {
@@ -109,12 +165,26 @@ export function useSEO(options: SEOOptions) {
 
     return () => {
       document.title = previousTitle;
+
+      // Restore in reverse order so multiple attributes on the same static
+      // element unwind cleanly before the next route's effect runs.
+      for (const undo of [...restore].reverse()) undo();
       for (const el of hreflangEls) el.remove();
       for (const el of jsonLdEls) el.remove();
-      if (!canonicalExisted) canonical?.remove();
+      displacedHreflang.forEach((el) => document.head.appendChild(el));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [options.title, options.description, options.canonicalUrl, options.ogImage, JSON.stringify(options.hreflang), JSON.stringify(options.jsonLd)]);
+  }, [
+    options.title,
+    options.description,
+    options.canonicalUrl,
+    options.ogImage,
+    options.ogType,
+    options.ogLocale,
+    options.robots,
+    JSON.stringify(options.hreflang),
+    JSON.stringify(options.jsonLd),
+  ]);
 }
 
 export function buildUrl(path: string): string {

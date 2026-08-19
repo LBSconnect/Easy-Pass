@@ -33,6 +33,35 @@
     <xhtml:link rel="alternate" hreflang="es" href="https://www.myeasypass.net/faq?lang=es" />
   </url>
 
+  <!-- Free practice-test acquisition pages -->
+  <url>
+    <loc>https://www.myeasypass.net/free/texas-real-estate-practice-test</loc>
+    <lastmod>2026-08-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <url>
+    <loc>https://www.myeasypass.net/free/texas-property-casualty-practice-test</loc>
+    <lastmod>2026-08-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <url>
+    <loc>https://www.myeasypass.net/free/texas-life-insurance-practice-test</loc>
+    <lastmod>2026-08-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <url>
+    <loc>https://www.myeasypass.net/free/texas-general-lines-practice-test</loc>
+    <lastmod>2026-08-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
   <!-- Texas exam-prep landing pages (English) -->
   <url>
     <loc>https://www.myeasypass.net/texas-real-estate-exam-prep</loc>

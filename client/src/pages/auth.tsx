@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,24 +16,43 @@ import { PageShell } from "@/components/page-shell";
 import { useSEO, buildUrl } from "@/hooks/use-seo";
 import { safeNextPath } from "@shared/redirects";
 
-const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email"),
-  password: z.string().min(1, "Password is required"),
-});
+/**
+ * The rules the form checks before it asks the server.
+ *
+ * Built per render from `t` rather than declared at module scope, because
+ * these messages are the ones a student actually reads when they get
+ * something wrong - and at module scope they could only ever be English.
+ * A Spanish student filling in a Spanish form was told "Passwords don't
+ * match", which is the moment the translation matters most.
+ */
+type Translate = (key: string, fallback: string) => string;
 
-const signupSchema = z.object({
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-  email: z.string().email("Please enter a valid email"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+function buildLoginSchema(t: Translate) {
+  return z.object({
+    email: z.string().email(t("auth.invalidEmail", "Please enter a valid email")),
+    password: z.string().min(1, t("auth.passwordRequired", "Password is required")),
+  });
+}
 
-type LoginFormData = z.infer<typeof loginSchema>;
-type SignupFormData = z.infer<typeof signupSchema>;
+function buildSignupSchema(t: Translate) {
+  return z
+    .object({
+      firstName: z.string().optional(),
+      lastName: z.string().optional(),
+      email: z.string().email(t("auth.invalidEmail", "Please enter a valid email")),
+      password: z
+        .string()
+        .min(8, t("auth.passwordTooShort", "Password must be at least 8 characters")),
+      confirmPassword: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t("auth.passwordsDoNotMatch", "Passwords don't match"),
+      path: ["confirmPassword"],
+    });
+}
+
+type LoginFormData = z.infer<ReturnType<typeof buildLoginSchema>>;
+type SignupFormData = z.infer<ReturnType<typeof buildSignupSchema>>;
 
 function LoginForm({
   onSwitchToSignup,
@@ -45,9 +64,13 @@ function LoginForm({
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const [, navigate] = useLocation();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Rebuilt when the language changes, so a student who switches language
+  // mid-form does not get the previous language's error next time they slip.
+  const loginSchema = useMemo(() => buildLoginSchema(t), [t, i18n.language]);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -189,9 +212,11 @@ function SignupForm({
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const [, navigate] = useLocation();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const signupSchema = useMemo(() => buildSignupSchema(t), [t, i18n.language]);
 
   const form = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),

@@ -77,6 +77,14 @@ jobs:
       # Raised for the functional server only. The second server below keeps
       # the real 5, so the specs that prove the limiter works still do.
       AUTH_RATE_LIMIT_MAX: "100000"
+      # Same reason: the whole suite signs up from one address, and the real
+      # cap is per address per hour. The rate-limit server below keeps a real
+      # (small) one so the sign-up limiter is still proven.
+      REGISTER_RATE_LIMIT_MAX: "100000"
+      # What the rate-limit server below is started with, so the sign-up specs
+      # know how many requests reach the cap. Read by the test process, which
+      # cannot see a step-scoped variable - hence job level.
+      REGISTER_RATE_LIMIT_MAX_EXPECTED: "5"
       RATE_LIMIT_BASE_URL: http://localhost:5001
       # The in-process per-IP limiters on the public endpoints have the same
       # one-IP problem. Scaled together so their relative sizes stay intact.
@@ -151,6 +159,11 @@ jobs:
           PORT: "5001"
           API_RATE_LIMIT_MAX: ""
           AUTH_RATE_LIMIT_MAX: ""
+          # Deliberately small rather than the production 40, so the sign-up
+          # cap can be reached in a handful of requests instead of forty
+          # throwaway accounts per CI run. The predicate being tested - what
+          # counts towards the cap - is the same at any value.
+          REGISTER_RATE_LIMIT_MAX: "5"
           RATE_LIMIT_SCALE: ""
           CORS_ALLOWED_ORIGINS: http://localhost:5001
         run: |

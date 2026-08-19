@@ -56,6 +56,12 @@ export type AIErrorKind =
   // generic provider error sends an operator looking for an outage that is
   // not happening.
   | "model_not_found"
+  // The provider understood the request and refused it - a malformed body, or
+  // an account that cannot be billed. Kept apart from provider_error because
+  // that one is retried and this one must not be: the answer is identical the
+  // second time, so a retry only doubles the student's wait and the bill for
+  // a call that was never going to work.
+  | "bad_request"
   | "provider_error"
   | "invalid_response";
 
@@ -71,8 +77,9 @@ export class AIError extends Error {
 
   /** Whether retrying the same request could plausibly succeed. */
   get retryable(): boolean {
-    // model_not_found and not_configured are deliberately absent: retrying
-    // a wrong model name or a rejected key just fails again.
+    // model_not_found, not_configured and bad_request are deliberately absent:
+    // retrying a wrong model name, a rejected key or a refused request just
+    // fails again.
     return this.kind === "timeout" || this.kind === "rate_limited" || this.kind === "provider_error";
   }
 }

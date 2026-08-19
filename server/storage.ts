@@ -63,6 +63,7 @@ import {
 import { users, type User } from "@shared/models/auth";
 import { parseExamMode, type ExamMode } from "@shared/examMode";
 import { ONLINE_WINDOW_MS } from "@shared/onlinePresence";
+import { centsToUsd } from "@shared/money";
 import { db, pool } from "./db";
 
 /**
@@ -539,7 +540,9 @@ export class DatabaseStorage implements IStorage {
     return {
       totalUsers: allUsers.length,
       activeSubscriptions: activeProfiles.length,
-      totalRevenue: totalRevenue / 100, // Convert cents to dollars
+      // Dollars from here on. The single conversion for this figure - see
+      // shared/money.ts for why converting again downstream is the bug.
+      totalRevenue: centsToUsd(totalRevenue),
       passRate,
       onlineNow,
       onlineWindowMinutes: Math.round(ONLINE_WINDOW_MS / 60000),
@@ -636,7 +639,7 @@ export class DatabaseStorage implements IStorage {
       const key = toDateKey(payment.createdAt);
       if (key in revenueCents) revenueCents[key] += payment.amount;
     }
-    const revenueOverTime = dateBuckets.map((date) => ({ date, amount: revenueCents[date] / 100 }));
+    const revenueOverTime = dateBuckets.map((date) => ({ date, amount: centsToUsd(revenueCents[date]) }));
 
     const activeProfiles = allProfiles.filter(
       (p) => p.subscriptionStatus === "active" || p.subscriptionStatus === "trialing"

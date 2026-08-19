@@ -17,6 +17,7 @@ const PAGES = {
     english: "/texas-property-casualty-exam-prep",
     practice: "/es/free/prueba-practica-propiedad-accidentes-texas",
     pricing: "/pricing?category=property_casualty",
+    concepts: "/es/conceptos-seguros-texas",
   },
   "vida": {
     title: "Preparación Examen Seguro de Vida Texas | MyEasyPass",
@@ -27,6 +28,7 @@ const PAGES = {
     english: "/texas-life-insurance-exam-prep",
     practice: "/es/free/prueba-practica-seguro-vida-texas",
     pricing: "/pricing?category=life_insurance",
+    concepts: "/es/conceptos-seguros-texas",
   },
   "lineas-generales": {
     title: "Preparación Examen Líneas Generales Texas | MyEasyPass",
@@ -37,6 +39,7 @@ const PAGES = {
     english: "/texas-general-lines-exam-prep",
     practice: "/es/free/prueba-practica-lineas-generales-texas",
     pricing: "/pricing?category=general_lines",
+    concepts: "/es/conceptos-seguros-texas",
   },
 } as const;
 
@@ -91,6 +94,7 @@ export default function SpanishInsuranceCategoryPage({ kind }: { kind: keyof typ
             <div className="flex flex-wrap gap-3">
               <Link href={page.practice}><Button size="lg">Prueba de práctica gratis</Button></Link>
               <Link href={page.pricing}><Button size="lg" variant="outline">Ver precios</Button></Link>
+              <Link href={page.concepts}><Button size="lg" variant="outline">Estudiar conceptos</Button></Link>
             </div>
           </div>
         </section>

@@ -42,6 +42,7 @@ import TexasGeneralLinesExamPrepPage from "@/pages/landing-texas-general-lines";
 import TexasRealEstateExamPrepEsPage from "@/pages/landing-texas-real-estate-es";
 import TexasInsuranceExamPrepEsPage from "@/pages/landing-texas-insurance-es";
 import FreePracticeTestPage from "@/pages/free-practice-test";
+import FreePracticeTestEsPage from "@/pages/free-practice-test-es";
 import InsuranceConceptPage from "@/pages/insurance-concept";
 import InsuranceConceptsHubPage from "@/pages/insurance-concepts-hub";
 import ExamConceptClusterPage from "@/pages/exam-concept-clusters";
@@ -206,6 +207,7 @@ function Router() {
       <Route path="/exams/:category" component={ExamsPage} />
       <Route path="/pricing" component={PricingPage} />
       <Route path="/free/:slug" component={FreePracticeTestPage} />
+      <Route path="/es/free/:slug" component={FreePracticeTestEsPage} />
       <Route path="/texas-insurance-exam/concepts" component={InsuranceConceptsHubPage} />
       <Route path="/texas-insurance-exam/:slug" component={InsuranceConceptPage} />
       <Route path="/texas-life-health-exam/:slug" component={() => <ExamConceptClusterPage clusterKey="life-health" />} />

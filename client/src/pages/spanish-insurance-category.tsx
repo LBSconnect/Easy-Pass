@@ -15,8 +15,9 @@ const PAGES = {
     intro: "Practica para tu examen de licencia de Propiedad y Accidentes de Texas con preguntas organizadas por tema, exámenes simulados y explicaciones en español o inglés.",
     topics: ["Seguro de propiedad", "Responsabilidad civil", "Seguro de automóvil", "Reclamaciones y principios de seguros"],
     english: "/texas-property-casualty-exam-prep",
-    practice: "/free/texas-property-casualty-practice-test",
+    practice: "/es/free/prueba-practica-propiedad-accidentes-texas",
     pricing: "/pricing?category=property_casualty",
+    concepts: "/es/conceptos-seguros-texas",
   },
   "vida": {
     title: "Preparación Examen Seguro de Vida Texas | MyEasyPass",
@@ -25,8 +26,9 @@ const PAGES = {
     intro: "Estudia para tu examen de licencia de Seguro de Vida de Texas con práctica enfocada, exámenes simulados y explicaciones disponibles en español o inglés.",
     topics: ["Pólizas de seguro de vida", "Anualidades", "Conceptos básicos de salud", "Principios y regulación de seguros"],
     english: "/texas-life-insurance-exam-prep",
-    practice: "/free/texas-life-insurance-practice-test",
+    practice: "/es/free/prueba-practica-seguro-vida-texas",
     pricing: "/pricing?category=life_insurance",
+    concepts: "/es/conceptos-seguros-texas",
   },
   "lineas-generales": {
     title: "Preparación Examen Líneas Generales Texas | MyEasyPass",
@@ -35,8 +37,9 @@ const PAGES = {
     intro: "Practica para tu examen de licencia de Líneas Generales de Texas con sesiones enfocadas, exámenes cronometrados y explicaciones bilingües.",
     topics: ["Coberturas de líneas generales", "Gestión de riesgos", "Conceptos de seguros comerciales", "Ética y regulación"],
     english: "/texas-general-lines-exam-prep",
-    practice: "/free/texas-general-lines-practice-test",
+    practice: "/es/free/prueba-practica-lineas-generales-texas",
     pricing: "/pricing?category=general_lines",
+    concepts: "/es/conceptos-seguros-texas",
   },
 } as const;
 
@@ -91,6 +94,7 @@ export default function SpanishInsuranceCategoryPage({ kind }: { kind: keyof typ
             <div className="flex flex-wrap gap-3">
               <Link href={page.practice}><Button size="lg">Prueba de práctica gratis</Button></Link>
               <Link href={page.pricing}><Button size="lg" variant="outline">Ver precios</Button></Link>
+              <Link href={page.concepts}><Button size="lg" variant="outline">Estudiar conceptos</Button></Link>
             </div>
           </div>
         </section>

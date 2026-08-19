@@ -29,11 +29,10 @@ export function Navbar() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Kept intentionally short so the row fits on one line at laptop widths in
-  // both locales. Pricing, Get Started and Visit Test Center live in the footer.
   const navLinks = [
     { href: "/", label: t("nav.home"), show: true },
     { href: "/exams", label: t("nav.exams"), show: true },
+    { href: "/free/study-resources", label: "Free Study Resources", show: true },
     { href: "/study-guide", label: t("nav.studyGuide"), show: isAuthenticated },
     { href: "/faq", label: t("nav.faq"), show: true },
     { href: "/profile", label: t("nav.profile"), show: isAuthenticated },
@@ -56,18 +55,16 @@ export function Navbar() {
           <img src={logoImage} alt="MyEasyPass" className="h-10 w-auto object-contain" width={996} height={301} />
         </Link>
 
-        <div className="hidden lg:flex items-center gap-5 xl:gap-7">
+        <div className="hidden lg:flex items-center gap-4 xl:gap-6">
           {navLinks
             .filter((link) => link.show)
             .map((link) => (
               <Link key={link.href} href={link.href}>
                 <span
                   className={`whitespace-nowrap text-sm font-medium transition-colors hover:text-primary ${
-                    location === link.href
-                      ? "text-primary"
-                      : "text-muted-foreground"
+                    location === link.href ? "text-primary" : "text-muted-foreground"
                   }`}
-                  data-testid={`link-nav-${link.href.replace("/", "") || "home"}`}
+                  data-testid={`link-nav-${link.href.replaceAll("/", "-").replace(/^-/, "") || "home"}`}
                 >
                   {link.label}
                 </span>
@@ -83,44 +80,22 @@ export function Navbar() {
             <div className="h-9 w-20 animate-pulse rounded-md bg-muted" />
           ) : !isAuthenticated ? (
             <>
-              {/* Persistent CTA for non-authenticated users - visible on all screens */}
-              <Button 
-                size="sm"
-                asChild 
-                className="gap-1"
-                data-testid="cta-header-start"
-                data-analytics="header-cta-start"
-              >
+              <Button size="sm" asChild className="gap-1" data-testid="cta-header-start" data-analytics="header-cta-start">
                 <Link href="/signup">
-                  <span className="hidden sm:inline">
-                    {t("nav.startPracticing", "Start Practicing")}
-                  </span>
+                  <span className="hidden sm:inline">{t("nav.startPracticing", "Start Practicing")}</span>
                   <span className="sm:hidden">{t("nav.start", "Start")}</span>
                 </Link>
               </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                asChild
-                className="hidden sm:flex"
-                data-testid="link-nav-login"
-              >
+              <Button size="sm" variant="outline" asChild className="hidden sm:flex" data-testid="link-nav-login">
                 <Link href="/login">{t("nav.login")}</Link>
               </Button>
             </>
           ) : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="relative h-9 w-9 rounded-full"
-                  data-testid="button-user-menu"
-                >
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full" data-testid="button-user-menu">
                   <Avatar className="h-9 w-9">
-                    <AvatarImage
-                      src={user?.profileImageUrl || undefined}
-                      alt={user?.firstName || "User"}
-                    />
+                    <AvatarImage src={user?.profileImageUrl || undefined} alt={user?.firstName || "User"} />
                     <AvatarFallback>{getInitials()}</AvatarFallback>
                   </Avatar>
                 </Button>
@@ -132,49 +107,23 @@ export function Navbar() {
                     <AvatarFallback>{getInitials()}</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium">
-                      {user?.firstName} {user?.lastName}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {user?.email}
-                    </span>
+                    <span className="text-sm font-medium">{user?.firstName} {user?.lastName}</span>
+                    <span className="text-xs text-muted-foreground">{user?.email}</span>
                   </div>
                 </div>
                 <DropdownMenuSeparator />
-                <Link href="/dashboard">
-                  <DropdownMenuItem data-testid="menu-item-dashboard">
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
-                    Dashboard
-                  </DropdownMenuItem>
-                </Link>
-                <Link href="/profile">
-                  <DropdownMenuItem data-testid="menu-item-profile">
-                    <User className="mr-2 h-4 w-4" />
-                    {t("nav.profile")}
-                  </DropdownMenuItem>
-                </Link>
-                <Link href="/profile">
-                  <DropdownMenuItem data-testid="menu-item-settings">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </DropdownMenuItem>
-                </Link>
+                <Link href="/dashboard"><DropdownMenuItem data-testid="menu-item-dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />Dashboard</DropdownMenuItem></Link>
+                <Link href="/profile"><DropdownMenuItem data-testid="menu-item-profile"><User className="mr-2 h-4 w-4" />{t("nav.profile")}</DropdownMenuItem></Link>
+                <Link href="/profile"><DropdownMenuItem data-testid="menu-item-settings"><Settings className="mr-2 h-4 w-4" />Settings</DropdownMenuItem></Link>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <a href="/api/logout" data-testid="menu-item-logout">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    {t("nav.logout")}
-                  </a>
-                </DropdownMenuItem>
+                <DropdownMenuItem asChild><a href="/api/logout" data-testid="menu-item-logout"><LogOut className="mr-2 h-4 w-4" />{t("nav.logout")}</a></DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
 
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild className="lg:hidden">
-              <Button variant="ghost" size="icon" aria-label="Open menu" data-testid="button-mobile-menu">
-                <Menu className="h-5 w-5" />
-              </Button>
+              <Button variant="ghost" size="icon" aria-label="Open menu" data-testid="button-mobile-menu"><Menu className="h-5 w-5" /></Button>
             </SheetTrigger>
             <SheetContent side="right">
               <SheetHeader>
@@ -183,42 +132,15 @@ export function Navbar() {
                 </SheetTitle>
               </SheetHeader>
               <div className="flex flex-col gap-4 mt-6">
-                {navLinks
-                  .filter((link) => link.show)
-                  .map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <span
-                        className={`block py-2 text-lg font-medium ${
-                          location === link.href
-                            ? "text-primary"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        {link.label}
-                      </span>
-                    </Link>
-                  ))}
+                {navLinks.filter((link) => link.show).map((link) => (
+                  <Link key={link.href} href={link.href} onClick={() => setMobileMenuOpen(false)}>
+                    <span className={`block py-2 text-lg font-medium ${location === link.href ? "text-primary" : "text-muted-foreground"}`}>{link.label}</span>
+                  </Link>
+                ))}
                 {!isAuthenticated && (
                   <div className="flex flex-col gap-3 mt-4 pt-4 border-t">
-                    <Button 
-                      asChild 
-                      onClick={() => setMobileMenuOpen(false)}
-                      data-testid="cta-mobile-start"
-                      data-analytics="mobile-cta-start"
-                    >
-                      <Link href="/signup">{t("nav.startPracticing", "Start Practicing")}</Link>
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      asChild 
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <Link href="/login">{t("nav.login")}</Link>
-                    </Button>
+                    <Button asChild onClick={() => setMobileMenuOpen(false)} data-testid="cta-mobile-start" data-analytics="mobile-cta-start"><Link href="/signup">{t("nav.startPracticing", "Start Practicing")}</Link></Button>
+                    <Button variant="outline" asChild onClick={() => setMobileMenuOpen(false)}><Link href="/login">{t("nav.login")}</Link></Button>
                   </div>
                 )}
               </div>

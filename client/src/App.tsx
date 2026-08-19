@@ -42,6 +42,8 @@ import TexasGeneralLinesExamPrepPage from "@/pages/landing-texas-general-lines";
 import TexasRealEstateExamPrepEsPage from "@/pages/landing-texas-real-estate-es";
 import TexasInsuranceExamPrepEsPage from "@/pages/landing-texas-insurance-es";
 import FreePracticeTestPage from "@/pages/free-practice-test";
+import InsuranceConceptPage from "@/pages/insurance-concept";
+import InsuranceConceptsHubPage from "@/pages/insurance-concepts-hub";
 import EmployerInquiryPage from "@/pages/employer-inquiry";
 import DiagnosticPage from "@/pages/diagnostic";
 import CookiePolicyPage from "@/pages/cookie-policy";
@@ -203,6 +205,8 @@ function Router() {
       <Route path="/exams/:category" component={ExamsPage} />
       <Route path="/pricing" component={PricingPage} />
       <Route path="/free/:slug" component={FreePracticeTestPage} />
+      <Route path="/texas-insurance-exam/concepts" component={InsuranceConceptsHubPage} />
+      <Route path="/texas-insurance-exam/:slug" component={InsuranceConceptPage} />
       <Route path="/texas-real-estate-exam-prep" component={TexasRealEstateExamPrepPage} />
       <Route path="/texas-property-casualty-exam-prep" component={TexasPropertyCasualtyExamPrepPage} />
       <Route path="/texas-life-insurance-exam-prep" component={TexasLifeInsuranceExamPrepPage} />

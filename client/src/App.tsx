@@ -22,9 +22,6 @@ import { PageErrorBoundary } from "@/components/error-boundary";
 import ExamsPage from "@/pages/exams";
 import PricingPage from "@/pages/pricing";
 import ProfilePage from "@/pages/profile";
-// Admin panel is loaded lazily: it's only ever reached by authenticated
-// admin users, and it pulls in recharts (a large charting dependency) that
-// would otherwise ship in the main bundle for every visitor.
 const AdminPage = lazy(() => import("@/pages/admin"));
 import ScheduleExamPage from "@/pages/schedule-exam";
 import StudyGuidePage from "@/pages/study-guide";
@@ -41,6 +38,7 @@ import TexasLifeInsuranceExamPrepPage from "@/pages/landing-texas-life-insurance
 import TexasGeneralLinesExamPrepPage from "@/pages/landing-texas-general-lines";
 import TexasRealEstateExamPrepEsPage from "@/pages/landing-texas-real-estate-es";
 import TexasInsuranceExamPrepEsPage from "@/pages/landing-texas-insurance-es";
+import FreePracticeTestPage from "@/pages/free-practice-test";
 import EmployerInquiryPage from "@/pages/employer-inquiry";
 import DiagnosticPage from "@/pages/diagnostic";
 import CookiePolicyPage from "@/pages/cookie-policy";
@@ -57,19 +55,8 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   const [, navigate] = useLocation();
   const { i18n } = useTranslation();
   const es = i18n.language === "es";
-
-  /**
-   * Client-side navigation, from an effect.
-   *
-   * This was `window.location.href = "/login"` executed during render, which
-   * is wrong twice over. Assigning during render is a render-phase side
-   * effect React may run more than once, and a full document load is the wrong
-   * tool anyway - /login is a route in this same app, so tearing down the
-   * document throws away the loaded bundle and query cache to reach a page
-   * already one render away. `replace` keeps Back from bouncing off the
-   * protected route the student just left.
-   */
   const mustSignIn = !isLoading && !isError && !isAuthenticated;
+
   useEffect(() => {
     if (mustSignIn) navigate("/login", { replace: true });
   }, [mustSignIn, navigate]);
@@ -85,17 +72,12 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
     );
   }
 
-  // Could not determine auth state. Not the same as "signed out": redirecting
-  // here would log out a student with a valid session over a transient 500,
-  // and during an outage they could not sign back in either.
   if (isError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="max-w-md text-center space-y-4">
           <h1 className="text-2xl font-bold">
-            {es
-              ? "No podemos conectar con MyEasyPass ahora mismo"
-              : "We can't reach MyEasyPass right now"}
+            {es ? "No podemos conectar con MyEasyPass ahora mismo" : "We can't reach MyEasyPass right now"}
           </h1>
           <p className="text-muted-foreground">
             {es
@@ -116,8 +98,6 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   }
 
   if (!isAuthenticated) {
-    // Says what is happening rather than showing a blank page while the
-    // browser navigates.
     return (
       <div
         className="min-h-screen flex items-center justify-center bg-background px-4"
@@ -157,10 +137,6 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 function HomePage() {
   const { isAuthenticated, isLoading, isError } = useAuth();
 
-  // The home page is public marketing and is the first thing a new visitor
-  // sees. Only a confirmed session diverts to the dashboard; a failed auth
-  // check must still show the page. Before this, a 500 on /api/auth/user left
-  // the spinner up forever and the site looked dead to everyone arriving.
   if (isLoading && !isError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background" data-testid="loading-home">
@@ -172,61 +148,54 @@ function HomePage() {
     );
   }
 
-  if (isAuthenticated) {
-    return <DashboardPage />;
-  }
-
+  if (isAuthenticated) return <DashboardPage />;
   return <LandingPage />;
 }
 
 function Router() {
   return (
-    // Page-level boundary: without this, one render error anywhere unmounts
-    // the entire tree and the user gets a blank white page with no way out.
     <PageErrorBoundary label="route">
       <Switch>
-      <Route path="/" component={HomePage} />
-      <Route path="/login" component={AuthPage} />
-      <Route path="/signup" component={AuthPage} />
-      <Route path="/forgot-password" component={ForgotPasswordPage} />
-      <Route path="/reset-password" component={ResetPasswordPage} />
-      <Route path="/dashboard" component={() => <ProtectedRoute component={DashboardPage} />} />
-      <Route path="/missed-questions" component={() => <ProtectedRoute component={MissedQuestionsPage} />} />
-      <Route path="/flashcards" component={() => <ProtectedRoute component={FlashcardsPage} />} />
-      <Route path="/study-assistant" component={() => <ProtectedRoute component={StudyAssistantPage} />} />
-      <Route path="/session/:category" component={() => <ProtectedRoute component={AlexiSessionPage} />} />
-      {/* Not wrapped in ProtectedRoute: guests can browse categories and try
-          a short quick-practice preview before being asked to sign up.
-          ExamsPage itself branches on auth state for the rest of the flow. */}
-      <Route path="/exams" component={ExamsPage} />
-      <Route path="/exams/:category" component={ExamsPage} />
-      <Route path="/pricing" component={PricingPage} />
-      <Route path="/texas-real-estate-exam-prep" component={TexasRealEstateExamPrepPage} />
-      <Route path="/texas-property-casualty-exam-prep" component={TexasPropertyCasualtyExamPrepPage} />
-      <Route path="/texas-life-insurance-exam-prep" component={TexasLifeInsuranceExamPrepPage} />
-      <Route path="/texas-general-lines-exam-prep" component={TexasGeneralLinesExamPrepPage} />
-      <Route path="/es/preparacion-examen-bienes-raices-texas" component={TexasRealEstateExamPrepEsPage} />
-      <Route path="/es/preparacion-examen-seguros-texas" component={TexasInsuranceExamPrepEsPage} />
-      <Route path="/employer-inquiry" component={EmployerInquiryPage} />
-      <Route path="/readiness-check" component={DiagnosticPage} />
-      <Route path="/schedule-exam" component={ScheduleExamPage} />
-      <Route path="/study-guide" component={() => <ProtectedRoute component={StudyGuidePage} />} />
-      <Route path="/profile" component={() => <ProtectedRoute component={ProfilePage} />} />
-      <Route path="/admin" component={() => <ProtectedRoute component={AdminPage} />} />
-      <Route path="/certificates/:slug" component={CertificatePage} />
-      <Route path="/faq" component={FAQPage} />
-      <Route path="/glossary" component={GlossaryPage} />
-      <Route path="/terms" component={TermsPage} />
-      <Route path="/privacy" component={PrivacyPage} />
-      <Route path="/cookie-policy" component={CookiePolicyPage} />
-      <Route path="/notice-at-collection" component={NoticeAtCollectionPage} />
-      <Route path="/privacy-request" component={PrivacyRequestPage} />
-      <Route path="/accessibility" component={AccessibilityPage} />
-      <Route path="/copyright-dmca" component={CopyrightDmcaPage} />
-      <Route path="/refund-policy" component={RefundPolicyPage} />
-      <Route path="/exam-disclaimer" component={ExamDisclaimerPage} />
-      <Route path="/electronic-communications" component={ElectronicCommunicationsPage} />
-      <Route component={NotFound} />
+        <Route path="/" component={HomePage} />
+        <Route path="/login" component={AuthPage} />
+        <Route path="/signup" component={AuthPage} />
+        <Route path="/forgot-password" component={ForgotPasswordPage} />
+        <Route path="/reset-password" component={ResetPasswordPage} />
+        <Route path="/dashboard" component={() => <ProtectedRoute component={DashboardPage} />} />
+        <Route path="/missed-questions" component={() => <ProtectedRoute component={MissedQuestionsPage} />} />
+        <Route path="/flashcards" component={() => <ProtectedRoute component={FlashcardsPage} />} />
+        <Route path="/study-assistant" component={() => <ProtectedRoute component={StudyAssistantPage} />} />
+        <Route path="/session/:category" component={() => <ProtectedRoute component={AlexiSessionPage} />} />
+        <Route path="/exams" component={ExamsPage} />
+        <Route path="/exams/:category" component={ExamsPage} />
+        <Route path="/pricing" component={PricingPage} />
+        <Route path="/free/:slug" component={FreePracticeTestPage} />
+        <Route path="/texas-real-estate-exam-prep" component={TexasRealEstateExamPrepPage} />
+        <Route path="/texas-property-casualty-exam-prep" component={TexasPropertyCasualtyExamPrepPage} />
+        <Route path="/texas-life-insurance-exam-prep" component={TexasLifeInsuranceExamPrepPage} />
+        <Route path="/texas-general-lines-exam-prep" component={TexasGeneralLinesExamPrepPage} />
+        <Route path="/es/preparacion-examen-bienes-raices-texas" component={TexasRealEstateExamPrepEsPage} />
+        <Route path="/es/preparacion-examen-seguros-texas" component={TexasInsuranceExamPrepEsPage} />
+        <Route path="/employer-inquiry" component={EmployerInquiryPage} />
+        <Route path="/readiness-check" component={DiagnosticPage} />
+        <Route path="/schedule-exam" component={ScheduleExamPage} />
+        <Route path="/study-guide" component={() => <ProtectedRoute component={StudyGuidePage} />} />
+        <Route path="/profile" component={() => <ProtectedRoute component={ProfilePage} />} />
+        <Route path="/admin" component={() => <ProtectedRoute component={AdminPage} />} />
+        <Route path="/certificates/:slug" component={CertificatePage} />
+        <Route path="/faq" component={FAQPage} />
+        <Route path="/glossary" component={GlossaryPage} />
+        <Route path="/terms" component={TermsPage} />
+        <Route path="/privacy" component={PrivacyPage} />
+        <Route path="/cookie-policy" component={CookiePolicyPage} />
+        <Route path="/notice-at-collection" component={NoticeAtCollectionPage} />
+        <Route path="/privacy-request" component={PrivacyRequestPage} />
+        <Route path="/accessibility" component={AccessibilityPage} />
+        <Route path="/copyright-dmca" component={CopyrightDmcaPage} />
+        <Route path="/refund-policy" component={RefundPolicyPage} />
+        <Route path="/exam-disclaimer" component={ExamDisclaimerPage} />
+        <Route path="/electronic-communications" component={ElectronicCommunicationsPage} />
+        <Route component={NotFound} />
       </Switch>
     </PageErrorBoundary>
   );

@@ -66,6 +66,9 @@ export const userProfiles = pgTable("user_profiles", {
   // Lets a one-click unsubscribe work without a login. Random, per student,
   // and only ever able to turn reminders off - it grants no other access.
   unsubscribeToken: varchar("unsubscribe_token"),
+  // When this student last made a request, used for the "online now" count.
+  // Written at most once a minute per student - see shared/onlinePresence.ts.
+  lastSeenAt: timestamp("last_seen_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

@@ -124,6 +124,10 @@ interface AdminStats {
   activeSubscriptions: number;
   totalRevenue: number;
   passRate: number;
+  /** Students who made a request inside the window below. */
+  onlineNow?: number;
+  /** How many minutes that covers, so the card can say what it measures. */
+  onlineWindowMinutes?: number;
 }
 
 interface AdminAnalytics {
@@ -181,7 +185,8 @@ interface AdminUser {
 const ALL_CATEGORIES: ExamCategory[] = ["real_estate", "property_casualty", "life_insurance", "general_lines"];
 
 export default function AdminPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const es = i18n.language === "es";
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
@@ -210,6 +215,11 @@ export default function AdminPage() {
   const { data: stats, isLoading: statsLoading } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
     enabled: isAdmin,
+    // "Online now" is only worth having if it moves. Thirty seconds keeps it
+    // current without polling hard, and the query stops while the tab is in
+    // the background rather than running all day behind other work.
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
   });
 
   const { data: analyticsData, isLoading: analyticsLoading } = useQuery<AdminAnalytics>({
@@ -787,7 +797,7 @@ export default function AdminPage() {
             </p>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-4 mb-8">
+          <div className="grid gap-6 md:grid-cols-3 xl:grid-cols-5 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -800,6 +810,45 @@ export default function AdminPage() {
                   <Skeleton className="h-8 w-16" />
                 ) : (
                   <div className="text-2xl font-bold">{stats?.totalUsers || 0}</div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Deliberately says what it measures. There is no live connection
+                to a student's browser, so nobody can be observed leaving -
+                this counts requests in the last few minutes, and a figure
+                sitting beside an exact one had better not imply it is exact
+                too. */}
+            <Card data-testid="card-online-now">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {es ? "En línea ahora" : "Online now"}
+                </CardTitle>
+                <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
+                  {(stats?.onlineNow ?? 0) > 0 && (
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  )}
+                  <span
+                    className={`relative inline-flex h-2.5 w-2.5 rounded-full ${
+                      (stats?.onlineNow ?? 0) > 0 ? "bg-emerald-500" : "bg-muted-foreground/40"
+                    }`}
+                  />
+                </span>
+              </CardHeader>
+              <CardContent>
+                {statsLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold" data-testid="stat-online-now">
+                      {stats?.onlineNow ?? 0}
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {es
+                        ? `Activos en los últimos ${stats?.onlineWindowMinutes ?? 5} min`
+                        : `Active in the last ${stats?.onlineWindowMinutes ?? 5} min`}
+                    </p>
+                  </>
                 )}
               </CardContent>
             </Card>

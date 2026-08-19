@@ -1326,9 +1326,8 @@ export async function registerRoutes(
         availableMinutes: minutes,
       });
 
-      const [pool, missedIds, responses] = await Promise.all([
+      const [pool, responses] = await Promise.all([
         storage.getActiveQuestions(examCategory),
-        storage.getMissedQuestionIds(userId, examCategory),
         storage.getResponsesForCategory(userId, examCategory),
       ]);
 
@@ -1369,10 +1368,20 @@ export async function registerRoutes(
         conceptTopic,
       );
 
+      // The response log, not a pre-filtered list of misses: review selection
+      // needs when each item was last seen as much as whether it was wrong.
+      // Topic comes from the bank rather than the response row, so a question
+      // re-filed under a different topic is scored where it now lives.
+      const topicById = new Map(plannable.map((q) => [q.id, q.topic]));
       const plan = buildSessionPlan({
         blocks: recommendation.recommendation.blocks,
         pool: plannable,
-        missedQuestionIds: missedIds,
+        exposures: responses.map((r) => ({
+          questionId: r.questionId,
+          topic: topicById.get(r.questionId) ?? r.topic ?? "General",
+          isCorrect: r.isCorrect,
+          answeredAt: r.answeredAt,
+        })),
         answeredQuestionIds: new Set(responses.map((r) => r.questionId)),
         conceptTopic,
         keyPoints,

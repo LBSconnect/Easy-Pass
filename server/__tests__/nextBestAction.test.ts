@@ -124,11 +124,33 @@ describe("composeSession", () => {
   it("always ends with a mastery check so the loop can close", () => {
     // Without measurement after study, the adapt-measure-adapt loop this
     // product is built on never closes.
-    for (const mode of ["teach", "flashcards", "practice", "scenarios"] as const) {
+    //
+    // "review" used to be missing from this list, and was the one mode that
+    // did not end with a check. It was also the mode chosen for the last days
+    // before an exam - so the sessions closest to the exam were the ones that
+    // measured nothing. Excluding it from the loop hid that.
+    for (const mode of ["teach", "flashcards", "practice", "scenarios", "review"] as const) {
       const blocks = composeSession(mode, 15, "Texas Law");
       expect(blocks[blocks.length - 1].mode).toBe("practice");
       expect(blocks[blocks.length - 1].label).toContain("mastery check");
     }
+  });
+
+  it("gives a review session a shape rather than one long list", () => {
+    // It used to be a single block: "N-question mixed review", rendered as the
+    // answers the student already had wrong. Warm up, recall, check.
+    const blocks = composeSession("review", 15, null);
+
+    expect(blocks.map((b) => b.mode)).toEqual(["flashcards", "review", "practice"]);
+  });
+
+  it("asks the review block to be recall rather than reading", () => {
+    // The label is what the student reads on the step card, so it has to
+    // promise the right activity.
+    const recall = composeSession("review", 15, null).find((b) => b.mode === "review")!;
+
+    expect(recall.label).toMatch(/from memory/i);
+    expect(recall.itemCount).toBeGreaterThan(0);
   });
 
   it("front-loads explanation in a teaching session", () => {

@@ -22,13 +22,17 @@ function q(
   };
 }
 
+/** Fixed so a session built from history is reproducible. */
+const NOW = new Date("2026-08-19T15:00:00Z");
+
 function input(over: Partial<PlanInput> = {}): PlanInput {
   return {
     blocks: [],
     pool: [q("a", "BOP Eligibility"), q("b", "BOP Eligibility"), q("c", "Texas Law")],
-    missedQuestionIds: [],
+    exposures: [],
     answeredQuestionIds: new Set<string>(),
     conceptTopic: null,
+    now: NOW,
     ...over,
   };
 }
@@ -97,30 +101,103 @@ describe("resolveBlock - flashcards", () => {
   });
 });
 
+/**
+ * Review is retrieval, not reading.
+ *
+ * It used to hand the client every item with `correctIndex` and the
+ * explanation already attached, and the page rendered them straight away - the
+ * student read their mistakes back. That is the notebook page, and re-reading
+ * a worked answer is the weakest way to study. These pin the block asking
+ * instead, and pin the answer key staying on the server until it does.
+ */
 describe("resolveBlock - review", () => {
-  it("reviews questions the student actually got wrong", () => {
+  const wrong = (id: string, topic: string, daysAgo: number) => ({
+    questionId: id,
+    topic,
+    isCorrect: false,
+    answeredAt: new Date(NOW.getTime() - daysAgo * 24 * 60 * 60 * 1000),
+  });
+
+  it("asks the student rather than showing them the answer", () => {
     const out = resolveBlock(
       block("review", 5),
-      input({ missedQuestionIds: ["c", "a"] }),
+      input({ exposures: [wrong("c", "Texas Law", 5), wrong("a", "BOP Eligibility", 5)] }),
     ) as any;
 
-    expect(out.items.map((i: any) => i.questionId)).toEqual(["c", "a"]);
-    // Reviewing a miss without the answer and the reason is useless.
-    expect(out.items[0].correctIndex).toBe(1);
-    expect(out.items[0].explanation).toBeTruthy();
+    expect(out.questions).toHaveLength(2);
+    for (const question of out.questions) {
+      expect(question).not.toHaveProperty("correctIndex");
+      expect(question).not.toHaveProperty("explanation");
+      expect(question.options.length).toBeGreaterThan(1);
+    }
   });
 
-  it("drops the block when there is nothing missed, rather than faking a review", () => {
-    expect(resolveBlock(block("review"), input({ missedQuestionIds: [] }))).toBeNull();
+  it("prefers the item the student last got wrong over one they got right", () => {
+    const out = resolveBlock(
+      block("review", 1),
+      input({
+        exposures: [
+          { questionId: "a", topic: "BOP Eligibility", isCorrect: true, answeredAt: new Date(NOW.getTime() - 5 * 86400000) },
+          wrong("c", "Texas Law", 5),
+        ],
+      }),
+    ) as any;
+
+    expect(out.questions.map((q: any) => q.questionId)).toEqual(["c"]);
   });
 
-  it("ignores missed ids that are no longer in the active pool", () => {
+  it("will not re-ask something answered minutes ago", () => {
+    // Inside one sitting that measures whether the answer is still on screen.
+    const justNow = {
+      questionId: "a",
+      topic: "BOP Eligibility",
+      isCorrect: false,
+      answeredAt: new Date(NOW.getTime() - 60 * 1000),
+    };
+
+    expect(resolveBlock(block("review"), input({ exposures: [justNow] }))).toBeNull();
+  });
+
+  it("drops the block when the student has answered nothing, rather than faking a review", () => {
+    // Building one out of unseen questions would make review mean practice.
+    // The session keeps its warm-up and mastery check either way.
+    expect(resolveBlock(block("review"), input({ exposures: [] }))).toBeNull();
+  });
+
+  it("ignores history for questions no longer in the active pool", () => {
     const out = resolveBlock(
       block("review"),
-      input({ missedQuestionIds: ["retired-question", "a"] }),
+      input({ exposures: [wrong("retired-question", "Texas Law", 5), wrong("a", "BOP Eligibility", 5)] }),
     ) as any;
 
-    expect(out.items.map((i: any) => i.questionId)).toEqual(["a"]);
+    expect(out.questions.map((q: any) => q.questionId)).toEqual(["a"]);
+  });
+
+  it("mixes concepts rather than asking one topic in a row", () => {
+    const out = resolveBlock(
+      block("review", 3),
+      input({
+        exposures: [
+          wrong("a", "BOP Eligibility", 5),
+          wrong("b", "BOP Eligibility", 5),
+          wrong("c", "Texas Law", 5),
+        ],
+      }),
+    ) as any;
+
+    const topics = out.questions.map((q: any) => q.topic);
+    expect(topics).toHaveLength(3);
+    // Only two topics exist here, so the middle one has to break the pair.
+    expect(topics[0]).not.toBe(topics[1]);
+  });
+
+  it("tells the truth about how many questions it found", () => {
+    const out = resolveBlock(
+      { mode: "review", itemCount: 9, estimatedMinutes: 5, label: "9 questions from memory" },
+      input({ exposures: [wrong("a", "BOP Eligibility", 5)] }),
+    ) as any;
+
+    expect(out.label).toBe("1 questions from memory");
   });
 });
 
@@ -168,7 +245,6 @@ describe("buildSessionPlan", () => {
     const plan = buildSessionPlan(
       input({
         blocks: [block("teach"), block("flashcards"), block("practice")],
-        missedQuestionIds: [],
       }),
     );
 
@@ -176,10 +252,10 @@ describe("buildSessionPlan", () => {
   });
 
   it("re-estimates from the blocks that survived", () => {
-    // The review block cannot be built with no misses, so its minutes must not
+    // The review block cannot be built with no history, so its minutes must not
     // stay in the total - a student told 15 minutes should not be handed 10.
     const plan = buildSessionPlan(
-      input({ blocks: [block("teach"), block("review")], missedQuestionIds: [] }),
+      input({ blocks: [block("teach"), block("review")], exposures: [] }),
     );
 
     expect(plan.blocks).toHaveLength(1);
@@ -196,6 +272,23 @@ describe("buildSessionPlan", () => {
     // Teach and flashcard items are shown, never answered, so they are not
     // part of the answer-order bookkeeping.
     expect(plan.questionIds).toHaveLength(2);
+  });
+
+  it("grades the review answers too", () => {
+    // Review questions are answered now, so they count. Leaving them out meant
+    // a student could retrieve a dozen items and have none of it reach their
+    // mastery - which is the measurement the whole adapt loop runs on.
+    const plan = buildSessionPlan(
+      input({
+        blocks: [block("review", 2), block("practice", 2)],
+        exposures: [
+          { questionId: "a", topic: "BOP Eligibility", isCorrect: false, answeredAt: new Date(NOW.getTime() - 5 * 86400000) },
+          { questionId: "c", topic: "Texas Law", isCorrect: false, answeredAt: new Date(NOW.getTime() - 5 * 86400000) },
+        ],
+      }),
+    );
+
+    expect(plan.questionIds).toHaveLength(4);
   });
 
   it("returns an empty plan rather than throwing when nothing can be built", () => {

@@ -105,7 +105,7 @@ export function modeLabel(mode: LearningMode, es: boolean): string {
     flashcards: ["Flashcards", "Tarjetas de estudio"],
     practice: ["Targeted practice", "Práctica dirigida"],
     scenarios: ["Applied scenarios", "Escenarios aplicados"],
-    review: ["Mixed review", "Repaso mixto"],
+    review: ["Recall practice", "Práctica de memoria"],
     mock_exam: ["Mock exam", "Examen simulado"],
   };
   return labels[mode][es ? 1 : 0];
@@ -141,8 +141,11 @@ export function modeHint(mode: LearningMode, es: boolean): string {
       "Situaciones más largas, como las plantea el examen",
     ],
     review: [
-      "A mix from everything you have covered",
-      "Una mezcla de todo lo que has cubierto",
+      // Not "a mix of what you have covered" any more. The step asks the
+      // student to answer from memory, and the hint has to say so - the
+      // difficulty is deliberate and reads as a bug if it arrives unannounced.
+      "Answer from memory, mixed across topics",
+      "Responde de memoria, mezclando temas",
     ],
     mock_exam: [
       "A full timed paper on its own screen",

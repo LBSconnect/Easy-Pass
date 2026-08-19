@@ -51,6 +51,23 @@ export function rateLimit(key: string, maxAttempts: number, windowMs: number): {
   return { allowed: true, remaining: maxAttempts - entry.count, resetIn: entry.resetTime - now };
 }
 
+/**
+ * Forget a key, because the thing it was counting turned out to be fine.
+ *
+ * The login limiter is consumed before the password is checked - it has to be,
+ * or guessing would be free - which means a SUCCESSFUL sign-in spends budget
+ * too. Six sign-ins in fifteen minutes and a student was told "Too many login
+ * attempts" for doing nothing wrong: a second device, a browser that lost the
+ * cookie, or simply signing out and back in.
+ *
+ * Clearing on success fixes that without weakening the control. Someone
+ * guessing passwords never reaches this line, so their attempts still
+ * accumulate and still stop at the cap.
+ */
+export function clearRateLimit(key: string): void {
+  rateLimitStore.delete(key);
+}
+
 setInterval(() => {
   const now = Date.now();
   const entries = Array.from(rateLimitStore.entries());

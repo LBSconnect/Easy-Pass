@@ -33,7 +33,7 @@ import {
   ClipboardCheck, PartyPopper,
 } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
-import { STUDY_ASSISTANT, useStudyAssistantConfig, modeLabel, type LearningMode } from "@/lib/studyAssistant";
+import { STUDY_ASSISTANT, useStudyAssistantConfig, modeLabel, modeHint, type LearningMode } from "@/lib/studyAssistant";
 import type { ExamCategory } from "@shared/schema";
 
 /* ------------------------------------------------------------------ */
@@ -229,6 +229,54 @@ export default function AlexiSessionPage() {
         subtitle={session.phrasing}
         icon={GraduationCap}
       />
+
+      {/* Alexi introduces the session in their own voice, and says what the
+          steps involve.
+          
+          Two problems this solves. The page opened on a generic mortarboard
+          icon, so the one screen that is meant to feel like being taught by
+          Alexi was the one place Alexi did not appear. And the block names
+          along the rail - "Mixed review", "Applied scenarios" - are headings,
+          not explanations: a student had agreed to a session without being
+          told what any of it involved. */}
+      <Card className="mt-5 border-primary/25 bg-gradient-to-br from-primary/[0.07] to-transparent" data-testid="session-intro">
+        <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:p-5">
+          <span className="inline-flex shrink-0 items-center justify-center self-start rounded-full bg-background p-1.5 shadow-sm">
+            <AlexiMascot size={56} waving={false} sparkles={false} animated />
+          </span>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-primary">
+              {es
+                ? `${named} te acompaña en esta sesión`
+                : `${named} is walking you through this session`}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {es
+                ? `${blocks.length} ${blocks.length === 1 ? "paso" : "pasos"}, unos ${session.estimatedMinutes} minutos. Puedes parar cuando quieras: cada respuesta se guarda al darla.`
+                : `${blocks.length} ${blocks.length === 1 ? "step" : "steps"}, about ${session.estimatedMinutes} minutes. You can stop whenever you like — every answer is saved as you give it.`}
+            </p>
+
+            <ul className="mt-3 space-y-1.5" data-testid="session-steps">
+              {blocks.map((b, i) => {
+                const Icon = BLOCK_ICON[b.mode];
+                return (
+                  <li key={i} className="flex items-start gap-2 text-sm">
+                    <Icon
+                      className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary"
+                      aria-hidden="true"
+                    />
+                    <span className="min-w-0">
+                      <span className="font-medium">{modeLabel(b.mode, es)}</span>
+                      <span className="text-muted-foreground"> — {modeHint(b.mode, es)}</span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Progress rail. The student can see how many steps remain, which is
           the difference between a session and an open-ended list. */}

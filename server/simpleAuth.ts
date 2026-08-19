@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import { sanitizeHtml } from "./sanitize";
 import { rateLimit } from "./rateLimit";
 import { resolveSecureCookie } from "@shared/sessionCookie";
+import { recordPresence } from "./presence";
 
 export function getSession() {
   if (!process.env.SESSION_SECRET) {
@@ -228,6 +229,11 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
       email: req.session.email,
     }
   };
-  
+
+  // Hooked here rather than as separate middleware so it covers every
+  // authenticated route by construction - a new route cannot forget it. The
+  // call is throttled, never awaited, and cannot throw.
+  recordPresence(req.session.userId);
+
   next();
 };

@@ -285,6 +285,21 @@ const STEPS: Step[] = [
             ON user_profiles (unsubscribe_token)
             WHERE unsubscribe_token IS NOT NULL;`,
   },
+
+  // --- Who is using the app right now -------------------------------------
+  // Nullable with no default: an existing student has not been seen since the
+  // column existed, and defaulting to now() would report every account ever
+  // created as online the moment this shipped.
+  //
+  // The index is partial because the count only ever asks about recent rows,
+  // and the vast majority of the table will be null or long past.
+  {
+    name: "user_profiles last seen",
+    sql: `ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS last_seen_at timestamp;
+          CREATE INDEX IF NOT EXISTS idx_user_profiles_last_seen
+            ON user_profiles (last_seen_at)
+            WHERE last_seen_at IS NOT NULL;`,
+  },
 ];
 
 export interface MigrationResult {
@@ -357,6 +372,7 @@ export async function checkSchemaHealth(): Promise<{
     ["exam_sessions", "mode"],
     ["user_profiles", "email_reminders_opt_in"],
     ["user_profiles", "unsubscribe_token"],
+    ["user_profiles", "last_seen_at"],
   ];
 
   const tables = await pool.query(

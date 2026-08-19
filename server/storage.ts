@@ -62,6 +62,7 @@ import {
 } from "@shared/schema";
 import { users, type User } from "@shared/models/auth";
 import { parseExamMode, type ExamMode } from "@shared/examMode";
+import { ONLINE_WINDOW_MS } from "@shared/onlinePresence";
 import { db, pool } from "./db";
 
 /**
@@ -186,6 +187,8 @@ export interface IStorage {
   upsertFlashcardReview(userId: string, questionId: string, category: ExamCategory, state: { streak: number; intervalDays: number; ease: number; dueAt: Date }): Promise<void>;
   countActiveQuestions(category: ExamCategory): Promise<number>;
   getLastAnsweredAt(userId: string): Promise<Date | null>;
+  touchLastSeen(userId: string, at: Date): Promise<void>;
+  countOnline(since: Date): Promise<number>;
   getReminderRecipients(notEmailedSince: Date): Promise<ReminderRecipient[]>;
   markReminderEmailSent(userId: string, at: Date): Promise<void>;
   setUnsubscribeToken(userId: string, token: string): Promise<void>;
@@ -508,6 +511,10 @@ export class DatabaseStorage implements IStorage {
     activeSubscriptions: number;
     totalRevenue: number;
     passRate: number;
+    /** Students who made a request inside the presence window. */
+    onlineNow: number;
+    /** The window that figure covers, so the UI can say what it means. */
+    onlineWindowMinutes: number;
   }> {
     const allUsers = await db.select().from(users);
     const allResults = await db.select().from(examResults);
@@ -527,12 +534,43 @@ export class DatabaseStorage implements IStorage {
       ? Math.round((allResults.filter(r => r.passed).length / allResults.length) * 100)
       : 0;
 
+    const onlineNow = await this.countOnline(new Date(Date.now() - ONLINE_WINDOW_MS));
+
     return {
       totalUsers: allUsers.length,
       activeSubscriptions: activeProfiles.length,
       totalRevenue: totalRevenue / 100, // Convert cents to dollars
       passRate,
+      onlineNow,
+      onlineWindowMinutes: Math.round(ONLINE_WINDOW_MS / 60000),
     };
+  }
+
+  /**
+   * Record that a student is using the app.
+   *
+   * Callers throttle this - see shared/onlinePresence.ts - so it is one small
+   * write per active student per minute rather than one per request.
+   */
+  async touchLastSeen(userId: string, at: Date): Promise<void> {
+    await db
+      .update(userProfiles)
+      .set({ lastSeenAt: at })
+      .where(eq(userProfiles.userId, userId));
+  }
+
+  /**
+   * How many students have made a request since `since`.
+   *
+   * Counted in the database rather than by loading rows: this runs on every
+   * admin dashboard load, and the answer is one integer.
+   */
+  async countOnline(since: Date): Promise<number> {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(userProfiles)
+      .where(gte(userProfiles.lastSeenAt, since));
+    return row?.count ?? 0;
   }
 
   async getAdminAnalytics(): Promise<{

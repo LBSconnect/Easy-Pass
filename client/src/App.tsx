@@ -22,6 +22,9 @@ import { PageErrorBoundary } from "@/components/error-boundary";
 import ExamsPage from "@/pages/exams";
 import PricingPage from "@/pages/pricing";
 import ProfilePage from "@/pages/profile";
+// Admin panel is loaded lazily: it's only ever reached by authenticated
+// admin users, and it pulls in recharts (a large charting dependency) that
+// would otherwise ship in the main bundle for every visitor.
 const AdminPage = lazy(() => import("@/pages/admin"));
 import ScheduleExamPage from "@/pages/schedule-exam";
 import StudyGuidePage from "@/pages/study-guide";
@@ -40,10 +43,12 @@ import TexasRealEstateExamPrepEsPage from "@/pages/landing-texas-real-estate-es"
 import TexasInsuranceExamPrepEsPage from "@/pages/landing-texas-insurance-es";
 import FreePracticeTestPage from "@/pages/free-practice-test";
 import FreePracticeTestEsPage from "@/pages/free-practice-test-es";
+import FreeStudyResourcesPage from "@/pages/free-study-resources";
 import InsuranceConceptPage from "@/pages/insurance-concept";
 import InsuranceConceptsHubPage from "@/pages/insurance-concepts-hub";
 import ExamConceptClusterPage from "@/pages/exam-concept-clusters";
 import LongTailComparisonPage from "@/pages/long-tail-comparisons";
+import SpanishTermWholeLifePage from "@/pages/spanish-term-whole-life";
 import EmployerInquiryPage from "@/pages/employer-inquiry";
 import DiagnosticPage from "@/pages/diagnostic";
 import CookiePolicyPage from "@/pages/cookie-policy";
@@ -61,6 +66,17 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   const { i18n } = useTranslation();
   const es = i18n.language === "es";
 
+  /**
+   * Client-side navigation, from an effect.
+   *
+   * This was `window.location.href = "/login"` executed during render, which
+   * is wrong twice over. Assigning during render is a render-phase side
+   * effect React may run more than once, and a full document load is the wrong
+   * tool anyway - /login is a route in this same app, so tearing down the
+   * document throws away the loaded bundle and query cache to reach a page
+   * already one render away. `replace` keeps Back from bouncing off the
+   * protected route the student just left.
+   */
   const mustSignIn = !isLoading && !isError && !isAuthenticated;
   useEffect(() => {
     if (mustSignIn) navigate("/login", { replace: true });
@@ -77,19 +93,30 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
     );
   }
 
+  // Could not determine auth state. Not the same as "signed out": redirecting
+  // here would log out a student with a valid session over a transient 500,
+  // and during an outage they could not sign back in either.
   if (isError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="max-w-md text-center space-y-4">
           <h1 className="text-2xl font-bold">
-            {es ? "No podemos conectar con MyEasyPass ahora mismo" : "We can't reach MyEasyPass right now"}
+            {es
+              ? "No podemos conectar con MyEasyPass ahora mismo"
+              : "We can't reach MyEasyPass right now"}
           </h1>
           <p className="text-muted-foreground">
-            {es ? "Tu cuenta está bien, solo no pudimos cargarla. Suele durar poco." : "Your account is fine - we just couldn't load it. This is usually brief."}
+            {es
+              ? "Tu cuenta está bien, solo no pudimos cargarla. Suele durar poco."
+              : "Your account is fine - we just couldn't load it. This is usually brief."}
           </p>
           <div className="flex flex-wrap justify-center gap-3">
-            <Button onClick={() => retry()} data-testid="button-auth-retry">{es ? "Reintentar" : "Try again"}</Button>
-            <Button variant="outline" asChild><a href="/">{es ? "Ir al inicio" : "Go to home page"}</a></Button>
+            <Button onClick={() => retry()} data-testid="button-auth-retry">
+              {es ? "Reintentar" : "Try again"}
+            </Button>
+            <Button variant="outline" asChild>
+              <a href="/">{es ? "Ir al inicio" : "Go to home page"}</a>
+            </Button>
           </div>
         </div>
       </div>
@@ -97,13 +124,22 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   }
 
   if (!isAuthenticated) {
+    // Says what is happening rather than showing a blank page while the
+    // browser navigates.
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4" data-testid="redirect-signin">
+      <div
+        className="min-h-screen flex items-center justify-center bg-background px-4"
+        data-testid="redirect-signin"
+      >
         <div className="text-center space-y-4">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-          <h1 className="text-lg font-medium">{es ? "Te llevamos a iniciar sesión…" : "Taking you to sign in…"}</h1>
+          <h1 className="text-lg font-medium">
+            {es ? "Te llevamos a iniciar sesión…" : "Taking you to sign in…"}
+          </h1>
           <p className="text-sm text-muted-foreground">
-            <a href="/login" className="text-primary underline-offset-2 hover:underline">{es ? "Continuar a iniciar sesión" : "Continue to sign in"}</a>
+            <a href="/login" className="text-primary underline-offset-2 hover:underline">
+              {es ? "Continuar a iniciar sesión" : "Continue to sign in"}
+            </a>
           </p>
         </div>
       </div>
@@ -111,7 +147,16 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   }
 
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background" data-testid="loading-suspense"><div className="text-center space-y-4"><div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" /><p className="text-muted-foreground">Loading...</p></div></div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-background" data-testid="loading-suspense">
+          <div className="text-center space-y-4">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      }
+    >
       <Component />
     </Suspense>
   );
@@ -120,6 +165,10 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 function HomePage() {
   const { isAuthenticated, isLoading, isError } = useAuth();
 
+  // The home page is public marketing and is the first thing a new visitor
+  // sees. Only a confirmed session diverts to the dashboard; a failed auth
+  // check must still show the page. Before this, a 500 on /api/auth/user left
+  // the spinner up forever and the site looked dead to everyone arriving.
   if (isLoading && !isError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background" data-testid="loading-home">
@@ -131,12 +180,17 @@ function HomePage() {
     );
   }
 
-  if (isAuthenticated) return <DashboardPage />;
+  if (isAuthenticated) {
+    return <DashboardPage />;
+  }
+
   return <LandingPage />;
 }
 
 function Router() {
   return (
+    // Page-level boundary: without this, one render error anywhere unmounts
+    // the entire tree and the user gets a blank white page with no way out.
     <PageErrorBoundary label="route">
       <Switch>
       <Route path="/" component={HomePage} />
@@ -149,9 +203,13 @@ function Router() {
       <Route path="/flashcards" component={() => <ProtectedRoute component={FlashcardsPage} />} />
       <Route path="/study-assistant" component={() => <ProtectedRoute component={StudyAssistantPage} />} />
       <Route path="/session/:category" component={() => <ProtectedRoute component={AlexiSessionPage} />} />
+      {/* Not wrapped in ProtectedRoute: guests can browse categories and try
+          a short quick-practice preview before being asked to sign up.
+          ExamsPage itself branches on auth state for the rest of the flow. */}
       <Route path="/exams" component={ExamsPage} />
       <Route path="/exams/:category" component={ExamsPage} />
       <Route path="/pricing" component={PricingPage} />
+      <Route path="/free/study-resources" component={FreeStudyResourcesPage} />
       <Route path="/free/:slug" component={FreePracticeTestPage} />
       <Route path="/es/free/:slug" component={FreePracticeTestEsPage} />
       <Route path="/texas-insurance-exam/concepts" component={InsuranceConceptsHubPage} />
@@ -169,7 +227,7 @@ function Router() {
       <Route path="/es/comparacion-ho-2-vs-ho-3-texas" component={LongTailComparisonPage} />
       <Route path="/es/comparacion-peril-vs-hazard-texas" component={LongTailComparisonPage} />
       <Route path="/es/comparacion-vacancy-vs-unoccupancy-texas" component={LongTailComparisonPage} />
-      <Route path="/es/comparacion-term-vs-whole-life-texas" component={LongTailComparisonPage} />
+      <Route path="/es/comparacion-term-vs-whole-life-texas" component={SpanishTermWholeLifePage} />
       <Route path="/es/:spanishExamSlug" component={TexasInsuranceExamPrepEsPage} />
       <Route path="/employer-inquiry" component={EmployerInquiryPage} />
       <Route path="/readiness-check" component={DiagnosticPage} />

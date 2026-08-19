@@ -66,9 +66,20 @@ export async function startStubServer(configure: (app: Express) => void): Promis
   return {
     baseURL: `http://127.0.0.1:${address.port}`,
     close: () =>
-      new Promise<void>((resolve, reject) =>
-        server.close((err) => (err ? reject(err) : resolve())),
-      ),
+      new Promise<void>((resolve, reject) => {
+        // server.close() stops the server accepting new connections and then
+        // waits for the open ones to end. A browser holds its sockets open
+        // with keep-alive, so that wait does not finish and the afterEach
+        // hook times out the spec.
+        //
+        // Which specs it kills depends on how many requests the page happened
+        // to make and how they were reused - adding one unrelated fetch to
+        // the dashboard turned three passing onboarding specs red without
+        // touching them. Closing the sockets explicitly makes teardown
+        // deterministic instead.
+        server.closeAllConnections();
+        server.close((err) => (err ? reject(err) : resolve()));
+      }),
   };
 }
 

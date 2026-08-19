@@ -143,6 +143,16 @@ export function Footer() {
                   <span className="hover:text-primary transition-colors">Insurance Exam Concepts</span>
                 </Link>
               </li>
+              <li>
+                <Link href="/texas-life-health-exam/concepts">
+                  <span className="hover:text-primary transition-colors">Life &amp; Health Concepts</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/texas-real-estate-exam/concepts">
+                  <span className="hover:text-primary transition-colors">Real Estate Concepts</span>
+                </Link>
+              </li>
             </ul>
           </div>
 

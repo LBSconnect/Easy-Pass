@@ -128,7 +128,7 @@ export default function StudyAssistantPage() {
                   {es ? "Puntaje EasyPass" : "EasyPass Score"}
                 </p>
                 <p className="mt-1 text-2xl font-bold" data-testid="text-alexi-score">
-                  {student.easyPassScore ?? "—"}
+                  {student.easyPassScore ?? "-"}
                 </p>
               </div>
               <ReadinessRing
@@ -154,7 +154,7 @@ export default function StudyAssistantPage() {
                 {es ? "Precisión reciente" : "Recent accuracy"}
               </p>
               <p className="mt-1 text-2xl font-bold" data-testid="text-alexi-accuracy">
-                {student.recentAccuracy !== null ? `${student.recentAccuracy}%` : "—"}
+                {student.recentAccuracy !== null ? `${student.recentAccuracy}%` : "-"}
               </p>
             </CardContent>
           </Card>

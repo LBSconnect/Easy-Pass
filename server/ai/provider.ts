@@ -50,6 +50,12 @@ export type AIErrorKind =
   | "not_configured"
   | "timeout"
   | "rate_limited"
+  // The model name was rejected. Kept apart from provider_error because it
+  // fails every single call rather than some of them, and the fix is a
+  // configuration change rather than waiting - "100% fallback" reported as a
+  // generic provider error sends an operator looking for an outage that is
+  // not happening.
+  | "model_not_found"
   | "provider_error"
   | "invalid_response";
 
@@ -65,6 +71,8 @@ export class AIError extends Error {
 
   /** Whether retrying the same request could plausibly succeed. */
   get retryable(): boolean {
+    // model_not_found and not_configured are deliberately absent: retrying
+    // a wrong model name or a rejected key just fails again.
     return this.kind === "timeout" || this.kind === "rate_limited" || this.kind === "provider_error";
   }
 }

@@ -126,7 +126,7 @@ export default function FlashcardsPage() {
             <p className="mt-1 text-sm text-muted-foreground">
               {es
                 ? "Vuelve más tarde: las tarjetas reaparecen cuando toca repasarlas."
-                : "Check back later — cards return when they're due for review."}
+                : "Check back later. Cards return when they're due for review."}
             </p>
           </CardContent>
         </Card>

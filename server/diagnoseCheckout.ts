@@ -38,7 +38,7 @@ function isSellable(price: {
 }
 
 function money(amount: number | null, currency: string): string {
-  return amount === null ? "—" : `${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`;
+  return amount === null ? "-" : `${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`;
 }
 
 async function main() {

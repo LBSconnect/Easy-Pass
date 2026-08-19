@@ -157,8 +157,40 @@ describe("recommendations with AI unavailable", () => {
 
     await studyAssistant.getRecommendation("user-1", "property_casualty" as never, { now: NOW });
 
+    // Kind and detail. An operator looking at a wall of fallbacks needs to
+    // know which failure it is, and the kind alone is only a category.
     expect(mockStorage.createAiUsageEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ outcome: "fallback", reason: "timeout" }),
+      expect.objectContaining({ outcome: "fallback", reason: "timeout: slow" }),
+    );
+  });
+
+  it("names the model when that is what the provider rejected", async () => {
+    // The failure that makes every single call fall back while the API key is
+    // perfectly valid. Reported as a generic provider error it sends someone
+    // hunting an outage that is not happening.
+    enableAI();
+    mockComplete.mockRejectedValue(
+      new AIError("model_not_found", "model: claude-does-not-exist"),
+    );
+
+    await studyAssistant.getRecommendation("user-1", "property_casualty" as never, { now: NOW });
+
+    expect(mockStorage.createAiUsageEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "fallback",
+        reason: "model_not_found: model: claude-does-not-exist",
+      }),
+    );
+  });
+
+  it("falls back to the kind when there is no useful detail", async () => {
+    enableAI();
+    mockComplete.mockRejectedValue(new AIError("rate_limited", "rate_limited"));
+
+    await studyAssistant.getRecommendation("user-1", "property_casualty" as never, { now: NOW });
+
+    expect(mockStorage.createAiUsageEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: "rate_limited" }),
     );
   });
 });

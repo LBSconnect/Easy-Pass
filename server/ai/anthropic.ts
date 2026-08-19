@@ -48,6 +48,19 @@ async function getClient(): Promise<AnthropicClient> {
 }
 
 /** Map an SDK/network error onto our own taxonomy so callers can branch. */
+/**
+ * The provider's own description of what went wrong.
+ *
+ * Recorded so the admin usage panel can say "model claude-opus-5 not found"
+ * rather than "provider_error", which is true but unactionable. Truncated
+ * because it is stored in a short column and a stack trace is not the point.
+ */
+function providerDetail(err: unknown): string {
+  const message = (err as { message?: string })?.message;
+  if (typeof message !== "string" || !message.trim()) return "";
+  return message.trim().slice(0, 80);
+}
+
 function classify(err: unknown): AIError {
   if (err instanceof AIError) return err;
 
@@ -63,7 +76,12 @@ function classify(err: unknown): AIError {
   if (status === 401 || status === 403) {
     return new AIError("not_configured", "AI credentials rejected", err);
   }
-  return new AIError("provider_error", "AI provider request failed", err);
+  if (status === 404) {
+    // Almost always the configured model name. Said plainly, because this is
+    // the failure that makes every call fall back while the key is fine.
+    return new AIError("model_not_found", providerDetail(err) || "AI model not found", err);
+  }
+  return new AIError("provider_error", providerDetail(err) || "AI provider request failed", err);
 }
 
 export class AnthropicProvider implements AIProvider {

@@ -37,7 +37,7 @@ const REASON_LABELS: Record<string, string> = {
 };
 
 function reasonLabel(reason: string | null): string {
-  if (!reason) return "—";
+  if (!reason) return "-";
   return REASON_LABELS[reason] ?? reason;
 }
 
@@ -126,7 +126,7 @@ export function AiUsagePanel() {
         {!hasData ? (
           <p className="mt-4 text-sm text-muted-foreground" data-testid="text-ai-usage-empty">
             No AI calls recorded in this period. That is expected while the assistant is
-            switched off — the recommendation engine runs without it.
+            switched off. The recommendation engine runs without it.
           </p>
         ) : (
           <>

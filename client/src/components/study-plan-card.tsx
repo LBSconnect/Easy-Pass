@@ -48,8 +48,8 @@ function taskLabel(task: PlanTask, es: boolean): string {
   switch (task.kind) {
     case "weak_topic_drill":
       return es
-        ? `${task.topic} — ${n} preguntas`
-        : `${task.topic} — ${n} questions`;
+        ? `${task.topic}: ${n} preguntas`
+        : `${task.topic}: ${n} questions`;
     case "missed_review":
       return es
         ? `Repasa ${n} preguntas falladas`

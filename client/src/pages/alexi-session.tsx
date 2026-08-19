@@ -254,7 +254,7 @@ export default function AlexiSessionPage() {
             <p className="mt-1 text-sm text-muted-foreground">
               {es
                 ? `${blocks.length} ${blocks.length === 1 ? "paso" : "pasos"}, unos ${session.estimatedMinutes} minutos. Puedes parar cuando quieras: cada respuesta se guarda al darla.`
-                : `${blocks.length} ${blocks.length === 1 ? "step" : "steps"}, about ${session.estimatedMinutes} minutes. You can stop whenever you like — every answer is saved as you give it.`}
+                : `${blocks.length} ${blocks.length === 1 ? "step" : "steps"}, about ${session.estimatedMinutes} minutes. You can stop whenever you like. Every answer is saved as you give it.`}
             </p>
 
             <ul className="mt-3 space-y-1.5" data-testid="session-steps">
@@ -268,7 +268,7 @@ export default function AlexiSessionPage() {
                     />
                     <span className="min-w-0">
                       <span className="font-medium">{modeLabel(b.mode, es)}</span>
-                      <span className="text-muted-foreground"> — {modeHint(b.mode, es)}</span>
+                      <span className="text-muted-foreground">: {modeHint(b.mode, es)}</span>
                     </span>
                   </li>
                 );

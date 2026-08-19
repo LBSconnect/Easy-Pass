@@ -309,8 +309,8 @@ const generalLinesQuestions: InsertQuestion[] = [
     optionsEn: ["Equal exchange of value", "The amounts exchanged by the parties may be unequal depending on whether a loss occurs", "Guaranteed payments", "No risk involved"],
     optionsEs: ["Intercambio igual de valor", "Las cantidades intercambiadas por las partes pueden ser desiguales dependiendo de si ocurre una pérdida", "Pagos garantizados", "Sin riesgo involucrado"],
     correctAnswer: 1,
-    explanationEn: "Aleatory means the value exchanged by the parties is unequal—the insured pays premiums, but the insurer may pay nothing or a large claim depending on losses.",
-    explanationEs: "Aleatorio significa que el valor intercambiado por las partes es desigual—el asegurado paga primas, pero el asegurador puede no pagar nada o un gran reclamo dependiendo de las pérdidas."
+    explanationEn: "Aleatory means the value exchanged by the parties is unequal: the insured pays premiums, but the insurer may pay nothing or a large claim depending on losses.",
+    explanationEs: "Aleatorio significa que el valor intercambiado por las partes es desigual: el asegurado paga primas, pero el asegurador puede no pagar nada o un gran reclamo dependiendo de las pérdidas."
   },
   {
     category: "general_lines",

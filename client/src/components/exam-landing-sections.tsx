@@ -146,21 +146,21 @@ export function ProblemSolution({ category, slug, isSpanish }: SectionProps) {
   const steps = [
     {
       Icon: Search,
-      title: isSpanish ? "1 — DIAGNOSTICAR" : "1 — DIAGNOSE",
+      title: isSpanish ? "1. DIAGNOSTICAR" : "1. DIAGNOSE",
       body: isSpanish
         ? "Haz una evaluación corta de preparación."
         : "Take a short readiness assessment.",
     },
     {
       Icon: Target,
-      title: isSpanish ? "2 — ENFOCAR" : "2 — TARGET",
+      title: isSpanish ? "2. ENFOCAR" : "2. TARGET",
       body: isSpanish
         ? "Ve tus temas más fuertes y más débiles."
         : "See your strongest and weakest exam topics.",
     },
     {
       Icon: TrendingUp,
-      title: isSpanish ? "3 — PREPARAR" : "3 — PREPARE",
+      title: isSpanish ? "3. PREPARAR" : "3. PREPARE",
       body: isSpanish
         ? "Practica áreas débiles, haz exámenes simulados y sigue tu progreso."
         : "Practice weaker areas, take mock exams and monitor progress.",

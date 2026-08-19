@@ -30,6 +30,12 @@ const SPANISH_INSURANCE_ALTERNATES: Record<string, string> = {
 
 type RestoreFn = () => void;
 
+/**
+ * Update one head element without leaking the new value into the next SPA
+ * route. If the element already existed (for example from index.html), its
+ * original value is restored on cleanup. If this hook created it, cleanup
+ * removes it entirely.
+ */
 function setHeadAttribute(
   selector: string,
   createElement: () => Element,
@@ -88,6 +94,12 @@ function setMetaByProperty(property: string, content: string): RestoreFn {
   );
 }
 
+/**
+ * The original exam-landing pairing is intentionally generic because the
+ * Spanish insurance hub covers multiple categories. Once category-specific
+ * Spanish pages exist, replace only the Spanish alternate for the three
+ * matching English insurance canonicals so each language pair is one-to-one.
+ */
 function normalizeHreflang(options: SEOOptions): { lang: string; url: string }[] {
   const alternates = [...(options.hreflang ?? [])];
   const spanishOverride = SPANISH_INSURANCE_ALTERNATES[options.canonicalUrl];
@@ -98,6 +110,15 @@ function normalizeHreflang(options: SEOOptions): { lang: string; url: string }[]
   return [...withoutOldSpanish, { lang: "es", url: spanishOverride }];
 }
 
+/**
+ * Manages document title, meta description, canonical link, Open Graph tags,
+ * hreflang alternates, robots directives, and JSON-LD for a single SPA route.
+ *
+ * The cleanup behavior matters for SEO. A client-side route change must not
+ * leave the previous page's title, canonical, hreflang, or social metadata in
+ * the document head. Static homepage values from index.html are restored when
+ * the visitor navigates back home.
+ */
 export function useSEO(options: SEOOptions) {
   useEffect(() => {
     const previousTitle = document.title;
@@ -133,6 +154,11 @@ export function useSEO(options: SEOOptions) {
       ),
     );
 
+    // index.html provides the homepage language alternates. Temporarily move
+    // them out while another route owns the head, then restore them when that
+    // route unmounts. This prevents duplicate/conflicting hreflang entries and
+    // also fixes the old behavior where returning home permanently lost its
+    // static hreflang tags.
     const displacedHreflang = Array.from(
       document.querySelectorAll('link[rel="alternate"][hreflang]'),
     );
@@ -161,6 +187,9 @@ export function useSEO(options: SEOOptions) {
 
     return () => {
       document.title = previousTitle;
+
+      // Restore in reverse order so multiple attributes on the same static
+      // element unwind cleanly before the next route's effect runs.
       for (const undo of [...restore].reverse()) undo();
       for (const el of hreflangEls) el.remove();
       for (const el of jsonLdEls) el.remove();

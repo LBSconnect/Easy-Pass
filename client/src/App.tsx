@@ -215,7 +215,7 @@ function Router() {
       <Route path="/texas-life-insurance-exam-prep" component={TexasLifeInsuranceExamPrepPage} />
       <Route path="/texas-general-lines-exam-prep" component={TexasGeneralLinesExamPrepPage} />
       <Route path="/es/preparacion-examen-bienes-raices-texas" component={TexasRealEstateExamPrepEsPage} />
-      <Route path="/es/preparacion-examen-seguros-texas" component={TexasInsuranceExamPrepEsPage} />
+      <Route path="/es/:spanishExamSlug" component={TexasInsuranceExamPrepEsPage} />
       <Route path="/employer-inquiry" component={EmployerInquiryPage} />
       <Route path="/readiness-check" component={DiagnosticPage} />
       <Route path="/schedule-exam" component={ScheduleExamPage} />

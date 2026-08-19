@@ -16,3 +16,4 @@ Sitemap: https://www.myeasypass.net/sitemap.xml
 Sitemap: https://www.myeasypass.net/sitemap-study-clusters.xml
 Sitemap: https://www.myeasypass.net/sitemap-spanish-insurance.xml
 Sitemap: https://www.myeasypass.net/sitemap-spanish-free-practice.xml
+Sitemap: https://www.myeasypass.net/sitemap-spanish-concepts.xml

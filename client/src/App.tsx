@@ -90,6 +90,9 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
     );
   }
 
+  // Could not determine auth state. Not the same as "signed out": redirecting
+  // here would log out a student with a valid session over a transient 500,
+  // and during an outage they could not sign back in either.
   if (isError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
@@ -118,6 +121,8 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   }
 
   if (!isAuthenticated) {
+    // Says what is happening rather than showing a blank page while the
+    // browser navigates.
     return (
       <div
         className="min-h-screen flex items-center justify-center bg-background px-4"
@@ -157,6 +162,10 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 function HomePage() {
   const { isAuthenticated, isLoading, isError } = useAuth();
 
+  // The home page is public marketing and is the first thing a new visitor
+  // sees. Only a confirmed session diverts to the dashboard; a failed auth
+  // check must still show the page. Before this, a 500 on /api/auth/user left
+  // the spinner up forever and the site looked dead to everyone arriving.
   if (isLoading && !isError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background" data-testid="loading-home">
@@ -177,6 +186,8 @@ function HomePage() {
 
 function Router() {
   return (
+    // Page-level boundary: without this, one render error anywhere unmounts
+    // the entire tree and the user gets a blank white page with no way out.
     <PageErrorBoundary label="route">
       <Switch>
       <Route path="/" component={HomePage} />
@@ -189,6 +200,9 @@ function Router() {
       <Route path="/flashcards" component={() => <ProtectedRoute component={FlashcardsPage} />} />
       <Route path="/study-assistant" component={() => <ProtectedRoute component={StudyAssistantPage} />} />
       <Route path="/session/:category" component={() => <ProtectedRoute component={AlexiSessionPage} />} />
+      {/* Not wrapped in ProtectedRoute: guests can browse categories and try
+          a short quick-practice preview before being asked to sign up.
+          ExamsPage itself branches on auth state for the rest of the flow. */}
       <Route path="/exams" component={ExamsPage} />
       <Route path="/exams/:category" component={ExamsPage} />
       <Route path="/pricing" component={PricingPage} />

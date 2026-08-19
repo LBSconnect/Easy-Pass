@@ -29,11 +29,12 @@ export function Navbar() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Kept intentionally short so the row fits on one line at laptop widths in
-  // both locales. Pricing, Get Started and Visit Test Center live in the footer.
+  // Keep primary discovery routes visible while leaving account actions and
+  // secondary conversion links to the CTA area/footer.
   const navLinks = [
     { href: "/", label: t("nav.home"), show: true },
     { href: "/exams", label: t("nav.exams"), show: true },
+    { href: "/free/study-resources", label: "Free Study Resources", show: true },
     { href: "/study-guide", label: t("nav.studyGuide"), show: isAuthenticated },
     { href: "/faq", label: t("nav.faq"), show: true },
     { href: "/profile", label: t("nav.profile"), show: isAuthenticated },
@@ -56,7 +57,7 @@ export function Navbar() {
           <img src={logoImage} alt="MyEasyPass" className="h-10 w-auto object-contain" width={996} height={301} />
         </Link>
 
-        <div className="hidden lg:flex items-center gap-5 xl:gap-7">
+        <div className="hidden lg:flex items-center gap-4 xl:gap-6">
           {navLinks
             .filter((link) => link.show)
             .map((link) => (
@@ -67,7 +68,7 @@ export function Navbar() {
                       ? "text-primary"
                       : "text-muted-foreground"
                   }`}
-                  data-testid={`link-nav-${link.href.replace("/", "") || "home"}`}
+                  data-testid={`link-nav-${link.href.replaceAll("/", "-").replace(/^-/, "") || "home"}`}
                 >
                   {link.label}
                 </span>
@@ -83,10 +84,9 @@ export function Navbar() {
             <div className="h-9 w-20 animate-pulse rounded-md bg-muted" />
           ) : !isAuthenticated ? (
             <>
-              {/* Persistent CTA for non-authenticated users - visible on all screens */}
-              <Button 
+              <Button
                 size="sm"
-                asChild 
+                asChild
                 className="gap-1"
                 data-testid="cta-header-start"
                 data-analytics="header-cta-start"
@@ -204,17 +204,17 @@ export function Navbar() {
                   ))}
                 {!isAuthenticated && (
                   <div className="flex flex-col gap-3 mt-4 pt-4 border-t">
-                    <Button 
-                      asChild 
+                    <Button
+                      asChild
                       onClick={() => setMobileMenuOpen(false)}
                       data-testid="cta-mobile-start"
                       data-analytics="mobile-cta-start"
                     >
                       <Link href="/signup">{t("nav.startPracticing", "Start Practicing")}</Link>
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      asChild 
+                    <Button
+                      variant="outline"
+                      asChild
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <Link href="/login">{t("nav.login")}</Link>

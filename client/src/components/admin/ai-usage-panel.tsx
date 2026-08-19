@@ -32,12 +32,28 @@ const REASON_LABELS: Record<string, string> = {
   rate_limited: "Provider rate limit",
   timeout: "Provider timed out",
   invalid_response: "Provider returned nothing usable",
+  model_not_found: "Configured model not available",
+  bad_request: "Provider refused the request",
   provider_error: "Provider request failed",
   unknown: "Unrecognised failure",
 };
 
+/**
+ * A stored reason may carry the provider's own sentence after the code, as
+ * `bad_request: Your credit balance is too low...`. That sentence is the whole
+ * point - it is the difference between "something is wrong with AI" and "add
+ * credit" - so the code is translated and the sentence kept verbatim.
+ */
 function reasonLabel(reason: string | null): string {
   if (!reason) return "-";
+
+  const split = reason.indexOf(": ");
+  if (split > 0) {
+    const code = reason.slice(0, split);
+    const detail = reason.slice(split + 2);
+    if (REASON_LABELS[code]) return `${REASON_LABELS[code]}: ${detail}`;
+  }
+
   return REASON_LABELS[reason] ?? reason;
 }
 

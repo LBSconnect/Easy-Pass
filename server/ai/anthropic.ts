@@ -55,13 +55,34 @@ async function getClient(): Promise<AnthropicClient> {
  * rather than "provider_error", which is true but unactionable. Truncated
  * because it is stored in a short column and a stack trace is not the point.
  */
-function providerDetail(err: unknown): string {
-  const message = (err as { message?: string })?.message;
-  if (typeof message !== "string" || !message.trim()) return "";
-  return message.trim().slice(0, 80);
+export function providerDetail(err: unknown): string {
+  const raw = (err as { message?: string })?.message;
+  if (typeof raw !== "string" || !raw.trim()) return "";
+
+  // The SDK's message is the status followed by the whole JSON envelope, so
+  // truncating it blindly spends the budget on `{"type":"error","error":...`
+  // and cuts off the sentence that says what went wrong. That is exactly what
+  // happened in production: an operator saw `"message":"Your cred` and had to
+  // guess the rest. The human sentence is what gets kept.
+  const inner =
+    (err as { error?: { error?: { message?: unknown } } })?.error?.error?.message;
+  if (typeof inner === "string" && inner.trim()) {
+    return inner.trim().slice(0, 100);
+  }
+
+  const match = raw.match(/"message"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  if (match) {
+    try {
+      return JSON.parse(`"${match[1]}"`).slice(0, 100);
+    } catch {
+      return match[1].slice(0, 100);
+    }
+  }
+
+  return raw.trim().slice(0, 100);
 }
 
-function classify(err: unknown): AIError {
+export function classify(err: unknown): AIError {
   if (err instanceof AIError) return err;
 
   const status = (err as { status?: number })?.status;
@@ -80,6 +101,13 @@ function classify(err: unknown): AIError {
     // Almost always the configured model name. Said plainly, because this is
     // the failure that makes every call fall back while the key is fine.
     return new AIError("model_not_found", providerDetail(err) || "AI model not found", err);
+  }
+  if (status === 400 || status === 422) {
+    // The provider read the request and said no. Retrying gets the same no,
+    // so this is reported once and not repeated - and the provider's own
+    // sentence is kept, because "bad request" alone does not distinguish a
+    // schema mistake from an account that has run out of credit.
+    return new AIError("bad_request", providerDetail(err) || "AI provider rejected the request", err);
   }
   return new AIError("provider_error", providerDetail(err) || "AI provider request failed", err);
 }

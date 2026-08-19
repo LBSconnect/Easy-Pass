@@ -105,6 +105,7 @@ import {
   Download,
 } from "lucide-react";
 import type { Question, ExamCategory, QuestionFeedback } from "@shared/schema";
+import { centsToUsd, formatUsd } from "@shared/money";
 
 const questionFormSchema = z.object({
   category: z.enum(["real_estate", "property_casualty", "life_insurance", "general_lines"]),
@@ -122,6 +123,7 @@ type QuestionFormValues = z.infer<typeof questionFormSchema>;
 interface AdminStats {
   totalUsers: number;
   activeSubscriptions: number;
+  /** Dollars, already converted from Stripe cents by the stats endpoint. */
   totalRevenue: number;
   passRate: number;
   /** Students who made a request inside the window below. */
@@ -134,6 +136,7 @@ interface AdminAnalytics {
   examsByCategory: Array<{ category: string; attempts: number; avgScore: number; passRate: number }>;
   resultsOverTime: Array<{ date: string; count: number }>;
   userGrowth: Array<{ date: string; count: number }>;
+  /** `amount` is dollars, converted server-side. */
   revenueOverTime: Array<{ date: string; amount: number }>;
   subscriptionsByType: Array<{ type: string; count: number }>;
   subscriptionsByCategory: Array<{ category: string; count: number }>;
@@ -881,7 +884,7 @@ export default function AdminPage() {
                   <Skeleton className="h-8 w-16" />
                 ) : (
                   <div className="text-2xl font-bold">
-                    ${((stats?.totalRevenue || 0) / 100).toFixed(2)}
+                    {formatUsd(stats?.totalRevenue)}
                   </div>
                 )}
               </CardContent>
@@ -1775,7 +1778,7 @@ export default function AdminPage() {
                             <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(d) => d.slice(5)} minTickGap={20} />
                             <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${v}`} />
                             <Tooltip
-                              formatter={(v: number) => [`$${v.toFixed(2)}`, "Revenue"]}
+                              formatter={(v: number) => [formatUsd(v), "Revenue"]}
                               labelFormatter={(d) => new Date(d).toLocaleDateString()}
                             />
                             <Area type="monotone" dataKey="amount" name="Revenue" stroke={CHART_COLORS[2]} fill="url(#colorRevenue)" />
@@ -2140,7 +2143,7 @@ export default function AdminPage() {
                               {stripeDiagnostic.prices?.map((p: any) => (
                                 <TableRow key={p.id}>
                                   <TableCell className="font-medium">{p.product_name}</TableCell>
-                                  <TableCell>${(p.amount / 100).toFixed(2)}</TableCell>
+                                  <TableCell>{formatUsd(centsToUsd(p.amount))}</TableCell>
                                   <TableCell>{p.interval}</TableCell>
                                   <TableCell>
                                     {p.metadata?.subscription_type

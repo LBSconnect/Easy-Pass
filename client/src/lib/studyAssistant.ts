@@ -112,6 +112,47 @@ export function modeLabel(mode: LearningMode, es: boolean): string {
 }
 
 /**
+ * What a student is actually going to do in this step.
+ *
+ * The labels above name a block; these say what happens in it. A student
+ * arriving at a session has agreed to something described as "3-minute
+ * review, 8 flashcards" without being told what any of that involves, and
+ * "Mixed review" is a heading, not an explanation.
+ *
+ * Each one describes real behaviour of the step it names - nothing here
+ * promises anything the runner does not do.
+ */
+export function modeHint(mode: LearningMode, es: boolean): string {
+  const hints: Record<LearningMode, [string, string]> = {
+    teach: [
+      "The key points, with worked examples",
+      "Los puntos clave, con ejemplos resueltos",
+    ],
+    flashcards: [
+      "Flip a card, say the answer, mark how it went",
+      "Voltea una tarjeta, responde y marca cómo te fue",
+    ],
+    practice: [
+      "Questions on the topics you get wrong most",
+      "Preguntas sobre los temas que más fallas",
+    ],
+    scenarios: [
+      "Longer situations, the way the exam frames them",
+      "Situaciones más largas, como las plantea el examen",
+    ],
+    review: [
+      "A mix from everything you have covered",
+      "Una mezcla de todo lo que has cubierto",
+    ],
+    mock_exam: [
+      "A full timed paper on its own screen",
+      "Un examen completo cronometrado en su propia pantalla",
+    ],
+  };
+  return hints[mode][es ? 1 : 0];
+}
+
+/**
  * Where Start sends the student.
  *
  * The session runner walks the recommendation's blocks in order, so the

@@ -14,7 +14,7 @@ export function Footer() {
   return (
     <footer className="border-t bg-card">
       <div className="container mx-auto px-4 py-10">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-5">
           <div className="space-y-4">
             <Link href="/" className="flex items-center gap-2">
               <img src={logoImage} alt="MyEasyPass" className="h-12 w-auto object-contain" width={996} height={301} />
@@ -110,6 +110,37 @@ export function Footer() {
                   <span className="hover:text-primary cursor-pointer transition-colors">
                     {t("categories.general_lines")}
                   </span>
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="mb-4 text-sm font-semibold">Free Study Resources</h3>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>
+                <Link href="/free/texas-real-estate-practice-test">
+                  <span className="hover:text-primary transition-colors">Free Real Estate Practice Test</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/free/texas-property-casualty-practice-test">
+                  <span className="hover:text-primary transition-colors">Free P&amp;C Practice Test</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/free/texas-life-insurance-practice-test">
+                  <span className="hover:text-primary transition-colors">Free Life Insurance Practice Test</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/free/texas-general-lines-practice-test">
+                  <span className="hover:text-primary transition-colors">Free General Lines Practice Test</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/texas-insurance-exam/concepts">
+                  <span className="hover:text-primary transition-colors">Insurance Exam Concepts</span>
                 </Link>
               </li>
             </ul>

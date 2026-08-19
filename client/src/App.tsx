@@ -40,10 +40,12 @@ import TexasRealEstateExamPrepEsPage from "@/pages/landing-texas-real-estate-es"
 import TexasInsuranceExamPrepEsPage from "@/pages/landing-texas-insurance-es";
 import FreePracticeTestPage from "@/pages/free-practice-test";
 import FreePracticeTestEsPage from "@/pages/free-practice-test-es";
+import FreeStudyResourcesPage from "@/pages/free-study-resources";
 import InsuranceConceptPage from "@/pages/insurance-concept";
 import InsuranceConceptsHubPage from "@/pages/insurance-concepts-hub";
 import ExamConceptClusterPage from "@/pages/exam-concept-clusters";
 import LongTailComparisonPage from "@/pages/long-tail-comparisons";
+import SpanishTermWholeLifePage from "@/pages/spanish-term-whole-life";
 import EmployerInquiryPage from "@/pages/employer-inquiry";
 import DiagnosticPage from "@/pages/diagnostic";
 import CookiePolicyPage from "@/pages/cookie-policy";
@@ -152,6 +154,7 @@ function Router() {
       <Route path="/exams" component={ExamsPage} />
       <Route path="/exams/:category" component={ExamsPage} />
       <Route path="/pricing" component={PricingPage} />
+      <Route path="/free/study-resources" component={FreeStudyResourcesPage} />
       <Route path="/free/:slug" component={FreePracticeTestPage} />
       <Route path="/es/free/:slug" component={FreePracticeTestEsPage} />
       <Route path="/texas-insurance-exam/concepts" component={InsuranceConceptsHubPage} />
@@ -169,7 +172,7 @@ function Router() {
       <Route path="/es/comparacion-ho-2-vs-ho-3-texas" component={LongTailComparisonPage} />
       <Route path="/es/comparacion-peril-vs-hazard-texas" component={LongTailComparisonPage} />
       <Route path="/es/comparacion-vacancy-vs-unoccupancy-texas" component={LongTailComparisonPage} />
-      <Route path="/es/comparacion-term-vs-whole-life-texas" component={LongTailComparisonPage} />
+      <Route path="/es/comparacion-term-vs-whole-life-texas" component={SpanishTermWholeLifePage} />
       <Route path="/es/:spanishExamSlug" component={TexasInsuranceExamPrepEsPage} />
       <Route path="/employer-inquiry" component={EmployerInquiryPage} />
       <Route path="/readiness-check" component={DiagnosticPage} />

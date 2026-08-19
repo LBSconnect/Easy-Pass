@@ -44,7 +44,12 @@ export type AnalyticsEventName =
   | "change_exam_clicked"
   | "exam_date_set"
   | "upgrade_clicked"
-  | "exams_page_view";
+  | "exams_page_view"
+  // Search-led entry points. A visitor who arrives on a free practice test or
+  // a concept explainer has not chosen an exam yet, so these are kept apart
+  // from the funnel events above rather than folded into them.
+  | "free_practice_cta_click"
+  | "concept_practice_cta_click";
 
 export function trackEvent(event: AnalyticsEventName, metadata?: Record<string, unknown>) {
   try {

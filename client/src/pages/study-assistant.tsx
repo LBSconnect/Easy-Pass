@@ -13,7 +13,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { PageShell, PageHeader, SectionHeading } from "@/components/page-shell";
 import { AlexiMark } from "@/components/alexi-mark";
 import { ReadinessRing } from "@/components/readiness-ring";
@@ -32,7 +32,7 @@ import { trackEvent } from "@/lib/analytics";
 import {
   STUDY_ASSISTANT, useRecommendation, useStudyAssistantConfig, modeLabel, blockHref,
 } from "@/lib/studyAssistant";
-import type { ExamCategory, UserProfile } from "@shared/schema";
+import { examCategoryEnum, type ExamCategory, type UserProfile } from "@shared/schema";
 
 /** Session lengths a student can realistically commit to. */
 const DURATIONS = [10, 15, 30, 60];
@@ -55,6 +55,7 @@ interface AskableResponse {
 export default function StudyAssistantPage() {
   const { i18n } = useTranslation();
   const es = i18n.language === "es";
+  const search = useSearch();
   const [minutes, setMinutes] = useState(15);
   const [showWhy, setShowWhy] = useState(false);
   const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(null);
@@ -62,7 +63,17 @@ export default function StudyAssistantPage() {
   const { data: config } = useStudyAssistantConfig();
   const { data: profile } = useQuery<UserProfile>({ queryKey: ["/api/profile"] });
 
+  // A diagnostic can hand Alexi the exact exam the visitor just assessed.
+  // The URL value is treated as untrusted input and accepted only when it is
+  // one of the same category enum values used by the API. Existing profile
+  // preference remains the normal source when there is no diagnostic handoff.
+  const requestedCategory = new URLSearchParams(search).get("category");
+  const categoryFromUrl = examCategoryEnum.enumValues.includes(requestedCategory as ExamCategory)
+    ? (requestedCategory as ExamCategory)
+    : null;
+
   const category =
+    categoryFromUrl ??
     (profile?.preferredCategory as ExamCategory | null) ??
     ((profile?.allowedCategories as ExamCategory[] | null) ?? [])[0] ??
     ("real_estate" as ExamCategory);

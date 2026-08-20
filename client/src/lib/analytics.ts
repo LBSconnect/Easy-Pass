@@ -6,7 +6,8 @@
  * arrives from Google on a study page can still be attributed when they later
  * take the diagnostic, open Alexi or start checkout.
  *
- * No email, name, answers or other student content is stored in attribution.
+ * No email, name, answers, raw query strings or other student content is stored
+ * in attribution. Only the allowlisted acquisition fields below are retained.
  */
 export type AnalyticsEventName =
   | "diagnostic_cta_click"
@@ -23,23 +24,15 @@ export type AnalyticsEventName =
   | "guest_practice_start"
   | "guest_practice_wall_shown"
   | "guest_practice_signup_click"
-  // Exam landing / readiness funnel. Every one of these carries an
-  // `exam_type` in metadata so conversion can be compared across the four
-  // exam products rather than aggregated into one meaningless number.
   | "exam_landing_view"
   | "readiness_cta_click"
   | "retaker_rescue_start"
   | "continue_studying_click"
-  // Study assistant. These exist to answer whether the assistant actually
-  // improves outcomes, not whether students click it - pair them with mastery
-  // and EasyPass Score movement rather than reading them on their own.
   | "alexi_opened"
   | "alexi_recommendation_viewed"
   | "alexi_recommendation_started"
   | "alexi_tutor_question"
   | "alexi_human_help_recommended"
-  // Dashboard and exams-page navigation. Named for the student action rather
-  // than the card, so renaming a card does not orphan its history.
   | "dashboard_view"
   | "easypass_score_clicked"
   | "todays_plan_started"
@@ -54,16 +47,13 @@ export type AnalyticsEventName =
   | "exam_date_set"
   | "upgrade_clicked"
   | "exams_page_view"
-  // Search-led entry points. A visitor who arrives on a free practice test or
-  // a concept explainer has not chosen an exam yet, so these are kept apart
-  // from the funnel events above rather than folded into them.
   | "free_practice_cta_click"
   | "concept_practice_cta_click";
 
 interface FirstTouchAttribution {
   landing_path: string;
-  landing_query: string | null;
   referrer_host: string | null;
+  source: string | null;
   utm_source: string | null;
   utm_medium: string | null;
   utm_campaign: string | null;
@@ -93,14 +83,18 @@ function captureFirstTouch(): FirstTouchAttribution {
   const params = new URLSearchParams(window.location.search);
   return {
     landing_path: window.location.pathname.slice(0, 500),
-    landing_query: clean(window.location.search || null),
     referrer_host: referrerHost(),
+    source: clean(params.get("source")),
     utm_source: clean(params.get("utm_source")),
     utm_medium: clean(params.get("utm_medium")),
     utm_campaign: clean(params.get("utm_campaign")),
     utm_content: clean(params.get("utm_content")),
     utm_term: clean(params.get("utm_term")),
   };
+}
+
+function currentSource(): string | null {
+  return clean(new URLSearchParams(window.location.search).get("source"));
 }
 
 function getFirstTouch(): FirstTouchAttribution {
@@ -127,7 +121,7 @@ export function trackEvent(event: AnalyticsEventName, metadata?: Record<string, 
       path: window.location.pathname,
       metadata: {
         ...attribution,
-        current_query: clean(window.location.search || null),
+        current_source: currentSource(),
         ...metadata,
       },
     });

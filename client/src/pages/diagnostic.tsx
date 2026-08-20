@@ -12,7 +12,7 @@ import { EXAM_VISUALS } from "@/lib/examVisuals";
 import { trackEvent } from "@/lib/analytics";
 import { useSEO, buildUrl } from "@/hooks/use-seo";
 import { useAuth } from "@/hooks/use-auth";
-import { ArrowRight, Loader2, RotateCcw, Check, Sparkles, Target, TrendingUp } from "lucide-react";
+import { ArrowRight, Loader2, RotateCcw, Target, Sparkles, TrendingUp } from "lucide-react";
 import type { ExamCategory } from "@shared/schema";
 
 const categories: ExamCategory[] = ["real_estate", "property_casualty", "life_insurance", "general_lines"];
@@ -200,9 +200,10 @@ export default function DiagnosticPage() {
   const activeScore = result?.score ?? saved?.score ?? null;
   const activeCategory = (result?.category ?? category ?? saved?.category ?? null) as ExamCategory | null;
   const band = activeScore !== null ? readinessCopy(activeScore, isSpanish) : null;
+  const alexiDestination = `/study-assistant${activeCategory ? `?category=${activeCategory}` : ""}`;
   const alexiHref = isAuthenticated
-    ? "/study-assistant"
-    : `/signup?source=readiness-check${activeCategory ? `&category=${activeCategory}` : ""}${activeScore !== null ? `&score=${activeScore}` : ""}`;
+    ? alexiDestination
+    : `/signup?next=${encodeURIComponent(alexiDestination)}&source=readiness-check`;
 
   const renderScoreCard = (score: number, correctAnswers: number, totalQuestions: number, savedMode = false) => (
     <Card data-testid={savedMode ? "card-diagnostic-saved" : "card-diagnostic-result"}>
@@ -238,9 +239,13 @@ export default function DiagnosticPage() {
             <div>
               <p className="font-semibold">{isSpanish ? "Tu próximo paso: Alexi" : "Your next step: Alexi"}</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {isSpanish
-                  ? "Crea una cuenta gratis para que Alexi use tu progreso real, tus áreas débiles y tu tiempo disponible para recomendar qué estudiar después."
-                  : "Create a free account so Alexi can use your real progress, weak areas, and available study time to recommend what to study next."}
+                {isAuthenticated
+                  ? (isSpanish
+                      ? "Alexi puede usar tu progreso real, tus áreas débiles y tu tiempo disponible para recomendar qué estudiar después."
+                      : "Alexi can use your real progress, weak areas, and available study time to recommend what to study next.")
+                  : (isSpanish
+                      ? "Crea una cuenta gratis y continúa directamente con Alexi para convertir esta evaluación en un plan de estudio personalizado."
+                      : "Create a free account and continue directly to Alexi to turn this diagnostic into a personalized study plan.")}
               </p>
             </div>
           </div>
@@ -274,7 +279,7 @@ export default function DiagnosticPage() {
             className="gap-2"
             onClick={() => trackEvent("diagnostic_cta_click", {
               category: activeCategory ?? undefined,
-              step: isAuthenticated ? "alexi_plan" : "save_score_signup",
+              step: isAuthenticated ? "alexi_plan" : "alexi_plan_signup",
               score,
             })}
             data-testid="button-diagnostic-alexi-plan"
@@ -283,7 +288,7 @@ export default function DiagnosticPage() {
               <Sparkles className="h-4 w-4" aria-hidden="true" />
               {isAuthenticated
                 ? (isSpanish ? "Crear mi plan con Alexi" : "Build my Alexi study plan")
-                : (isSpanish ? "Guardar puntaje y crear mi plan" : "Save my score & build my plan")}
+                : (isSpanish ? "Crear cuenta gratis y mi plan" : "Create free account & build my plan")}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </Button>

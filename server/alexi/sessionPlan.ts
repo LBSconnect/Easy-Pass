@@ -22,6 +22,7 @@
  */
 
 import { selectRetrieval, type Exposure } from "@shared/retrievalReview";
+import type { BlockPurpose } from "./nextBestAction";
 
 export type SessionBlockMode =
   | "teach"
@@ -43,7 +44,13 @@ export interface PlannableQuestion {
 
 export interface PlanInput {
   /** Blocks the recommendation asked for, in order. */
-  blocks: Array<{ mode: SessionBlockMode; itemCount: number; estimatedMinutes: number; label: string }>;
+  blocks: Array<{
+    mode: SessionBlockMode;
+    purpose: BlockPurpose;
+    itemCount: number;
+    estimatedMinutes: number;
+    label: string;
+  }>;
   /** Active questions for the category, already scoped. */
   pool: PlannableQuestion[];
   /**
@@ -67,6 +74,9 @@ export interface PlanInput {
 export interface TeachBlock {
   mode: "teach";
   label: string;
+  /** Carried through from the recommendation so the client can name the
+   * step truthfully - a check is not more of the block before it. */
+  purpose: BlockPurpose;
   estimatedMinutes: number;
   /** Short grounded statements shown before the worked examples. */
   keyPoints: string[];
@@ -84,6 +94,9 @@ export interface TeachBlock {
 export interface FlashcardBlock {
   mode: "flashcards";
   label: string;
+  /** Carried through from the recommendation so the client can name the
+   * step truthfully - a check is not more of the block before it. */
+  purpose: BlockPurpose;
   estimatedMinutes: number;
   cards: Array<{
     questionId: string;
@@ -96,6 +109,9 @@ export interface FlashcardBlock {
 export interface QuestionBlock {
   mode: "practice" | "scenarios";
   label: string;
+  /** Carried through from the recommendation so the client can name the
+   * step truthfully - a check is not more of the block before it. */
+  purpose: BlockPurpose;
   estimatedMinutes: number;
   /** Correct answers are never sent; the client asks per answer. */
   questions: Array<{
@@ -122,6 +138,9 @@ export interface QuestionBlock {
 export interface ReviewBlock {
   mode: "review";
   label: string;
+  /** Carried through from the recommendation so the client can name the
+   * step truthfully - a check is not more of the block before it. */
+  purpose: BlockPurpose;
   estimatedMinutes: number;
   questions: Array<{
     questionId: string;
@@ -134,6 +153,9 @@ export interface ReviewBlock {
 export interface MockExamBlock {
   mode: "mock_exam";
   label: string;
+  /** Carried through from the recommendation so the client can name the
+   * step truthfully - a check is not more of the block before it. */
+  purpose: BlockPurpose;
   estimatedMinutes: number;
 }
 
@@ -207,6 +229,7 @@ export function resolveBlock(
       // what the student is about to start.
       return {
         mode: "mock_exam",
+        purpose: block.purpose,
         label: block.label,
         estimatedMinutes: block.estimatedMinutes,
       };
@@ -230,6 +253,7 @@ export function resolveBlock(
       if (examples.length === 0 && keyPoints.length === 0) return null;
       return {
         mode: "teach",
+        purpose: block.purpose,
         label: block.label,
         estimatedMinutes: block.estimatedMinutes,
         keyPoints,
@@ -255,6 +279,7 @@ export function resolveBlock(
       if (cards.length === 0) return null;
       return {
         mode: "flashcards",
+        purpose: block.purpose,
         label: reconcileLabel(block.label, cards.length),
         estimatedMinutes: block.estimatedMinutes,
         cards,
@@ -284,6 +309,7 @@ export function resolveBlock(
       if (questions.length === 0) return null;
       return {
         mode: "review",
+        purpose: block.purpose,
         label: reconcileLabel(block.label, questions.length),
         estimatedMinutes: block.estimatedMinutes,
         questions,
@@ -305,6 +331,7 @@ export function resolveBlock(
       if (questions.length === 0) return null;
       return {
         mode: block.mode,
+        purpose: block.purpose,
         label: reconcileLabel(block.label, questions.length),
         estimatedMinutes: block.estimatedMinutes,
         questions,

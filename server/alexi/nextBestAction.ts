@@ -53,8 +53,27 @@ export type ReasonCode =
   | "broadly_ready"
   | "stalled_despite_practice";
 
+/**
+ * What a block is FOR, which its mode does not say.
+ *
+ * A practice session is two practice blocks: the practice itself, then a short
+ * check at the end. Both have mode "practice", so anything labelling a block
+ * from its mode alone printed "Targeted practice" twice - in the session
+ * summary and again as two identical chips on the progress rail. The student
+ * was told the same step was coming twice, and the one that was actually a
+ * measurement looked like more of the same.
+ */
+export type BlockPurpose =
+  /** The substance of the session. */
+  | "main"
+  /** A low-stakes way back into the material before the real work. */
+  | "warm_up"
+  /** The measurement at the end, which is what lets the next session adapt. */
+  | "check";
+
 export interface SessionBlock {
   mode: LearningMode;
+  purpose: BlockPurpose;
   /** Questions, cards, or minutes of reading depending on mode. */
   itemCount: number;
   estimatedMinutes: number;
@@ -157,17 +176,17 @@ export function composeSession(
       const cards = Math.max(4, Math.round(minutes * 0.5));
       const check = Math.max(3, Math.round(minutes * 0.3));
       return [
-        { mode: "teach", itemCount: 1, estimatedMinutes: review, label: `${target} explained simply` },
-        { mode: "flashcards", itemCount: cards, estimatedMinutes: Math.round(minutes * 0.3), label: `${cards} smart flashcards` },
-        { mode: "practice", itemCount: check, estimatedMinutes: minutes - review - Math.round(minutes * 0.3), label: `${check}-question mastery check` },
+        { mode: "teach", purpose: "main", itemCount: 1, estimatedMinutes: review, label: `${target} explained simply` },
+        { mode: "flashcards", purpose: "main", itemCount: cards, estimatedMinutes: Math.round(minutes * 0.3), label: `${cards} smart flashcards` },
+        { mode: "practice", purpose: "check", itemCount: check, estimatedMinutes: minutes - review - Math.round(minutes * 0.3), label: `${check}-question mastery check` },
       ];
     }
     case "flashcards": {
       const cards = Math.max(6, Math.round(minutes * 1.2));
       const check = Math.max(3, Math.round(minutes * 0.25));
       return [
-        { mode: "flashcards", itemCount: cards, estimatedMinutes: Math.round(minutes * 0.6), label: `${cards} flashcards on ${target}` },
-        { mode: "practice", itemCount: check, estimatedMinutes: minutes - Math.round(minutes * 0.6), label: `${check}-question mastery check` },
+        { mode: "flashcards", purpose: "main", itemCount: cards, estimatedMinutes: Math.round(minutes * 0.6), label: `${cards} flashcards on ${target}` },
+        { mode: "practice", purpose: "check", itemCount: check, estimatedMinutes: minutes - Math.round(minutes * 0.6), label: `${check}-question mastery check` },
       ];
     }
     case "scenarios":
@@ -176,8 +195,8 @@ export function composeSession(
       const check = Math.max(2, Math.round(minutes * 0.2));
       const label = mode === "scenarios" ? "applied scenario questions" : "targeted questions";
       return [
-        { mode, itemCount: questions, estimatedMinutes: Math.round(minutes * 0.8), label: `${questions} ${label} on ${target}` },
-        { mode: "practice", itemCount: check, estimatedMinutes: minutes - Math.round(minutes * 0.8), label: `${check}-question mastery check` },
+        { mode, purpose: "main", itemCount: questions, estimatedMinutes: Math.round(minutes * 0.8), label: `${questions} ${label} on ${target}` },
+        { mode: "practice", purpose: "check", itemCount: check, estimatedMinutes: minutes - Math.round(minutes * 0.8), label: `${check}-question mastery check` },
       ];
     }
     case "review": {
@@ -199,21 +218,22 @@ export function composeSession(
       const warmUpMinutes = Math.round(minutes * 0.25);
       const checkMinutes = Math.round(minutes * 0.25);
       return [
-        { mode: "flashcards", itemCount: warmUp, estimatedMinutes: warmUpMinutes, label: `${warmUp}-card warm-up` },
+        { mode: "flashcards", purpose: "warm_up", itemCount: warmUp, estimatedMinutes: warmUpMinutes, label: `${warmUp}-card warm-up` },
         {
           mode: "review",
+          purpose: "main",
           itemCount: recall,
           // Whatever is left after the two shorter blocks, so the three still
           // add up to the time the student was promised.
           estimatedMinutes: minutes - warmUpMinutes - checkMinutes,
           label: `${recall} questions from memory`,
         },
-        { mode: "practice", itemCount: check, estimatedMinutes: checkMinutes, label: `${check}-question mastery check` },
+        { mode: "practice", purpose: "check", itemCount: check, estimatedMinutes: checkMinutes, label: `${check}-question mastery check` },
       ];
     }
     case "mock_exam":
       return [
-        { mode: "mock_exam", itemCount: 100, estimatedMinutes: minutes, label: "Full-length timed mock exam" },
+        { mode: "mock_exam", purpose: "main", itemCount: 100, estimatedMinutes: minutes, label: "Full-length timed mock exam" },
       ];
   }
 }

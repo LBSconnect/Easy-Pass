@@ -33,7 +33,10 @@ import {
   ClipboardCheck, PartyPopper,
 } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
-import { STUDY_ASSISTANT, useStudyAssistantConfig, modeLabel, modeHint, type LearningMode } from "@/lib/studyAssistant";
+import {
+  STUDY_ASSISTANT, useStudyAssistantConfig, blockLabel, blockHint,
+  type LearningMode, type BlockPurpose,
+} from "@/lib/studyAssistant";
 import type { ExamCategory } from "@shared/schema";
 
 /* ------------------------------------------------------------------ */
@@ -60,12 +63,13 @@ interface PracticeQuestion {
   options: string[];
 }
 
-type Block =
+type Block = { purpose: BlockPurpose } & (
   | { mode: "teach"; label: string; estimatedMinutes: number; keyPoints: string[]; examples: TeachExample[] }
   | { mode: "flashcards"; label: string; estimatedMinutes: number; cards: Flashcard[] }
   | { mode: "practice" | "scenarios"; label: string; estimatedMinutes: number; questions: PracticeQuestion[] }
   | { mode: "review"; label: string; estimatedMinutes: number; questions: PracticeQuestion[] }
-  | { mode: "mock_exam"; label: string; estimatedMinutes: number };
+  | { mode: "mock_exam"; label: string; estimatedMinutes: number }
+);
 
 interface SessionPayload {
   sessionId: string;
@@ -263,8 +267,8 @@ export default function AlexiSessionPage() {
                       aria-hidden="true"
                     />
                     <span className="min-w-0">
-                      <span className="font-medium">{modeLabel(b.mode, es)}</span>
-                      <span className="text-muted-foreground">: {modeHint(b.mode, es)}</span>
+                      <span className="font-medium">{blockLabel(b.mode, b.purpose, es)}</span>
+                      <span className="text-muted-foreground">: {blockHint(b.mode, b.purpose, es)}</span>
                     </span>
                   </li>
                 );
@@ -303,7 +307,7 @@ export default function AlexiSessionPage() {
                 className={done ? "opacity-60" : undefined}
               >
                 <Icon className="mr-1 h-3 w-3" aria-hidden="true" />
-                {modeLabel(b.mode, es)}
+                {blockLabel(b.mode, b.purpose, es)}
               </Badge>
             );
           })}

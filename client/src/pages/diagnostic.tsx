@@ -5,14 +5,14 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { PageShell } from "@/components/page-shell";
 import { apiRequest, getQueryFn, queryClient } from "@/lib/queryClient";
 import { EXAM_VISUALS } from "@/lib/examVisuals";
 import { trackEvent } from "@/lib/analytics";
 import { useSEO, buildUrl } from "@/hooks/use-seo";
-import { ArrowRight, Loader2, RotateCcw, Lock, Check } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { ArrowRight, Loader2, RotateCcw, Check, Sparkles, Target, TrendingUp } from "lucide-react";
 import type { ExamCategory } from "@shared/schema";
 
 const categories: ExamCategory[] = ["real_estate", "property_casualty", "life_insurance", "general_lines"];
@@ -33,17 +33,52 @@ interface DiagnosticQuestion {
   optionsEs: string[];
 }
 
+interface DiagnosticResult {
+  score: number;
+  correctAnswers: number;
+  totalQuestions: number;
+  category?: string;
+}
+
+function readinessCopy(score: number, isSpanish: boolean) {
+  if (score >= 80) {
+    return {
+      label: isSpanish ? "Base sólida" : "Strong foundation",
+      message: isSpanish
+        ? "Tu muestra inicial es fuerte. Alexi puede concentrar tu tiempo en brechas específicas y práctica de nivel examen."
+        : "Your initial sample is strong. Alexi can focus your time on specific gaps and exam-level practice.",
+    };
+  }
+
+  if (score >= 60) {
+    return {
+      label: isSpanish ? "En desarrollo" : "Developing",
+      message: isSpanish
+        ? "Tienes una base útil, pero todavía hay áreas que pueden costarte puntos. Alexi puede priorizar qué estudiar primero."
+        : "You have a useful foundation, but there are still areas that can cost you points. Alexi can prioritize what to study first.",
+    };
+  }
+
+  return {
+    label: isSpanish ? "Construir fundamentos" : "Build the foundations",
+    message: isSpanish
+      ? "Esta muestra encontró brechas importantes. Eso es exactamente lo que una evaluación debe revelar: Alexi puede convertirlas en un plan paso a paso."
+      : "This sample found important gaps. That is exactly what a diagnostic should reveal: Alexi can turn them into a step-by-step plan.",
+  };
+}
+
 export default function DiagnosticPage() {
   const { t, i18n } = useTranslation();
   const isSpanish = i18n.language === "es";
+  const { isAuthenticated } = useAuth();
 
   useSEO({
     title: isSpanish
-      ? "Evaluación de Preparación | MyEasyPass"
-      : "Readiness Assessment | MyEasyPass",
+      ? "Evaluación Gratis de Preparación | MyEasyPass"
+      : "Free Exam Readiness Check | MyEasyPass",
     description: isSpanish
-      ? "10 preguntas rápidas para ver cómo te desempeñas. Sin necesidad de suscripción."
-      : "10 quick questions to see how you'd do. No subscription required.",
+      ? "Responde 10 preguntas gratis, recibe tu puntuación diagnóstica y descubre qué estudiar después con MyEasyPass."
+      : "Answer 10 free questions, get your diagnostic readiness score, and see what to study next with MyEasyPass.",
     canonicalUrl: buildUrl(isSpanish ? "/readiness-check?lang=es" : "/readiness-check"),
     hreflang: [
       { lang: "en", url: buildUrl("/readiness-check") },
@@ -72,12 +107,7 @@ export default function DiagnosticPage() {
   const [questions, setQuestions] = useState<DiagnosticQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [result, setResult] = useState<{ score: number; correctAnswers: number; totalQuestions: number } | null>(null);
-  // The score itself is computed as soon as the quiz is submitted, but we
-  // hold off rendering it until the user has seen (and can dismiss) a
-  // subscribe prompt - this is a soft gate, not a hard paywall, since the
-  // page's own copy promises "no subscription required" for the assessment.
-  const [revealScore, setRevealScore] = useState(false);
+  const [result, setResult] = useState<DiagnosticResult | null>(null);
 
   const startMutation = useMutation({
     mutationFn: async (cat: ExamCategory) => {
@@ -97,7 +127,6 @@ export default function DiagnosticPage() {
       setCurrentIndex(0);
       setAnswers({});
       setResult(null);
-      setRevealScore(false);
     },
     onError: () => {
       // The category is set before the request, so a failure otherwise strands
@@ -111,20 +140,22 @@ export default function DiagnosticPage() {
     mutationFn: async () => {
       const res = await apiRequest("POST", `/api/diagnostic/${attemptId}/submit`, { answers });
       const data = await res.json();
-      if (typeof data?.correctAnswers !== "number" || typeof data?.totalQuestions !== "number") {
+      if (typeof data?.score !== "number" || typeof data?.correctAnswers !== "number" || typeof data?.totalQuestions !== "number") {
         throw new Error("no-result");
       }
-      return data;
+      return data as DiagnosticResult;
     },
     onSuccess: (data) => {
       setResult(data);
-      setRevealScore(false);
       // The dashboard reads this to decide whether to ask for a readiness
       // check. Queries default to staleTime: Infinity, so without this the
-      // student walks back to the dashboard and is asked all over again -
-      // which is the whole bug this is here to prevent.
+      // student walks back to the dashboard and is asked all over again.
       queryClient.invalidateQueries({ queryKey: ["/api/diagnostic/latest"] });
-      trackEvent("diagnostic_cta_click", { category: category ?? undefined, step: "subscribe_prompt_shown" });
+      trackEvent("diagnostic_cta_click", {
+        category: category ?? undefined,
+        step: "score_revealed",
+        score: data.score,
+      });
     },
   });
 
@@ -154,16 +185,6 @@ export default function DiagnosticPage() {
     setCurrentIndex(0);
     setAnswers({});
     setResult(null);
-    setRevealScore(false);
-  };
-
-  const handleSubscribeClick = () => {
-    trackEvent("diagnostic_cta_click", { category: category ?? undefined, step: "subscribe_prompt_subscribe" });
-  };
-
-  const handleSkipSubscribePrompt = () => {
-    trackEvent("diagnostic_cta_click", { category: category ?? undefined, step: "subscribe_prompt_skip" });
-    setRevealScore(true);
   };
 
   const currentQuestion = questions[currentIndex];
@@ -176,68 +197,139 @@ export default function DiagnosticPage() {
    * old score.
    */
   const showSaved = Boolean(saved?.completedAt) && !category && !result && !retaking;
+  const activeScore = result?.score ?? saved?.score ?? null;
+  const activeCategory = (result?.category ?? category ?? saved?.category ?? null) as ExamCategory | null;
+  const band = activeScore !== null ? readinessCopy(activeScore, isSpanish) : null;
+  const alexiHref = isAuthenticated
+    ? "/study-assistant"
+    : `/signup?source=readiness-check${activeCategory ? `&category=${activeCategory}` : ""}${activeScore !== null ? `&score=${activeScore}` : ""}`;
+
+  const renderScoreCard = (score: number, correctAnswers: number, totalQuestions: number, savedMode = false) => (
+    <Card data-testid={savedMode ? "card-diagnostic-saved" : "card-diagnostic-result"}>
+      <CardHeader className="text-center">
+        <div className="mx-auto mb-2 rounded-full bg-primary/10 p-3">
+          <Target className="h-8 w-8 text-primary" aria-hidden="true" />
+        </div>
+        <CardTitle as="h1" className="text-2xl md:text-3xl">
+          {isSpanish ? "Tu Puntuación Diagnóstica de Preparación" : "Your Diagnostic Readiness Score"}
+        </CardTitle>
+        <CardDescription>
+          {isSpanish
+            ? `Acertaste ${correctAnswers} de ${totalQuestions} preguntas.`
+            : `You answered ${correctAnswers} of ${totalQuestions} questions correctly.`}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="text-center">
+          <div className="text-6xl font-bold text-primary" data-testid={savedMode ? "text-saved-score" : "text-diagnostic-score"}>
+            {score}%
+          </div>
+          {band && (
+            <div className="mt-3">
+              <p className="text-lg font-semibold" data-testid="text-readiness-band">{band.label}</p>
+              <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">{band.message}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-xl border bg-muted/30 p-4 text-left">
+          <div className="flex gap-3">
+            <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+            <div>
+              <p className="font-semibold">{isSpanish ? "Tu próximo paso: Alexi" : "Your next step: Alexi"}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {isSpanish
+                  ? "Crea una cuenta gratis para que Alexi use tu progreso real, tus áreas débiles y tu tiempo disponible para recomendar qué estudiar después."
+                  : "Create a free account so Alexi can use your real progress, weak areas, and available study time to recommend what to study next."}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3 text-left">
+          <div className="rounded-lg border p-3">
+            <Target className="h-4 w-4 text-primary" aria-hidden="true" />
+            <p className="mt-2 text-sm font-medium">{isSpanish ? "1. Detecta brechas" : "1. Find the gaps"}</p>
+          </div>
+          <div className="rounded-lg border p-3">
+            <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
+            <p className="mt-2 text-sm font-medium">{isSpanish ? "2. Alexi prioriza" : "2. Alexi prioritizes"}</p>
+          </div>
+          <div className="rounded-lg border p-3">
+            <TrendingUp className="h-4 w-4 text-primary" aria-hidden="true" />
+            <p className="mt-2 text-sm font-medium">{isSpanish ? "3. Mejora tu puntaje" : "3. Improve your score"}</p>
+          </div>
+        </div>
+
+        <p className="text-center text-xs leading-relaxed text-muted-foreground">
+          {isSpanish
+            ? "Esta puntuación es una muestra diagnóstica de 10 preguntas, no una predicción de aprobación ni un examen oficial. Tu EasyPass Score completo se vuelve más útil a medida que practicas."
+            : "This is a 10-question diagnostic snapshot, not a pass prediction or an official exam. Your full EasyPass Score becomes more informative as you practice."}
+        </p>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <Button
+            size="lg"
+            asChild
+            className="gap-2"
+            onClick={() => trackEvent("diagnostic_cta_click", {
+              category: activeCategory ?? undefined,
+              step: isAuthenticated ? "alexi_plan" : "save_score_signup",
+              score,
+            })}
+            data-testid="button-diagnostic-alexi-plan"
+          >
+            <Link href={alexiHref}>
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+              {isAuthenticated
+                ? (isSpanish ? "Crear mi plan con Alexi" : "Build my Alexi study plan")
+                : (isSpanish ? "Guardar puntaje y crear mi plan" : "Save my score & build my plan")}
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={savedMode ? () => setRetaking(true) : handleRestart}
+            className="gap-2"
+            data-testid="button-diagnostic-restart"
+          >
+            <RotateCcw className="h-4 w-4" aria-hidden="true" />
+            {isSpanish ? "Intentar otra categoría" : "Try another category"}
+          </Button>
+        </div>
+
+        <div className="text-center">
+          <Button variant="link" asChild>
+            <Link href={activeCategory ? `/pricing?category=${activeCategory}` : "/pricing"}>
+              {isSpanish ? "Ver preparación completa" : "Explore full exam prep"}
+            </Link>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <PageShell width="narrow">
       <div>
-          {showSaved && saved && (
-            <Card data-testid="card-diagnostic-saved">
-              <CardHeader>
-                <CardTitle as="h1" className="flex items-center gap-2">
-                  <Check className="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-                  {isSpanish ? "Ya hiciste tu evaluación" : "You've already done your readiness check"}
-                </CardTitle>
-                <CardDescription>
-                  {isSpanish
-                    ? "Guardamos tu resultado, así que no necesitas repetirla."
-                    : "We saved your result, so there's no need to take it again."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                {saved.score !== null && (
-                  <div className="text-center">
-                    <div className="text-5xl font-bold text-primary" data-testid="text-saved-score">
-                      {saved.score}%
-                    </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {isSpanish
-                        ? `Acertaste ${saved.correctAnswers ?? 0} de ${saved.totalQuestions} preguntas.`
-                        : `You answered ${saved.correctAnswers ?? 0} of ${saved.totalQuestions} questions correctly.`}
-                    </p>
-                  </div>
-                )}
-
-                <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-                  <Button asChild size="lg" data-testid="button-saved-subscribe">
-                    <Link href={`/pricing?category=${saved.category}`}>
-                      {isSpanish ? "Ver planes" : "See plans"}
-                      <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={() => setRetaking(true)}
-                    data-testid="button-saved-retake"
-                  >
-                    <RotateCcw className="mr-1.5 h-4 w-4" aria-hidden="true" />
-                    {isSpanish ? "Volver a hacerla" : "Take it again"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+          {showSaved && saved && saved.score !== null && (
+            renderScoreCard(saved.score, saved.correctAnswers ?? 0, saved.totalQuestions, true)
           )}
 
           {!category && !showSaved && (
             <>
               <div className="text-center mb-8">
+                <p className="mb-2 text-sm font-semibold text-primary">
+                  {isSpanish ? "Gratis · 10 preguntas · Resultado inmediato" : "Free · 10 questions · Instant result"}
+                </p>
                 <h1 className="text-2xl md:text-3xl font-bold mb-3">
-                  {isSpanish ? "Evaluación de Preparación" : "Readiness Assessment"}
+                  {isSpanish ? "Evaluación de Preparación MyEasyPass" : "MyEasyPass Readiness Check"}
                 </h1>
                 <p className="text-muted-foreground text-lg">
                   {isSpanish
-                    ? "10 preguntas rápidas para ver cómo te desempeñas. Sin necesidad de suscripción."
-                    : "10 quick questions to see how you'd do. No subscription required."}
+                    ? "Descubre dónde estás hoy y qué deberías estudiar después. Sin suscripción y sin ocultar tu resultado."
+                    : "See where you stand today and what you should study next. No subscription and no hidden score."}
                 </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -322,108 +414,14 @@ export default function DiagnosticPage() {
                       <ArrowRight className="h-4 w-4" />
                     </>
                   ) : (
-                    isSpanish ? "Ver Resultados" : "See Results"
+                    isSpanish ? "Ver mi puntuación" : "See my score"
                   )}
                 </Button>
               </CardContent>
             </Card>
           )}
 
-          {result && !revealScore && (
-            <Card>
-              <CardHeader className="text-center">
-                <div className="mx-auto mb-2 p-3 rounded-full bg-primary/10 w-fit">
-                  <Lock className="h-8 w-8 text-primary" />
-                </div>
-                <CardTitle as="h1" className="text-2xl">
-                  {isSpanish ? "¡Evaluación completa!" : "Assessment complete!"}
-                </CardTitle>
-                <CardDescription>
-                  {isSpanish
-                    ? "Suscríbete para desbloquear tu puntuación y obtener acceso ilimitado a exámenes de práctica completos."
-                    : "Subscribe to unlock your score and get unlimited access to full practice exams."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6 text-center">
-                <p className="text-muted-foreground">
-                  {isSpanish
-                    ? "Ya respondiste todas las preguntas. Suscríbete ahora para ver cómo te fue y seguir practicando con nuestro banco completo de preguntas."
-                    : "You've answered every question. Subscribe now to see how you did and keep practicing with our full question bank."}
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Button
-                    size="lg"
-                    asChild
-                    className="gap-2"
-                    onClick={handleSubscribeClick}
-                    data-testid="button-diagnostic-subscribe-prompt"
-                  >
-                    <Link href="/pricing">
-                      {isSpanish ? "Suscribirse Ahora" : "Subscribe Now"}
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={handleSkipSubscribePrompt}
-                    data-testid="button-diagnostic-skip-subscribe"
-                  >
-                    {isSpanish ? "Ver mi puntuación" : "See my score"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {result && revealScore && (
-            <Card>
-              <CardHeader className="text-center">
-                <CardTitle as="h1" className="text-2xl">
-                  {isSpanish ? "Tus Resultados" : "Your Results"}
-                </CardTitle>
-                <CardDescription>
-                  {isSpanish
-                    ? `Respondiste correctamente ${result.correctAnswers} de ${result.totalQuestions} preguntas.`
-                    : `You answered ${result.correctAnswers} of ${result.totalQuestions} questions correctly.`}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6 text-center">
-                <div className="text-5xl font-bold text-primary" data-testid="text-diagnostic-score">
-                  {result.score}%
-                </div>
-                <p className="text-muted-foreground">
-                  {isSpanish
-                    ? "Esto es solo un vistazo rápido, no un examen oficial. Practica con nuestro banco completo de preguntas para prepararte a fondo."
-                    : "This is just a quick snapshot, not an official exam. Practice with our full question bank to prepare in depth."}
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Button
-                    size="lg"
-                    asChild
-                    className="gap-2"
-                    onClick={() => trackEvent("diagnostic_cta_click", { category: category ?? undefined, step: "results_signup" })}
-                    data-testid="button-diagnostic-signup"
-                  >
-                    <Link href="/signup">
-                      {isSpanish ? "Comenzar a Practicar" : "Start Practicing"}
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={handleRestart}
-                    className="gap-2"
-                    data-testid="button-diagnostic-restart"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    {isSpanish ? "Intentar Otra Categoría" : "Try Another Category"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {result && renderScoreCard(result.score, result.correctAnswers, result.totalQuestions)}
       </div>
     </PageShell>
   );

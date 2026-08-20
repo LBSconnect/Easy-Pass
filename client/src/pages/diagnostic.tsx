@@ -137,6 +137,16 @@ export default function DiagnosticPage() {
       if (typeof data?.score !== "number" || typeof data?.correctAnswers !== "number" || typeof data?.totalQuestions !== "number") {
         throw new Error("no-result");
       }
+
+      // Preserve the exact completed attempt in the secure server-side session
+      // before the visitor enters signup/login. This is deliberately best
+      // effort: a transient stash failure must never hide a score they earned.
+      try {
+        await apiRequest("POST", "/api/diagnostic/stash", { attemptId, answers });
+      } catch (error) {
+        console.warn("Could not preserve diagnostic evidence for account handoff", error);
+      }
+
       return data as DiagnosticResult;
     },
     onSuccess: (data) => {

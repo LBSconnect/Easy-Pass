@@ -3,13 +3,123 @@ import session from "express-session";
 import connectPg from "connect-pg-simple";
 import type { Express, RequestHandler } from "express";
 import { db } from "./db";
-import { users } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { users, diagnosticAttempts, questionResponses, questions } from "@shared/schema";
+import { eq, and, isNull, inArray } from "drizzle-orm";
 import { sanitizeHtml } from "./sanitize";
 import { rateLimit, clearRateLimit } from "./rateLimit";
 import { resolveSecureCookie } from "@shared/sessionCookie";
 import { recordPresence } from "./presence";
 import { SIGNUP_ABUSE_FLAG } from "@shared/signupLimit";
+
+type DiagnosticEvidence = {
+  attemptId: string;
+  answers: Record<string, number>;
+};
+
+/**
+ * Validate the tiny diagnostic payload before we keep it in the server-side
+ * session. The attempt itself is authoritative; this only preserves which
+ * shuffled option the browser selected for each question until the visitor
+ * signs in or creates an account.
+ */
+function parseDiagnosticEvidence(value: unknown): DiagnosticEvidence | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as { attemptId?: unknown; answers?: unknown };
+  if (typeof candidate.attemptId !== "string" || candidate.attemptId.length < 1) return null;
+  if (!candidate.answers || typeof candidate.answers !== "object" || Array.isArray(candidate.answers)) return null;
+
+  const entries = Object.entries(candidate.answers as Record<string, unknown>);
+  if (entries.length < 1 || entries.length > 25) return null;
+
+  const answers: Record<string, number> = {};
+  for (const [questionId, raw] of entries) {
+    if (!questionId || typeof raw !== "number" || !Number.isInteger(raw) || raw < 0 || raw > 9) {
+      return null;
+    }
+    answers[questionId] = raw;
+  }
+
+  return { attemptId: candidate.attemptId, answers };
+}
+
+/**
+ * Turn one completed public diagnostic into first-class learning history.
+ *
+ * Ownership is claimed inside the same transaction that writes responses. A
+ * guest attempt can therefore belong to exactly one account, while a retry by
+ * that same account is harmless. The synthetic session id is covered by the
+ * existing unique response index, so a repeated auth request cannot count the
+ * same diagnostic question twice.
+ */
+async function claimDiagnosticEvidence(userId: string, evidence: DiagnosticEvidence): Promise<boolean> {
+  const [attempt] = await db
+    .select()
+    .from(diagnosticAttempts)
+    .where(eq(diagnosticAttempts.id, evidence.attemptId))
+    .limit(1);
+
+  if (!attempt || !attempt.completedAt) return false;
+  if (attempt.userId && attempt.userId !== userId) return false;
+
+  const questionIds = attempt.questionIds as string[];
+  if (questionIds.length === 0) return false;
+  if (Object.keys(evidence.answers).length !== questionIds.length) return false;
+  if (questionIds.some((id) => evidence.answers[id] === undefined)) return false;
+
+  const answerOrder = attempt.answerOrder as Record<string, number>;
+
+  return db.transaction(async (tx) => {
+    if (!attempt.userId) {
+      const [claimed] = await tx
+        .update(diagnosticAttempts)
+        .set({ userId })
+        .where(and(eq(diagnosticAttempts.id, attempt.id), isNull(diagnosticAttempts.userId)))
+        .returning({ id: diagnosticAttempts.id });
+      if (!claimed) return false;
+    }
+
+    const questionRows = await tx
+      .select({ id: questions.id, topic: questions.topic })
+      .from(questions)
+      .where(inArray(questions.id, questionIds));
+    const topicById = new Map(questionRows.map((q) => [q.id, q.topic ?? "General"]));
+    const diagnosticSessionId = `diagnostic:${attempt.id}`;
+
+    await tx
+      .insert(questionResponses)
+      .values(
+        questionIds.map((questionId) => ({
+          userId,
+          questionId,
+          category: attempt.category,
+          topic: topicById.get(questionId) ?? "General",
+          source: "diagnostic" as const,
+          sessionId: diagnosticSessionId,
+          selectedAnswer: evidence.answers[questionId],
+          isCorrect: evidence.answers[questionId] === answerOrder[questionId],
+          language: "en" as const,
+          answeredAt: attempt.completedAt!,
+        })),
+      )
+      .onConflictDoNothing();
+
+    return true;
+  });
+}
+
+async function claimSessionDiagnostic(req: any, userId: string): Promise<void> {
+  const evidence = parseDiagnosticEvidence(req.session.diagnosticEvidence);
+  if (!evidence) return;
+
+  try {
+    await claimDiagnosticEvidence(userId, evidence);
+  } catch (error) {
+    // Account access must never fail because this optional growth handoff did.
+    console.error("Diagnostic evidence claim failed:", error);
+  } finally {
+    delete req.session.diagnosticEvidence;
+  }
+}
 
 export function getSession() {
   if (!process.env.SESSION_SECRET) {
@@ -60,12 +170,68 @@ declare module "express-session" {
   interface SessionData {
     userId: string;
     email: string;
+    diagnosticEvidence?: DiagnosticEvidence;
   }
 }
 
 export async function setupAuth(app: Express) {
   app.set("trust proxy", 1);
   app.use(getSession());
+
+  // Preserve a just-completed public diagnostic in this browser's secure
+  // server-side session. Nothing is assigned to an account until successful
+  // auth, and the attempt id must resolve to the exact completed question set.
+  app.post("/api/diagnostic/stash", async (req, res) => {
+    try {
+      const ip = req.ip || req.socket.remoteAddress || "unknown";
+      const { allowed, resetIn } = rateLimit(`diagnostic-stash:${ip}`, 20, 15 * 60 * 1000);
+      if (!allowed) {
+        return res.status(429).json({
+          message: "Too many attempts. Please try again later.",
+          retryAfter: Math.ceil(resetIn / 1000),
+        });
+      }
+
+      const evidence = parseDiagnosticEvidence(req.body);
+      if (!evidence) {
+        return res.status(400).json({ message: "Invalid diagnostic evidence" });
+      }
+
+      const [attempt] = await db
+        .select()
+        .from(diagnosticAttempts)
+        .where(eq(diagnosticAttempts.id, evidence.attemptId))
+        .limit(1);
+      if (!attempt || !attempt.completedAt) {
+        return res.status(404).json({ message: "Completed diagnostic not found" });
+      }
+      if (attempt.userId && attempt.userId !== req.session.userId) {
+        return res.status(409).json({ message: "Diagnostic already belongs to another account" });
+      }
+
+      const questionIds = attempt.questionIds as string[];
+      if (
+        Object.keys(evidence.answers).length !== questionIds.length ||
+        questionIds.some((id) => evidence.answers[id] === undefined) ||
+        Object.keys(evidence.answers).some((id) => !questionIds.includes(id))
+      ) {
+        return res.status(400).json({ message: "Diagnostic answers do not match this attempt" });
+      }
+
+      req.session.diagnosticEvidence = evidence;
+
+      // A signed-in student does not need an auth handoff; attach the evidence
+      // immediately and clear the transient copy.
+      if (req.session.userId) {
+        await claimSessionDiagnostic(req, req.session.userId);
+      }
+
+      res.json({ stashed: true });
+    } catch (error) {
+      console.error("Diagnostic evidence stash failed:", error);
+      res.status(500).json({ message: "Failed to preserve diagnostic evidence" });
+    }
+  });
 
   app.post("/api/register", async (req, res) => {
     try {
@@ -118,6 +284,7 @@ export async function setupAuth(app: Express) {
 
       req.session.userId = newUser.id;
       req.session.email = newUser.email!;
+      await claimSessionDiagnostic(req, newUser.id);
 
       res.json({
         id: newUser.id,
@@ -172,6 +339,7 @@ export async function setupAuth(app: Express) {
 
       req.session.userId = user.id;
       req.session.email = user.email!;
+      await claimSessionDiagnostic(req, user.id);
 
       res.json({
         id: user.id,

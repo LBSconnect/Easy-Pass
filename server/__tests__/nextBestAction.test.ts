@@ -136,6 +136,40 @@ describe("composeSession", () => {
     }
   });
 
+  it("does not name two different steps the same thing", () => {
+    // A practice session is two practice blocks - the practice, then the check
+    // at the end. Labelling from mode alone printed "Targeted practice" twice
+    // in the summary and again as two identical chips on the progress rail, so
+    // the measurement looked like a repeat of the step before it.
+    for (const mode of ["teach", "flashcards", "practice", "scenarios", "review"] as const) {
+      const blocks = composeSession(mode, 15, "Texas Law");
+      const named = blocks.map((b) => `${b.mode}:${b.purpose}`);
+      expect(new Set(named).size, `${mode} repeats a step name: ${named.join(", ")}`).toBe(
+        blocks.length,
+      );
+    }
+  });
+
+  it("marks the closing block as a check rather than more of the same", () => {
+    for (const mode of ["teach", "flashcards", "practice", "scenarios", "review"] as const) {
+      const blocks = composeSession(mode, 15, "Texas Law");
+      expect(blocks[blocks.length - 1].purpose).toBe("check");
+    }
+  });
+
+  it("marks the block that eases a student in as a warm-up", () => {
+    const blocks = composeSession("review", 15, null);
+    expect(blocks[0].purpose).toBe("warm_up");
+  });
+
+  it("gives every block a purpose, so nothing falls back to its mode", () => {
+    for (const mode of ["teach", "flashcards", "practice", "scenarios", "review", "mock_exam"] as const) {
+      for (const block of composeSession(mode, 15, "Texas Law")) {
+        expect(["main", "warm_up", "check"]).toContain(block.purpose);
+      }
+    }
+  });
+
   it("gives a review session a shape rather than one long list", () => {
     // It used to be a single block: "N-question mixed review", rendered as the
     // answers the student already had wrong. Warm up, recall, check.

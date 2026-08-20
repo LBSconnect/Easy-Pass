@@ -98,6 +98,49 @@ export function useRecommendation(category: string | null, minutes?: number) {
   });
 }
 
+/**
+ * What a block is for, which its mode does not say.
+ *
+ * Mirrors BlockPurpose in server/alexi/nextBestAction.ts. A practice session
+ * is two practice blocks - the practice, then the check at the end - so
+ * labelling from mode alone told the student "Targeted practice" twice.
+ */
+export type BlockPurpose = "main" | "warm_up" | "check";
+
+/**
+ * The name of one step, as the student reads it on the rail and in the summary.
+ *
+ * Purpose wins where it changes what the step actually is: a flashcard warm-up
+ * is not the same activity as a flashcard session, and a five-question check is
+ * not more targeted practice. Everything else falls through to the mode name.
+ */
+export function blockLabel(mode: LearningMode, purpose: BlockPurpose, es: boolean): string {
+  if (purpose === "check") return es ? "Comprobación" : "Mastery check";
+  if (purpose === "warm_up") return es ? "Calentamiento" : "Warm-up";
+  return modeLabel(mode, es);
+}
+
+/**
+ * What happens in that step.
+ *
+ * Same reasoning as blockLabel: the check and the warm-up describe themselves,
+ * because "questions on the topics you get wrong most" is not what either of
+ * them does.
+ */
+export function blockHint(mode: LearningMode, purpose: BlockPurpose, es: boolean): string {
+  if (purpose === "check") {
+    return es
+      ? "Unas pocas preguntas para medir lo que acabas de estudiar"
+      : "A few questions to measure what you just studied";
+  }
+  if (purpose === "warm_up") {
+    return es
+      ? "Tarjetas rápidas para volver al tema"
+      : "Quick cards to get back into the material";
+  }
+  return modeHint(mode, es);
+}
+
 /** Student-facing label for a learning mode. */
 export function modeLabel(mode: LearningMode, es: boolean): string {
   const labels: Record<LearningMode, [string, string]> = {

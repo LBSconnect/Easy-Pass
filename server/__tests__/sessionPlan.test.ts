@@ -37,8 +37,9 @@ function input(over: Partial<PlanInput> = {}): PlanInput {
   };
 }
 
-const block = (mode: any, itemCount = 3) => ({
+const block = (mode: any, itemCount = 3, purpose: any = "main") => ({
   mode,
+  purpose,
   itemCount,
   estimatedMinutes: 5,
   label: `${mode} block`,
@@ -193,7 +194,7 @@ describe("resolveBlock - review", () => {
 
   it("tells the truth about how many questions it found", () => {
     const out = resolveBlock(
-      { mode: "review", itemCount: 9, estimatedMinutes: 5, label: "9 questions from memory" },
+      { mode: "review", purpose: "main" as const, itemCount: 9, estimatedMinutes: 5, label: "9 questions from memory" },
       input({ exposures: [wrong("a", "BOP Eligibility", 5)] }),
     ) as any;
 
@@ -274,6 +275,17 @@ describe("buildSessionPlan", () => {
     expect(plan.questionIds).toHaveLength(2);
   });
 
+  it("carries each block's purpose through to the client", () => {
+    // The client names steps from purpose: without it a mastery check reads as
+    // "Targeted practice" again, which is what the block before it said. The
+    // resolver builds new objects, so this is exactly where it got dropped.
+    const plan = buildSessionPlan(
+      input({ blocks: [block("teach", 3, "main"), block("practice", 2, "check")] }),
+    );
+
+    expect(plan.blocks.map((b) => b.purpose)).toEqual(["main", "check"]);
+  });
+
   it("grades the review answers too", () => {
     // Review questions are answered now, so they count. Leaving them out meant
     // a student could retrieve a dozen items and have none of it reach their
@@ -316,7 +328,7 @@ describe("reconcileLabel", () => {
   it("is applied to blocks whose label states a quantity", () => {
     const short = buildSessionPlan(
       input({
-        blocks: [{ mode: "flashcards", itemCount: 8, estimatedMinutes: 4, label: "8 smart flashcards" }],
+        blocks: [{ mode: "flashcards", purpose: "main" as const, itemCount: 8, estimatedMinutes: 4, label: "8 smart flashcards" }],
         pool: [q("a", "T"), q("b", "T")],
       }),
     );
@@ -327,7 +339,7 @@ describe("reconcileLabel", () => {
   it("is not applied to a teach label, where a number names the subject", () => {
     const plan = buildSessionPlan(
       input({
-        blocks: [{ mode: "teach", itemCount: 3, estimatedMinutes: 3, label: "Section 5 explained simply" }],
+        blocks: [{ mode: "teach", purpose: "main" as const, itemCount: 3, estimatedMinutes: 3, label: "Section 5 explained simply" }],
         pool: [q("a", "T")],
       }),
     );

@@ -67,6 +67,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Legend, Tooltip } from "recharts";
 import { parseExamMode } from "@shared/examMode";
 import type { ExamCategory, Question, ExamSession, ExamResult } from "@shared/schema";
+import { activatable } from "@/lib/activatable";
 
 const categoryIcons = {
   real_estate: Home,
@@ -945,13 +946,22 @@ function ExamSession() {
                       return (
                         <div
                           key={question.id}
-                          className={`p-3 rounded-lg border cursor-pointer transition-colors hover-elevate ${
+                          className={`p-3 rounded-lg border cursor-pointer transition-colors hover-elevate focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                             index === currentIndex ? "border-primary bg-primary/5" : ""
                           } ${!hasAnswer ? "border-amber-500/50 bg-amber-500/5" : ""}`}
-                          onClick={() => {
-                            setCurrentIndex(index);
-                            setShowReviewPanel(false);
-                          }}
+                          // Keyboard-operable: jumping back to a flagged
+                          // question must not require a mouse.
+                          {...activatable(
+                            () => {
+                              setCurrentIndex(index);
+                              setShowReviewPanel(false);
+                            },
+                            {
+                              label: `${i18n.language === "es" ? "Ir a la pregunta" : "Go to question"} ${index + 1}${
+                                hasAnswer ? "" : i18n.language === "es" ? " - sin responder" : " - unanswered"
+                              }`,
+                            },
+                          )}
                           data-testid={`review-question-${index + 1}`}
                         >
                           <div className="flex items-start gap-3">

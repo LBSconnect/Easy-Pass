@@ -14,6 +14,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { BookOpen, CheckCircle2, XCircle, ArrowRight, ArrowLeft, GraduationCap, Target, Clock, Sparkles, ChevronRight, RotateCcw, Trophy, Lock } from "lucide-react";
 import type { StudyProgress, UserProfile, ExamCategory } from "@shared/schema";
 import type { CategoryTopics, StudyTopic } from "@shared/studyTopics";
+import { activatable } from "@/lib/activatable";
 
 interface QuizQuestion {
   id: string;
@@ -66,8 +67,14 @@ function TopicCard({
 
   return (
     <Card
-      className={`hover-elevate transition-all duration-200 cursor-pointer group ${locked ? "opacity-70" : ""}`}
-      onClick={onStartQuiz}
+      className={`hover-elevate transition-all duration-200 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${locked ? "opacity-70" : ""}`}
+      // A real control, not a div that happens to respond to a mouse. Sixty
+      // presses of Tab never reached this card before; see lib/activatable.ts.
+      {...activatable(onStartQuiz, {
+        label: locked
+          ? `${language === "es" ? topic.nameEs : topic.nameEn} - ${t("study.subscriptionRequiredShort", "Subscription required")}`
+          : `${t("study.startQuiz", "Start Quiz")}: ${language === "es" ? topic.nameEs : topic.nameEn}`,
+      })}
       data-testid={`card-topic-${topic.id}`}
     >
       <CardHeader className="pb-3">

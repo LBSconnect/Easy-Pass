@@ -2,6 +2,12 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
+declare global {
+  interface Window {
+    dataLayer: unknown[][];
+  }
+}
+
 // Google Ads tag (AW-18360793283), loaded site-wide from the app entrypoint.
 window.dataLayer = window.dataLayer || [];
 function gtag(...args: unknown[]) {

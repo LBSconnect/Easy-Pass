@@ -77,7 +77,7 @@ function buildSevenDayRoadmap(plan: StudyPlan, es: boolean): RoadmapDay[] {
   const weakTopics = plan.tasks
     .filter((task) => task.kind === "weak_topic_drill" && task.topic)
     .map((task) => task.topic as string);
-  const uniqueWeak = [...new Set(weakTopics)];
+  const uniqueWeak = Array.from(new Set(weakTopics));
   const missed = plan.tasks.find((task) => task.kind === "missed_review");
   const hasMock = plan.tasks.some((task) => task.kind === "mock_exam");
   const dayCount = plan.daysUntilExam === null

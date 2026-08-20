@@ -42,6 +42,7 @@ import FreePracticeTestPage from "@/pages/free-practice-test";
 import FreePracticeTestEsPage from "@/pages/free-practice-test-es";
 import FreeStudyResourcesPage from "@/pages/free-study-resources";
 import SearchIntentStudyPage from "@/pages/search-intent-study";
+import WorkedExampleStudyPage from "@/pages/worked-example-study";
 import InsuranceConceptPage from "@/pages/insurance-concept";
 import InsuranceConceptsHubPage from "@/pages/insurance-concepts-hub";
 import ExamConceptClusterPage from "@/pages/exam-concept-clusters";
@@ -160,6 +161,8 @@ function Router() {
       <Route path="/es/free/:slug" component={FreePracticeTestEsPage} />
       <Route path="/study/:slug" component={SearchIntentStudyPage} />
       <Route path="/es/estudiar/:slug" component={SearchIntentStudyPage} />
+      <Route path="/examples/:slug" component={WorkedExampleStudyPage} />
+      <Route path="/es/ejemplos/:slug" component={WorkedExampleStudyPage} />
       <Route path="/texas-insurance-exam/concepts" component={InsuranceConceptsHubPage} />
       <Route path="/texas-insurance-exam/ho-2-vs-ho-3" component={LongTailComparisonPage} />
       <Route path="/texas-insurance-exam/peril-vs-hazard" component={LongTailComparisonPage} />

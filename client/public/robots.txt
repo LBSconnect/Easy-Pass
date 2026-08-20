@@ -19,3 +19,4 @@ Sitemap: https://www.myeasypass.net/sitemap-spanish-free-practice.xml
 Sitemap: https://www.myeasypass.net/sitemap-spanish-concepts.xml
 Sitemap: https://www.myeasypass.net/sitemap-long-tail-comparisons.xml
 Sitemap: https://www.myeasypass.net/sitemap-free-study-resources.xml
+Sitemap: https://www.myeasypass.net/sitemap-search-intent-study.xml

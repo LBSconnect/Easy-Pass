@@ -1,32 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect } from "vitest";
+import { isolateAiEnv } from "./support/aiEnv";
 import { getAIConfig, hasCredentials } from "../ai/config";
 import { estimateCostUsd } from "../ai/pricing";
 import { UnconfiguredProvider, AIError } from "../ai/provider";
 
-const AI_ENV = [
-  "ANTHROPIC_API_KEY",
-  "ALEXI_ENABLED",
-  "ALEXI_TUTOR_ENABLED",
-  "ALEXI_QUIZ_GENERATION_ENABLED",
-  "ALEXI_SPANISH_ENABLED",
-  "ALEXI_MODEL_TUTOR",
-  "ALEXI_MODEL_UTILITY",
-  "ALEXI_MAX_TOKENS_TUTOR",
-];
-
-let saved: Record<string, string | undefined>;
-
-beforeEach(() => {
-  saved = Object.fromEntries(AI_ENV.map((k) => [k, process.env[k]]));
-  for (const key of AI_ENV) delete process.env[key];
-});
-
-afterEach(() => {
-  for (const [key, value] of Object.entries(saved)) {
-    if (value === undefined) delete process.env[key];
-    else process.env[key] = value;
-  }
-});
+// These tests assert what happens with NO configuration, so they must not see
+// the machine's. The list they used to clear was hand-written and drifted:
+// ALEXI_MOCK_EXAM_ENABLED was never added, so wherever that is genuinely set
+// this file failed. See support/aiEnv.ts.
+isolateAiEnv();
 
 describe("hasCredentials", () => {
   it("is false with no key", () => {

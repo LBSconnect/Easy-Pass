@@ -6,7 +6,8 @@
  * arrives from Google on a study page can still be attributed when they later
  * take the diagnostic, open Alexi or start checkout.
  *
- * No email, name, answers or other student content is stored in attribution.
+ * No email, name, answers, raw query strings or other student content is stored
+ * in attribution. Only the allowlisted acquisition fields below are retained.
  */
 export type AnalyticsEventName =
   | "diagnostic_cta_click"
@@ -62,8 +63,8 @@ export type AnalyticsEventName =
 
 interface FirstTouchAttribution {
   landing_path: string;
-  landing_query: string | null;
   referrer_host: string | null;
+  source: string | null;
   utm_source: string | null;
   utm_medium: string | null;
   utm_campaign: string | null;
@@ -93,14 +94,18 @@ function captureFirstTouch(): FirstTouchAttribution {
   const params = new URLSearchParams(window.location.search);
   return {
     landing_path: window.location.pathname.slice(0, 500),
-    landing_query: clean(window.location.search || null),
     referrer_host: referrerHost(),
+    source: clean(params.get("source")),
     utm_source: clean(params.get("utm_source")),
     utm_medium: clean(params.get("utm_medium")),
     utm_campaign: clean(params.get("utm_campaign")),
     utm_content: clean(params.get("utm_content")),
     utm_term: clean(params.get("utm_term")),
   };
+}
+
+function currentSource(): string | null {
+  return clean(new URLSearchParams(window.location.search).get("source"));
 }
 
 function getFirstTouch(): FirstTouchAttribution {
@@ -127,7 +132,7 @@ export function trackEvent(event: AnalyticsEventName, metadata?: Record<string, 
       path: window.location.pathname,
       metadata: {
         ...attribution,
-        current_query: clean(window.location.search || null),
+        current_source: currentSource(),
         ...metadata,
       },
     });

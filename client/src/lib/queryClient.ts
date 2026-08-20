@@ -1,5 +1,6 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { apiErrorFrom } from "./apiError";
+import { trackEvent } from "./analytics";
 
 /**
  * Fail with something a person can read.
@@ -12,11 +13,36 @@ async function throwIfResNotOk(res: Response) {
   if (!res.ok) throw await apiErrorFrom(res);
 }
 
+function trackApiMilestone(method: string, url: string, phase: "start" | "success") {
+  const verb = method.toUpperCase();
+
+  if (verb === "POST" && url === "/api/register") {
+    trackEvent(phase === "start" ? "signup_started" : "signup_completed");
+    return;
+  }
+
+  if (phase === "success" && verb === "POST" && url === "/api/login") {
+    trackEvent("login_completed");
+    return;
+  }
+
+  if (phase === "success" && verb === "POST" && /^\/api\/diagnostic\/[^/]+\/submit$/.test(url)) {
+    trackEvent("diagnostic_completed");
+    return;
+  }
+
+  if (phase === "success" && verb === "POST" && url === "/api/stripe/checkout") {
+    trackEvent("checkout_session_created");
+  }
+}
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  trackApiMilestone(method, url, "start");
+
   const res = await fetch(url, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
@@ -25,6 +51,7 @@ export async function apiRequest(
   });
 
   await throwIfResNotOk(res);
+  trackApiMilestone(method, url, "success");
   return res;
 }
 

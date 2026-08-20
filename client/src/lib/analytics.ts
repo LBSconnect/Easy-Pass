@@ -1,13 +1,22 @@
 /**
- * Lightweight, self-hosted event tracking. No third-party analytics platform
- * is configured yet (see Phase 1 audit) - events are logged server-side to
- * the analytics_events table via POST /api/analytics/events. Swap the body
- * of trackEvent for a third-party SDK call later without touching call sites.
+ * Lightweight, self-hosted event tracking.
+ *
+ * Events are logged server-side to analytics_events. This module also keeps a
+ * small first-touch attribution envelope in sessionStorage so a visitor who
+ * arrives from Google on a study page can still be attributed when they later
+ * take the diagnostic, open Alexi or start checkout.
+ *
+ * No email, name, answers or other student content is stored in attribution.
  */
 export type AnalyticsEventName =
   | "diagnostic_cta_click"
+  | "diagnostic_completed"
   | "pricing_cta_click"
   | "checkout_start"
+  | "checkout_session_created"
+  | "signup_started"
+  | "signup_completed"
+  | "login_completed"
   | "bootcamp_cta_click"
   | "employer_inquiry_submit"
   | "official_exam_schedule_click"
@@ -51,12 +60,76 @@ export type AnalyticsEventName =
   | "free_practice_cta_click"
   | "concept_practice_cta_click";
 
+interface FirstTouchAttribution {
+  landing_path: string;
+  landing_query: string | null;
+  referrer_host: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+  utm_term: string | null;
+}
+
+const ATTRIBUTION_KEY = "myeasypass:first-touch:v1";
+
+function clean(value: string | null): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed.slice(0, 250) : null;
+}
+
+function referrerHost(): string | null {
+  try {
+    if (!document.referrer) return null;
+    const host = new URL(document.referrer).hostname.toLowerCase();
+    return host === window.location.hostname.toLowerCase() ? null : host.slice(0, 250);
+  } catch {
+    return null;
+  }
+}
+
+function captureFirstTouch(): FirstTouchAttribution {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    landing_path: window.location.pathname.slice(0, 500),
+    landing_query: clean(window.location.search || null),
+    referrer_host: referrerHost(),
+    utm_source: clean(params.get("utm_source")),
+    utm_medium: clean(params.get("utm_medium")),
+    utm_campaign: clean(params.get("utm_campaign")),
+    utm_content: clean(params.get("utm_content")),
+    utm_term: clean(params.get("utm_term")),
+  };
+}
+
+function getFirstTouch(): FirstTouchAttribution {
+  const fresh = captureFirstTouch();
+  try {
+    const stored = sessionStorage.getItem(ATTRIBUTION_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as FirstTouchAttribution;
+      if (parsed && typeof parsed.landing_path === "string") return parsed;
+    }
+    sessionStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(fresh));
+  } catch {
+    // Storage can be disabled in private/restricted browser contexts. Events
+    // still work; they simply carry the current page's attribution envelope.
+  }
+  return fresh;
+}
+
 export function trackEvent(event: AnalyticsEventName, metadata?: Record<string, unknown>) {
   try {
+    const attribution = getFirstTouch();
     const body = JSON.stringify({
       event,
       path: window.location.pathname,
-      metadata,
+      metadata: {
+        ...attribution,
+        current_query: clean(window.location.search || null),
+        ...metadata,
+      },
     });
 
     if (navigator.sendBeacon) {
@@ -72,9 +145,9 @@ export function trackEvent(event: AnalyticsEventName, metadata?: Record<string, 
       credentials: "include",
       keepalive: true,
     }).catch(() => {
-      // Analytics failures must never surface to the user
+      // Analytics failures must never surface to the user.
     });
   } catch {
-    // Never let tracking break the page
+    // Never let tracking break the page.
   }
 }

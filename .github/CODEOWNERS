@@ -1,0 +1,59 @@
+# Who owns what, and why this file exists.
+#
+# Two agents work this repository in parallel, on acquisition and on the
+# student product. For a while the boundary was described as "SEO" and
+# "Alexi", which stopped being true the moment growth work began reaching
+# into the recommendation engine - and that is where things started
+# colliding. So the split is drawn at files, which cannot drift.
+#
+# GitHub uses this to request reviews. Its more useful job here is to make
+# the boundary visible on every pull request rather than remembered.
+#
+# Editing a file you do not own is not forbidden. Saying so in the pull
+# request description, rather than discovering it in a merge, is the ask.
+
+# --- Acquisition -----------------------------------------------------------
+# Search-led entry points and everything that gets a stranger to the site.
+/client/src/pages/landing-*.tsx
+/client/src/pages/insurance-concept*.tsx
+/client/src/pages/free-practice-test*.tsx
+/client/src/pages/exam-concept-clusters.tsx
+/client/public/sitemap*.xml
+/client/public/robots.txt
+
+# --- Student runtime -------------------------------------------------------
+# Everything a paying student touches after they sign up.
+/server/alexi/
+/server/simpleAuth.ts
+/server/rateLimit.ts
+/server/storage.ts
+/server/migrations.ts
+/server/contentRepair.ts
+/shared/schema.ts
+/shared/retrievalReview.ts
+/client/src/pages/dashboard.tsx
+/client/src/pages/exams.tsx
+/client/src/pages/study-guide.tsx
+/client/src/pages/flashcards.tsx
+/client/src/pages/missed-questions.tsx
+/client/src/pages/alexi-session.tsx
+/client/src/pages/admin.tsx
+/tests/
+/server/__tests__/
+/.github/workflows/
+
+# --- Shared ----------------------------------------------------------------
+# Both sides legitimately need these. The rule is ADD, NEVER RESHAPE.
+#
+# Adding a route, an event name, a nav item or a translation key is fine.
+# Removing, renaming or restructuring what is already there is not, because
+# the other side is probably standing on it. Two outages came from exactly
+# that: the Button "link" variant was deleted while three pages still used
+# it, and two analytics events were fired without being added to the type.
+# Both took the type check red on main, and both were found by whoever
+# opened the next pull request rather than by whoever made the change.
+/client/src/App.tsx
+/client/src/lib/analytics.ts
+/client/src/components/navbar.tsx
+/client/src/lib/i18nResources.ts
+/client/src/components/ui/

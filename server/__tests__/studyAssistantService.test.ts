@@ -8,6 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { isolateAiEnv } from "./support/aiEnv";
 
 const mockStorage = {
   getResponsesForCategory: vi.fn(),
@@ -39,8 +40,6 @@ const { AIError } = await import("../ai/provider");
 const NOW = new Date("2026-08-17T12:00:00Z");
 const DAY = 24 * 60 * 60 * 1000;
 
-const AI_ENV = ["ANTHROPIC_API_KEY", "ALEXI_ENABLED", "ALEXI_TUTOR_ENABLED", "ALEXI_SPANISH_ENABLED"];
-let saved: Record<string, string | undefined>;
 
 function responses(topic: string, results: boolean[], daysAgo = 0) {
   return results.map((isCorrect, i) => ({
@@ -67,10 +66,11 @@ const QUESTION = {
     "Las pólizas Businessowners están diseñadas para negocios pequeños y medianos, como tiendas y oficinas.",
 };
 
-beforeEach(() => {
-  saved = Object.fromEntries(AI_ENV.map((k) => [k, process.env[k]]));
-  for (const key of AI_ENV) delete process.env[key];
+// The environment these run against must be the one the test sets, not the
+// one the machine happens to have. See support/aiEnv.ts.
+isolateAiEnv();
 
+beforeEach(() => {
   vi.clearAllMocks();
   clearPhrasingCache();
 
@@ -80,13 +80,6 @@ beforeEach(() => {
   mockStorage.getProfile.mockResolvedValue({ preferredLanguage: "en", examDate: null, hasPreviousAttempt: false });
   mockStorage.getQuestion.mockResolvedValue(QUESTION);
   mockStorage.createAiUsageEvent.mockResolvedValue({});
-});
-
-afterEach(() => {
-  for (const [key, value] of Object.entries(saved)) {
-    if (value === undefined) delete process.env[key];
-    else process.env[key] = value;
-  }
 });
 
 function enableAI() {

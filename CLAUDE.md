@@ -233,6 +233,65 @@ Exams require **70%** correct answers to pass.
 - Frontend: i18next with `t('key')` function
 - Account for 20-30% Spanish text expansion
 
+## Working in Parallel
+
+Two agents work this repository at the same time - one on acquisition, one on
+the student product. Most of what has gone wrong here has been coordination
+rather than code, so these are the conventions that keep it workable.
+
+### Who owns what
+
+`.github/CODEOWNERS` is the authority and shows up on every pull request. In
+short: search-led pages, sitemaps and metadata on one side; the Alexi engine,
+auth, storage, the student pages and the test suites on the other.
+
+The boundary is drawn at **files**, not topics. "SEO" and "Alexi" sounded like
+a clean split until growth work started feeding the recommendation engine, at
+which point the two were the same code.
+
+### Shared files: add, never reshape
+
+`App.tsx`, `lib/analytics.ts`, `navbar.tsx`, `lib/i18nResources.ts` and
+`components/ui/` are legitimately shared. Adding a route, an event name, a nav
+item or a translation key is fine. Removing, renaming or restructuring what is
+already there is not - the other side is probably standing on it.
+
+Two outages came from ignoring this. The Button `link` variant was deleted
+while three pages still used it, and two analytics events were fired without
+being added to `AnalyticsEventName`. Both broke the type check on `main`, and
+both were discovered by whoever opened the next pull request.
+
+### Never merge on red, or on pending
+
+Every red merge puts the next pull request on a broken base, and the person who
+opens it inherits a failure they did not cause. Nine merged inside one hour on
+one occasion with end-to-end tests failing throughout, after which nobody could
+say which change had broken what.
+
+Branch protection on `main` requiring both checks is what makes this structural
+rather than a matter of remembering.
+
+### Never force-push `main`
+
+Merged pull request #137 was silently dropped from `main`'s history that way.
+The commit still existed but was no longer an ancestor, so four files were
+simply gone and had to be restored by hand. Nothing warns you.
+
+### `npm run build` does not type-check
+
+Vite and esbuild strip types without checking them, so a green build can be
+code that does not compile. Run all four before pushing:
+
+```bash
+npm run check && npm run check:tests && npx vitest run && npm run build
+```
+
+### CI runs every Playwright project
+
+`npx playwright test` with no `--project` runs `e2e`, `ui` **and**
+`rate-limits`. Running only `--project=e2e` locally will look green while CI is
+red, which has already cost an afternoon of misattributed failures.
+
 ## Common Tasks
 
 ### Add a new API endpoint

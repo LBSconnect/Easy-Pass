@@ -26,6 +26,15 @@ const STUDY_QUESTIONS = [
   { title: "Joint Tenancy vs Tenancy in Common", href: "/study/joint-tenancy-vs-tenancy-in-common", category: "Real Estate" },
 ] as const;
 
+const WORKED_EXAMPLES = [
+  { title: "Coinsurance Calculation Example", href: "/examples/coinsurance-example", category: "Property & Casualty" },
+  { title: "Actual Cash Value Example", href: "/examples/actual-cash-value-example", category: "Property & Casualty" },
+  { title: "Replacement Cost Example", href: "/examples/replacement-cost-example", category: "Property & Casualty" },
+  { title: "Earnest Money Example", href: "/examples/earnest-money-example", category: "Real Estate" },
+  { title: "Insurable Interest Example", href: "/examples/insurable-interest-example", category: "Life Insurance" },
+  { title: "Beneficiary Scenario Example", href: "/examples/beneficiary-scenario", category: "Life Insurance" },
+] as const;
+
 export default function FreeStudyResourcesPage() {
   const canonical = buildUrl("/free/study-resources");
 
@@ -43,7 +52,7 @@ export default function FreeStudyResourcesPage() {
         url: canonical,
         mainEntity: {
           "@type": "ItemList",
-          itemListElement: [...RESOURCES, ...STUDY_QUESTIONS].map((resource, index) => ({
+          itemListElement: [...RESOURCES, ...STUDY_QUESTIONS, ...WORKED_EXAMPLES].map((resource, index) => ({
             "@type": "ListItem",
             position: index + 1,
             name: resource.title,
@@ -121,7 +130,30 @@ export default function FreeStudyResourcesPage() {
           </div>
         </section>
 
-        <section className="py-12 md:py-14">
+        <section className="py-14 md:py-16">
+          <div className="container mx-auto max-w-6xl px-4">
+            <div className="mb-8 max-w-3xl">
+              <Badge variant="outline">Worked Examples</Badge>
+              <h2 className="mt-3 text-2xl font-bold md:text-3xl">See the concept worked out step by step</h2>
+              <p className="mt-3 text-muted-foreground">Use simplified examples to understand formulas, valuation questions and common licensing-exam scenarios before you practice them yourself.</p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {WORKED_EXAMPLES.map((item) => (
+                <Card key={item.href}>
+                  <CardContent className="p-6">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-primary">{item.category}</p>
+                    <h3 className="mt-2 text-lg font-semibold">{item.title}</h3>
+                    <Button variant="link" className="mt-4 h-auto p-0" asChild>
+                      <Link href={item.href}>See worked example <ArrowRight className="ml-1 h-4 w-4" /></Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="border-t bg-muted/30 py-12 md:py-14">
           <div className="container mx-auto max-w-4xl px-4 text-center">
             <h2 className="text-2xl font-bold md:text-3xl">Not sure where to start?</h2>
             <p className="mt-3 text-muted-foreground">Take the readiness check to identify the areas that deserve your attention first.</p>

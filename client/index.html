@@ -4,33 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5, user-scalable=yes" />
 
-    <!-- ============================================================
-         PRIMARY SEO: Title & Description
-         Target: Texas real estate school, Texas insurance school,
-                 Texas real estate courses, exam cram, practice tests
-    ============================================================ -->
     <title>MyEasyPass | Texas Real Estate &amp; Insurance Exam Prep | Online School &amp; Exam Cram</title>
     <meta name="description" content="Texas real estate and insurance online school. Ace your TREC real estate license exam, Texas property &amp; casualty, life insurance, and general lines exams with 800+ practice questions, timed mock exams, and bilingual (English/Spanish) exam cram courses." />
     <meta name="keywords" content="Texas real estate exam prep, Texas real estate school, Texas real estate courses online, TREC exam prep, Texas real estate license exam, Texas insurance exam prep, Texas insurance school, Texas insurance courses, property casualty exam Texas, life insurance exam Texas, general lines insurance Texas, exam cram Texas, Texas licensing exam practice test, bilingual real estate exam prep, real estate practice questions Texas, insurance practice questions Texas, Texas real estate license school online, online real estate school Texas, Texas insurance license exam prep, pass real estate exam Texas, pass insurance exam Texas, myeasypass" />
 
-    <!-- ============================================================
-         CANONICAL & LANGUAGE ALTERNATES
-    ============================================================ -->
     <link rel="canonical" href="https://www.myeasypass.net/" />
     <link rel="alternate" hreflang="en" href="https://www.myeasypass.net/" />
     <link rel="alternate" hreflang="es" href="https://www.myeasypass.net/?lang=es" />
     <link rel="alternate" hreflang="x-default" href="https://www.myeasypass.net/" />
 
-    <!-- ============================================================
-         GEO TARGETING — Texas market
-    ============================================================ -->
     <meta name="geo.region" content="US-TX" />
     <meta name="geo.placename" content="Texas" />
     <meta name="ICBM" content="31.9686, -99.9018" />
 
-    <!-- ============================================================
-         OPEN GRAPH — Facebook / LinkedIn / WhatsApp
-    ============================================================ -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="MyEasyPass" />
     <meta property="og:url" content="https://www.myeasypass.net/" />
@@ -43,26 +29,17 @@
     <meta property="og:locale" content="en_US" />
     <meta property="og:locale:alternate" content="es_MX" />
 
-    <!-- ============================================================
-         TWITTER CARD
-    ============================================================ -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@myeasypass" />
     <meta name="twitter:title" content="MyEasyPass | Texas Real Estate &amp; Insurance Exam Cram" />
     <meta name="twitter:description" content="Texas real estate and insurance exam prep online. 800+ practice questions. Bilingual EN/ES. Start today." />
     <meta name="twitter:image" content="https://www.myeasypass.net/og-image.png" />
 
-    <!-- ============================================================
-         ROBOTS & INDEXING
-    ============================================================ -->
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="googlebot" content="index, follow" />
     <meta name="author" content="MyEasyPass" />
     <meta name="copyright" content="MyEasyPass" />
 
-    <!-- ============================================================
-         MOBILE / PWA
-    ============================================================ -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="MyEasyPass" />
@@ -72,51 +49,14 @@
     <meta name="format-detection" content="telephone=yes" />
     <meta name="application-name" content="MyEasyPass" />
 
-    <!-- ============================================================
-         FAVICONS
-    ============================================================ -->
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
 
-    <!-- ============================================================
-         PERFORMANCE: web fonts, loaded without blocking first paint
-
-         This stylesheet used to be render-blocking, which put first paint at
-         the mercy of a third party: on a network that cannot reach Google
-         Fonts - plenty of workplaces and test centres, and whole countries -
-         the browser waits out the connection before drawing anything, and the
-         student sits in front of a white page. Measured at ~13.6s to first
-         paint with the request blocked.
-
-         `media="print"` makes it non-blocking; the onload handler promotes it
-         once it arrives. Text paints immediately in the fallback (system-ui,
-         see --font-sans) and swaps when Inter loads, which is what
-         `display=swap` in the URL is for. The noscript copy keeps the font for
-         browsers that would otherwise never run the promotion.
-
-         Only Inter is requested. DM Sans was being downloaded and is not
-         referenced anywhere in the stylesheet or the Tailwind config.
-    ============================================================ -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      media="print"
-      onload="this.media='all'"
-      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..700;1,14..32,400..600&display=swap"
-    />
-    <noscript>
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..700;1,14..32,400..600&display=swap"
-      />
-    </noscript>
+    <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..700;1,14..32,400..600&display=swap" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..700;1,14..32,400..600&display=swap" /></noscript>
 
-    <!-- ============================================================
-         JSON-LD STRUCTURED DATA
-    ============================================================ -->
-
-    <!-- 1. WebSite (enables Google Sitelinks Search Box) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -127,16 +67,12 @@
       "description": "Texas real estate and insurance online exam prep school. Bilingual practice tests and exam cram courses.",
       "potentialAction": {
         "@type": "SearchAction",
-        "target": {
-          "@type": "EntryPoint",
-          "urlTemplate": "https://www.myeasypass.net/?q={search_term_string}"
-        },
+        "target": {"@type": "EntryPoint", "urlTemplate": "https://www.myeasypass.net/?q={search_term_string}"},
         "query-input": "required name=search_term_string"
       }
     }
     </script>
 
-    <!-- 2. EducationalOrganization (registers the site as a licensed school / course provider) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -146,43 +82,23 @@
       "url": "https://www.myeasypass.net/",
       "logo": "https://www.myeasypass.net/favicon.png",
       "description": "MyEasyPass is a Texas-focused online school offering exam cram courses and practice tests for Texas real estate (TREC) and insurance licensing exams. Courses available in English and Spanish.",
-      "address": {
-        "@type": "PostalAddress",
-        "addressRegion": "TX",
-        "addressCountry": "US"
-      },
-      "areaServed": {
-        "@type": "State",
-        "name": "Texas"
-      },
+      "address": {"@type": "PostalAddress", "addressRegion": "TX", "addressCountry": "US"},
+      "areaServed": {"@type": "State", "name": "Texas"},
       "availableLanguage": ["English", "Spanish"],
       "sameAs": ["https://www.lbs4.com"],
       "hasOfferCatalog": {
         "@type": "OfferCatalog",
         "name": "Texas Licensing Exam Cram Courses",
         "itemListElement": [
-          {
-            "@type": "Offer",
-            "itemOffered": { "@type": "Course", "name": "Texas Real Estate Exam Prep" }
-          },
-          {
-            "@type": "Offer",
-            "itemOffered": { "@type": "Course", "name": "Texas Property & Casualty Insurance Exam Prep" }
-          },
-          {
-            "@type": "Offer",
-            "itemOffered": { "@type": "Course", "name": "Texas Life Insurance Exam Prep" }
-          },
-          {
-            "@type": "Offer",
-            "itemOffered": { "@type": "Course", "name": "Texas General Lines Insurance Exam Prep" }
-          }
+          {"@type": "Offer", "itemOffered": {"@type": "Course", "name": "Texas Real Estate Exam Prep"}},
+          {"@type": "Offer", "itemOffered": {"@type": "Course", "name": "Texas Property & Casualty Insurance Exam Prep"}},
+          {"@type": "Offer", "itemOffered": {"@type": "Course", "name": "Texas Life Insurance Exam Prep"}},
+          {"@type": "Offer", "itemOffered": {"@type": "Course", "name": "Texas General Lines Insurance Exam Prep"}}
         ]
       }
     }
     </script>
 
-    <!-- 3. Course — Texas Real Estate -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -191,38 +107,24 @@
       "alternateName": "Texas Real Estate Exam Cram",
       "description": "Comprehensive exam cram course for the Texas real estate (TREC) license exam. Includes 200+ practice questions, timed full mock exams, and bilingual (English/Spanish) study guides covering all TREC-tested topics.",
       "url": "https://www.myeasypass.net/pricing",
-      "provider": {
-        "@type": "EducationalOrganization",
-        "name": "MyEasyPass",
-        "url": "https://www.myeasypass.net/"
-      },
+      "provider": {"@type": "EducationalOrganization", "name": "MyEasyPass", "url": "https://www.myeasypass.net/"},
       "educationalLevel": "Professional Certification",
       "teaches": "Texas Real Estate License: TREC salesperson and broker exam preparation",
       "inLanguage": ["en", "es"],
       "availableLanguage": ["English", "Spanish"],
-      "hasCourseInstance": {
-        "@type": "CourseInstance",
-        "courseMode": "Online",
-        "courseWorkload": "PT1H"
-      },
+      "hasCourseInstance": {"@type": "CourseInstance", "courseMode": "Online", "courseWorkload": "PT1H"},
       "offers": {
         "@type": "Offer",
         "name": "Monthly Plan",
-        "price": "19.99",
+        "price": "35.00",
         "priceCurrency": "USD",
-        "priceSpecification": {
-          "@type": "UnitPriceSpecification",
-          "price": "19.99",
-          "priceCurrency": "USD",
-          "unitText": "MONTH"
-        },
+        "priceSpecification": {"@type": "UnitPriceSpecification", "price": "35.00", "priceCurrency": "USD", "unitText": "MONTH"},
         "availability": "https://schema.org/InStock",
         "url": "https://www.myeasypass.net/pricing"
       }
     }
     </script>
 
-    <!-- 4. Course — Texas Property & Casualty Insurance -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -231,34 +133,24 @@
       "alternateName": "Texas P&C Insurance Exam Cram",
       "description": "Practice questions and timed mock exams for the Texas Property & Casualty insurance license exam. Bilingual English/Spanish. Covers all TDI-tested content areas.",
       "url": "https://www.myeasypass.net/pricing",
-      "provider": {
-        "@type": "EducationalOrganization",
-        "name": "MyEasyPass",
-        "url": "https://www.myeasypass.net/"
-      },
+      "provider": {"@type": "EducationalOrganization", "name": "MyEasyPass", "url": "https://www.myeasypass.net/"},
       "educationalLevel": "Professional Certification",
       "teaches": "Texas Property & Casualty Insurance License: TDI exam preparation",
       "inLanguage": ["en", "es"],
       "availableLanguage": ["English", "Spanish"],
-      "hasCourseInstance": { "@type": "CourseInstance", "courseMode": "Online" },
+      "hasCourseInstance": {"@type": "CourseInstance", "courseMode": "Online"},
       "offers": {
         "@type": "Offer",
         "name": "Monthly Plan",
-        "price": "19.99",
+        "price": "35.00",
         "priceCurrency": "USD",
-        "priceSpecification": {
-          "@type": "UnitPriceSpecification",
-          "price": "19.99",
-          "priceCurrency": "USD",
-          "unitText": "MONTH"
-        },
+        "priceSpecification": {"@type": "UnitPriceSpecification", "price": "35.00", "priceCurrency": "USD", "unitText": "MONTH"},
         "availability": "https://schema.org/InStock",
         "url": "https://www.myeasypass.net/pricing"
       }
     }
     </script>
 
-    <!-- 5. Course — Texas Life Insurance -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -267,33 +159,23 @@
       "alternateName": "Texas Life Insurance Exam Cram",
       "description": "Exam cram for the Texas Life insurance license exam. 199+ bilingual practice questions covering all TDI life insurance topics.",
       "url": "https://www.myeasypass.net/pricing",
-      "provider": {
-        "@type": "EducationalOrganization",
-        "name": "MyEasyPass",
-        "url": "https://www.myeasypass.net/"
-      },
+      "provider": {"@type": "EducationalOrganization", "name": "MyEasyPass", "url": "https://www.myeasypass.net/"},
       "educationalLevel": "Professional Certification",
       "teaches": "Texas Life Insurance License: TDI exam preparation",
       "inLanguage": ["en", "es"],
-      "hasCourseInstance": { "@type": "CourseInstance", "courseMode": "Online" },
+      "hasCourseInstance": {"@type": "CourseInstance", "courseMode": "Online"},
       "offers": {
         "@type": "Offer",
         "name": "Monthly Plan",
-        "price": "19.99",
+        "price": "35.00",
         "priceCurrency": "USD",
-        "priceSpecification": {
-          "@type": "UnitPriceSpecification",
-          "price": "19.99",
-          "priceCurrency": "USD",
-          "unitText": "MONTH"
-        },
+        "priceSpecification": {"@type": "UnitPriceSpecification", "price": "35.00", "priceCurrency": "USD", "unitText": "MONTH"},
         "availability": "https://schema.org/InStock",
         "url": "https://www.myeasypass.net/pricing"
       }
     }
     </script>
 
-    <!-- 6. Course — Texas General Lines Insurance -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -302,33 +184,23 @@
       "alternateName": "Texas General Lines Insurance Exam Cram",
       "description": "Comprehensive practice tests and exam cram for the Texas General Lines insurance license. 196+ bilingual questions covering property, casualty, life, health and more.",
       "url": "https://www.myeasypass.net/pricing",
-      "provider": {
-        "@type": "EducationalOrganization",
-        "name": "MyEasyPass",
-        "url": "https://www.myeasypass.net/"
-      },
+      "provider": {"@type": "EducationalOrganization", "name": "MyEasyPass", "url": "https://www.myeasypass.net/"},
       "educationalLevel": "Professional Certification",
       "teaches": "Texas General Lines Insurance License: TDI exam preparation",
       "inLanguage": ["en", "es"],
-      "hasCourseInstance": { "@type": "CourseInstance", "courseMode": "Online" },
+      "hasCourseInstance": {"@type": "CourseInstance", "courseMode": "Online"},
       "offers": {
         "@type": "Offer",
         "name": "Monthly Plan",
-        "price": "19.99",
+        "price": "35.00",
         "priceCurrency": "USD",
-        "priceSpecification": {
-          "@type": "UnitPriceSpecification",
-          "price": "19.99",
-          "priceCurrency": "USD",
-          "unitText": "MONTH"
-        },
+        "priceSpecification": {"@type": "UnitPriceSpecification", "price": "35.00", "priceCurrency": "USD", "unitText": "MONTH"},
         "availability": "https://schema.org/InStock",
         "url": "https://www.myeasypass.net/pricing"
       }
     }
     </script>
 
-    <!-- 7. FAQPage — targets "People Also Ask" / featured snippet boxes -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -337,83 +209,58 @@
         {
           "@type": "Question",
           "name": "What is the best way to study for the Texas real estate license exam?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "The best way to prepare for the Texas real estate (TREC) exam is through timed practice tests that mirror the actual exam format, combined with topic-by-topic study guides. MyEasyPass offers 200+ Texas-specific practice questions, full mock exams with a 150-minute timer, and bilingual (English/Spanish) study materials to help you pass on the first attempt."
-          }
+          "acceptedAnswer": {"@type": "Answer", "text": "The best way to prepare for the Texas real estate (TREC) exam is through timed practice tests that mirror the actual exam format, combined with topic-by-topic study guides. MyEasyPass offers 200+ Texas-specific practice questions, full mock exams with a 150-minute timer, and bilingual (English/Spanish) study materials to help you pass on the first attempt."}
         },
         {
           "@type": "Question",
           "name": "How many questions are on the Texas real estate license exam?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "The Texas real estate salesperson exam (TREC) consists of two portions: a national section with 80 questions and a state-specific Texas section with 30 questions, for a total of 110 questions. A passing score of 70% is required on each section. MyEasyPass practice exams are designed to match the content and difficulty of both sections."
-          }
+          "acceptedAnswer": {"@type": "Answer", "text": "The Texas real estate salesperson exam (TREC) consists of two portions: a national section with 80 questions and a state-specific Texas section with 30 questions, for a total of 110 questions. A passing score of 70% is required on each section. MyEasyPass practice exams are designed to match the content and difficulty of both sections."}
         },
         {
           "@type": "Question",
           "name": "Is there an online school for Texas insurance exam prep?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. MyEasyPass is an online exam cram school specifically for Texas insurance licensing exams regulated by the Texas Department of Insurance (TDI). We offer practice tests for Property & Casualty, Life Insurance, and General Lines Insurance in both English and Spanish, accessible 24/7 from any device."
-          }
+          "acceptedAnswer": {"@type": "Answer", "text": "Yes. MyEasyPass is an online exam cram school specifically for Texas insurance licensing exams regulated by the Texas Department of Insurance (TDI). We offer practice tests for Property & Casualty, Life Insurance, and General Lines Insurance in both English and Spanish, accessible 24/7 from any device."}
         },
         {
           "@type": "Question",
           "name": "What score do I need to pass the Texas insurance license exam?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Texas insurance licensing exams administered by Pearson VUE require a minimum passing score of 70%. MyEasyPass tracks your score after every practice session and highlights the topics where you need the most improvement, so you know exactly where to focus before exam day."
-          }
+          "acceptedAnswer": {"@type": "Answer", "text": "Texas insurance licensing exams administered by Pearson VUE require a minimum passing score of 70%. MyEasyPass tracks your score after every practice session and highlights the topics where you need the most improvement, so you know exactly where to focus before exam day."}
         },
         {
           "@type": "Question",
           "name": "Are there bilingual Spanish Texas real estate and insurance exam prep courses?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. MyEasyPass is one of the few Texas exam prep platforms offering fully bilingual courses in English and Spanish. All 800+ practice questions and study guides are available in both languages, making it ideal for Spanish-speaking students preparing for Texas real estate or insurance licensing exams."
-          }
+          "acceptedAnswer": {"@type": "Answer", "text": "Yes. MyEasyPass is one of the few Texas exam prep platforms offering fully bilingual courses in English and Spanish. All 800+ practice questions and study guides are available in both languages, making it ideal for Spanish-speaking students preparing for Texas real estate or insurance licensing exams."}
         },
         {
           "@type": "Question",
           "name": "How much does Texas exam prep cost at MyEasyPass?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "MyEasyPass offers a simple monthly plan. A single exam category (e.g., Real Estate or Life Insurance) is $19.99/month. The Full Bundle, which includes all four categories (Real Estate, Property & Casualty, Life Insurance, and General Lines Insurance), is $34.99/month. Cancel anytime."
-          }
+          "acceptedAnswer": {"@type": "Answer", "text": "MyEasyPass exam-prep subscriptions are $35 per month for one exam category. Current categories include Texas Real Estate, Property & Casualty, Life Insurance, and General Lines Insurance. There is no current multi-category bundle."}
         },
         {
           "@type": "Question",
           "name": "Can I take the Texas real estate exam in Spanish?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "The official TREC exam is administered in English only through Pearson VUE. However, MyEasyPass provides all practice materials in both English and Spanish so Spanish-speaking students can fully understand the concepts before taking the official English-language exam."
-          }
+          "acceptedAnswer": {"@type": "Answer", "text": "The official TREC exam is administered in English only through Pearson VUE. However, MyEasyPass provides all practice materials in both English and Spanish so Spanish-speaking students can fully understand the concepts before taking the official English-language exam."}
         },
         {
           "@type": "Question",
           "name": "What Texas licensing exams does MyEasyPass cover?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "MyEasyPass currently covers four Texas licensing exams: (1) Texas Real Estate (TREC salesperson license), (2) Texas Property & Casualty Insurance, (3) Texas Life Insurance, and (4) Texas General Lines Insurance. All courses include 200+ practice questions per category and full timed mock exams."
-          }
+          "acceptedAnswer": {"@type": "Answer", "text": "MyEasyPass currently covers four Texas licensing exams: (1) Texas Real Estate (TREC salesperson license), (2) Texas Property & Casualty Insurance, (3) Texas Life Insurance, and (4) Texas General Lines Insurance. All courses include 200+ practice questions per category and full timed mock exams."}
         }
       ]
     }
     </script>
 
-    <!-- 8. Site navigation elements -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "ItemList",
       "name": "Site Navigation",
       "itemListElement": [
-        { "@type": "SiteNavigationElement", "position": 1, "name": "Home", "url": "https://www.myeasypass.net/" },
-        { "@type": "SiteNavigationElement", "position": 2, "name": "Pricing", "url": "https://www.myeasypass.net/pricing" },
-        { "@type": "SiteNavigationElement", "position": 3, "name": "FAQ", "url": "https://www.myeasypass.net/faq" },
-        { "@type": "SiteNavigationElement", "position": 4, "name": "Login", "url": "https://www.myeasypass.net/login" },
-        { "@type": "SiteNavigationElement", "position": 5, "name": "Sign Up", "url": "https://www.myeasypass.net/signup" }
+        {"@type": "SiteNavigationElement", "position": 1, "name": "Home", "url": "https://www.myeasypass.net/"},
+        {"@type": "SiteNavigationElement", "position": 2, "name": "Pricing", "url": "https://www.myeasypass.net/pricing"},
+        {"@type": "SiteNavigationElement", "position": 3, "name": "FAQ", "url": "https://www.myeasypass.net/faq"},
+        {"@type": "SiteNavigationElement", "position": 4, "name": "Login", "url": "https://www.myeasypass.net/login"},
+        {"@type": "SiteNavigationElement", "position": 5, "name": "Sign Up", "url": "https://www.myeasypass.net/signup"}
       ]
     }
     </script>

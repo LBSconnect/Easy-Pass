@@ -24,23 +24,15 @@ export type AnalyticsEventName =
   | "guest_practice_start"
   | "guest_practice_wall_shown"
   | "guest_practice_signup_click"
-  // Exam landing / readiness funnel. Every one of these carries an
-  // `exam_type` in metadata so conversion can be compared across the four
-  // exam products rather than aggregated into one meaningless number.
   | "exam_landing_view"
   | "readiness_cta_click"
   | "retaker_rescue_start"
   | "continue_studying_click"
-  // Study assistant. These exist to answer whether the assistant actually
-  // improves outcomes, not whether students click it - pair them with mastery
-  // and EasyPass Score movement rather than reading them on their own.
   | "alexi_opened"
   | "alexi_recommendation_viewed"
   | "alexi_recommendation_started"
   | "alexi_tutor_question"
   | "alexi_human_help_recommended"
-  // Dashboard and exams-page navigation. Named for the student action rather
-  // than the card, so renaming a card does not orphan its history.
   | "dashboard_view"
   | "easypass_score_clicked"
   | "todays_plan_started"
@@ -55,9 +47,6 @@ export type AnalyticsEventName =
   | "exam_date_set"
   | "upgrade_clicked"
   | "exams_page_view"
-  // Search-led entry points. A visitor who arrives on a free practice test or
-  // a concept explainer has not chosen an exam yet, so these are kept apart
-  // from the funnel events above rather than folded into them.
   | "free_practice_cta_click"
   | "concept_practice_cta_click";
 

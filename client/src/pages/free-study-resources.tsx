@@ -17,6 +17,15 @@ const RESOURCES = [
   { title: "Real Estate Concepts", description: "Build confidence on agency, property, fixtures, market value and other Texas real estate exam concepts.", href: "/texas-real-estate-exam/concepts", type: "Study Guide" },
 ] as const;
 
+const STUDY_QUESTIONS = [
+  { title: "Named Peril vs Open Peril", href: "/study/named-peril-vs-open-peril", category: "Property & Casualty" },
+  { title: "Cancellation vs Nonrenewal", href: "/study/cancellation-vs-nonrenewal", category: "Property & Casualty" },
+  { title: "Policyowner vs Insured vs Beneficiary", href: "/study/policyowner-vs-insured-vs-beneficiary", category: "Life Insurance" },
+  { title: "Revocable vs Irrevocable Beneficiary", href: "/study/revocable-vs-irrevocable-beneficiary", category: "Life Insurance" },
+  { title: "Lien vs Encumbrance", href: "/study/lien-vs-encumbrance", category: "Real Estate" },
+  { title: "Joint Tenancy vs Tenancy in Common", href: "/study/joint-tenancy-vs-tenancy-in-common", category: "Real Estate" },
+] as const;
+
 export default function FreeStudyResourcesPage() {
   const canonical = buildUrl("/free/study-resources");
 
@@ -34,7 +43,7 @@ export default function FreeStudyResourcesPage() {
         url: canonical,
         mainEntity: {
           "@type": "ItemList",
-          itemListElement: RESOURCES.map((resource, index) => ({
+          itemListElement: [...RESOURCES, ...STUDY_QUESTIONS].map((resource, index) => ({
             "@type": "ListItem",
             position: index + 1,
             name: resource.title,
@@ -89,7 +98,30 @@ export default function FreeStudyResourcesPage() {
           </div>
         </section>
 
-        <section className="border-t bg-muted/30 py-12 md:py-14">
+        <section className="border-y bg-muted/30 py-14 md:py-16">
+          <div className="container mx-auto max-w-6xl px-4">
+            <div className="mb-8 max-w-3xl">
+              <Badge variant="outline">Popular Study Questions</Badge>
+              <h2 className="mt-3 text-2xl font-bold md:text-3xl">Quick answers to concepts students mix up</h2>
+              <p className="mt-3 text-muted-foreground">Use these free side-by-side guides when two exam terms sound similar but mean different things.</p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {STUDY_QUESTIONS.map((item) => (
+                <Card key={item.href}>
+                  <CardContent className="p-6">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-primary">{item.category}</p>
+                    <h3 className="mt-2 text-lg font-semibold">{item.title}</h3>
+                    <Button variant="link" className="mt-4 h-auto p-0" asChild>
+                      <Link href={item.href}>Study this difference <ArrowRight className="ml-1 h-4 w-4" /></Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-12 md:py-14">
           <div className="container mx-auto max-w-4xl px-4 text-center">
             <h2 className="text-2xl font-bold md:text-3xl">Not sure where to start?</h2>
             <p className="mt-3 text-muted-foreground">Take the readiness check to identify the areas that deserve your attention first.</p>

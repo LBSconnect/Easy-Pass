@@ -290,7 +290,12 @@ export default function DiagnosticPage() {
             variant="outline"
             onClick={savedMode ? () => setRetaking(true) : handleRestart}
             className="gap-2"
-            data-testid="button-diagnostic-restart"
+            // Named for which card it is on, like the card and the score two
+            // dozen lines above. The saved card lost its own name when the
+            // fresh and saved results were merged into this one function, and
+            // the spec asserting a student can still retake had nothing left
+            // to click.
+            data-testid={savedMode ? "button-saved-retake" : "button-diagnostic-restart"}
           >
             <RotateCcw className="h-4 w-4" aria-hidden="true" />
             {isSpanish ? "Intentar otra categoría" : "Try another category"}

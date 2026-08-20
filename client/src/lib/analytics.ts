@@ -10,8 +10,10 @@
  */
 export type AnalyticsEventName =
   | "diagnostic_cta_click"
+  | "diagnostic_completed"
   | "pricing_cta_click"
   | "checkout_start"
+  | "checkout_session_created"
   | "signup_started"
   | "signup_completed"
   | "login_completed"

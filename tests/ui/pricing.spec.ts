@@ -161,19 +161,33 @@ test.describe('pricing', () => {
     expect(errors).toEqual([]);
   });
 
-  test('signing in returns the visitor to the exam they picked', async ({ page }) => {
+  test('a signed-out buyer lands on sign-up, and their exam survives', async ({ page }) => {
+    // Almost everyone reaching Subscribe without a session is new, so the
+    // wall is the sign-up form - with the login switch for everyone else.
     await page.goto(`${stub.baseURL}/pricing`, { waitUntil: 'networkidle' });
     await page.getByTestId('button-category-life_insurance').click();
     await page.getByTestId('button-subscribe').click();
 
-    await page.waitForURL(/\/login/);
+    await page.waitForURL(/\/signup/);
     expect(decodeURIComponent(page.url())).toContain('category=life_insurance');
+    await expect(page.getByTestId('input-signup-email')).toBeVisible();
+  });
+
+  test('a returning student can still switch to login and resume their exam', async ({ page }) => {
+    await page.goto(`${stub.baseURL}/pricing`, { waitUntil: 'networkidle' });
+    await page.getByTestId('button-category-life_insurance').click();
+    await page.getByTestId('button-subscribe').click();
+
+    await page.waitForURL(/\/signup/);
+    // The switch lives on the sign-up card; the next parameter must survive it.
+    await page.getByTestId('button-switch-auth-mode').click();
 
     await page.fill('input[type="email"]', 'student@example.com');
     await page.fill('input[type="password"]', 'password123');
     await page.getByRole('button', { name: /sign in/i }).first().click();
 
     await page.waitForURL(/\/pricing/);
+    expect(decodeURIComponent(page.url())).toContain('category=life_insurance');
     await expect(page.getByTestId('text-total-price')).toBeVisible();
   });
 

@@ -164,6 +164,7 @@ const EVENT_LABELS: Record<string, string> = {
   diagnostic_cta_click: "Readiness Assessment Started",
   pricing_cta_click: "Pricing CTA Click",
   checkout_start: "Checkout Started",
+  checkout_canceled: "Checkout Canceled",
   bootcamp_cta_click: "Bootcamp CTA Click",
   employer_inquiry_submit: "Employer Inquiry Submitted",
   official_exam_schedule_click: "Official Exam Schedule Click",

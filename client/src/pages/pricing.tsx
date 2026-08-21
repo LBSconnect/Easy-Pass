@@ -40,7 +40,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { trackEvent } from "@/lib/analytics";
 import { useSEO, buildUrl } from "@/hooks/use-seo";
 import type { ExamCategory } from "@shared/schema";
-import { Check, Sparkles, TriangleAlert } from "lucide-react";
+import { Check, Info, Sparkles, TriangleAlert } from "lucide-react";
 
 interface StripePrice {
   id: string;
@@ -119,6 +119,23 @@ export default function PricingPage() {
       : null;
   });
 
+  // Backed out of Stripe. The cancel URL carries the category, so the exam is
+  // already re-selected by the initialiser above - what remains is saying so,
+  // calmly. Cancelling is a normal part of deciding, not an error.
+  const returnedFromCanceledCheckout = useMemo(
+    () => new URLSearchParams(search).get("canceled") === "true",
+    [search],
+  );
+  useEffect(() => {
+    if (!returnedFromCanceledCheckout) return;
+    trackEvent("checkout_canceled", {
+      exam_type: selectedCategory,
+      category_preserved: selectedCategory !== null,
+    });
+    // Once per return, like pricing_view above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // The step between the result card and checkout. Without it the funnel has a
   // gap exactly where people are deciding, and an abandonment between "saw the
   // price" and "started checkout" is indistinguishable from never arriving.
@@ -185,7 +202,12 @@ export default function PricingPage() {
   const checkoutMutation = useMutation({
     mutationFn: async (priceId: string) => {
       trackEvent("checkout_start", { priceId, category: selectedCategory });
-      const res = await apiRequest("POST", "/api/stripe/checkout", { priceId });
+      // The category rides along so a cancelled checkout can bring the
+      // student back to this page with their exam still selected.
+      const res = await apiRequest("POST", "/api/stripe/checkout", {
+        priceId,
+        category: selectedCategory ?? undefined,
+      });
       const data = await res.json();
       // A 200 with no URL used to leave the button silently doing nothing.
       // Failing here surfaces it as a toast instead of as a dead click.
@@ -215,10 +237,16 @@ export default function PricingPage() {
     if (!selectedCategory || !applicablePrice) return;
 
     if (!isAuthenticated) {
-      // Carry the choice through sign-in. Without this the student picks an
-      // exam, logs in, and lands on a dashboard that never heard about it.
+      // Carry the choice through sign-up. Without this the student picks an
+      // exam, signs in, and lands on a dashboard that never heard about it.
+      //
+      // Signup, not login: almost everyone reaching Subscribe without a
+      // session is new - they came from an ad, took the readiness check and
+      // chose a plan. Landing them on "Log In" reads as being asked for an
+      // account they do not have. The signup screen keeps its "Already have
+      // an account?" switch, so returning students lose nothing.
       const back = `/pricing?category=${encodeURIComponent(selectedCategory)}`;
-      navigate(`/login?next=${encodeURIComponent(back)}`);
+      navigate(`/signup?next=${encodeURIComponent(back)}`);
       return;
     }
     checkoutMutation.mutate(applicablePrice.id);
@@ -242,6 +270,22 @@ export default function PricingPage() {
           </Badge>
         }
       />
+
+      {returnedFromCanceledCheckout && (
+        // Deliberately not error styling: nothing went wrong. The one fact a
+        // person who backed out needs is that they were not charged; the next
+        // most useful is that their choice survived.
+        <Card className="mt-6 border-primary/25 bg-primary/[0.04]" data-testid="card-checkout-canceled">
+          <CardContent className="flex items-start gap-3 p-4">
+            <Info className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+            <p className="min-w-0 text-base leading-relaxed">
+              {isSpanish
+                ? "El pago fue cancelado y no se realizó ningún cargo. Tu selección de examen sigue aquí — continúa cuando estés listo."
+                : "Checkout was canceled and nothing was charged. Your exam selection is still here — pick up whenever you're ready."}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {pricesError && (
         <Card className="mt-6 border-destructive/40" data-testid="card-prices-error">

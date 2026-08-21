@@ -138,14 +138,16 @@ test.describe("checkout hand-off keeps the exam", () => {
     await stub.close();
   });
 
-  test("a signed-out visitor is sent to sign in and comes back to the same exam", async ({ page }) => {
+  test("a signed-out visitor is sent to sign UP and comes back to the same exam", async ({ page }) => {
     await page.goto(`${stub.baseURL}/pricing?category=${LIFE}`, { waitUntil: "networkidle" });
     await expect(page.getByTestId(`button-category-${LIFE}`)).toHaveAttribute("aria-checked", "true");
 
     await page.getByTestId("button-subscribe").click();
 
-    // The exam has to survive the round trip, or they pick it twice.
-    await page.waitForURL(/\/login/, { timeout: 15_000 });
+    // Sign-up, not log-in: a visitor reaching Subscribe without a session is
+    // almost always new. The exam has to survive the round trip either way,
+    // or they pick it twice.
+    await page.waitForURL(/\/signup/, { timeout: 15_000 });
     const next = new URL(page.url()).searchParams.get("next");
     expect(next).toBe(`/pricing?category=${LIFE}`);
   });

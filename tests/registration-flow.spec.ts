@@ -166,10 +166,19 @@ test.describe('signing up in Spanish', () => {
 });
 
 test.describe('getting to the form at all', () => {
-  test('the header call to action leads to sign-up', async ({ page }) => {
+  test('the header call to action leads to the readiness check, not a form', async ({ page }) => {
+    // Cold traffic gets the product first; the account is asked for at
+    // checkout. The header CTA used to open the sign-up form directly.
     await page.goto('/', { waitUntil: 'networkidle' });
     await page.getByTestId('cta-header-start').click();
 
+    await page.waitForURL(/\/readiness-check/);
+    await expect(page.getByTestId('button-diagnostic-category-real_estate')).toBeVisible();
+  });
+
+  test('sign-up remains reachable directly', async ({ page }) => {
+    // Rerouting the acquisition CTA must not orphan the form itself.
+    await page.goto('/signup', { waitUntil: 'networkidle' });
     await expect(page.getByTestId('input-signup-email')).toBeVisible();
   });
 

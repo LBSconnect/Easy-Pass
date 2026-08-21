@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { trackEvent } from "@/lib/analytics";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -80,8 +81,17 @@ export function Navbar() {
             <div className="h-9 w-20 animate-pulse rounded-md bg-muted" />
           ) : !isAuthenticated ? (
             <>
-              <Button size="sm" asChild className="gap-1" data-testid="cta-header-start" data-analytics="header-cta-start">
-                <Link href="/signup">
+              {/* Cold traffic goes to the readiness check, not an account form.
+                  The account is asked for at checkout, where it is unavoidable -
+                  the same rule the diagnostic result card already follows. */}
+              <Button
+                size="sm"
+                asChild
+                className="gap-1"
+                data-testid="cta-header-start"
+                onClick={() => trackEvent("diagnostic_cta_click", { source: "navbar" })}
+              >
+                <Link href="/readiness-check">
                   <span className="hidden sm:inline">{t("nav.startPracticing", "Start Practicing")}</span>
                   <span className="sm:hidden">{t("nav.start", "Start")}</span>
                 </Link>
@@ -139,7 +149,14 @@ export function Navbar() {
                 ))}
                 {!isAuthenticated && (
                   <div className="flex flex-col gap-3 mt-4 pt-4 border-t">
-                    <Button asChild onClick={() => setMobileMenuOpen(false)} data-testid="cta-mobile-start" data-analytics="mobile-cta-start"><Link href="/signup">{t("nav.startPracticing", "Start Practicing")}</Link></Button>
+                    <Button
+                      asChild
+                      onClick={() => {
+                        trackEvent("diagnostic_cta_click", { source: "navbar_mobile" });
+                        setMobileMenuOpen(false);
+                      }}
+                      data-testid="cta-mobile-start"
+                    ><Link href="/readiness-check">{t("nav.startPracticing", "Start Practicing")}</Link></Button>
                     <Button variant="outline" asChild onClick={() => setMobileMenuOpen(false)}><Link href="/login">{t("nav.login")}</Link></Button>
                   </div>
                 )}

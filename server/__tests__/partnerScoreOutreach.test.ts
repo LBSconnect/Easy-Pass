@@ -1,7 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { scoreProspect, deriveComponents, SCORE_WEIGHTS } from "@shared/partnerScore";
 import { buildOutreachDraft } from "@shared/partnerOutreach";
-import { isPubliclyActive, suggestedCategory, normalizePriority } from "@shared/partners";
+import {
+  isPubliclyActive,
+  suggestedCategory,
+  normalizePriority,
+  validatePartnerState,
+  partnerCodeChangeProblem,
+} from "@shared/partners";
 
 describe("scoreProspect", () => {
   it("scores nothing as zero and everything as one hundred", () => {
@@ -171,5 +177,119 @@ describe("buildOutreachDraft", () => {
     const body = buildOutreachDraft(base).body;
     expect(body).toMatch(/open to a short pilot/i);
     expect(body).not.toMatch(/our partner|we work with|as a partner/i);
+  });
+});
+
+describe("validatePartnerState", () => {
+  const live = {
+    partnerStatus: "active_partner",
+    partnerCode: "kw-southwest",
+    defaultExamCategory: "real_estate",
+    partnerActive: true,
+  };
+
+  it("accepts a complete active partner", () => {
+    expect(validatePartnerState(live)).toEqual([]);
+  });
+
+  it("says nothing about a record that is not active", () => {
+    // A prospect with no code and no exam is a perfectly normal prospect.
+    expect(validatePartnerState({ partnerActive: false })).toEqual([]);
+    expect(validatePartnerState({})).toEqual([]);
+  });
+
+  it("refuses an active partner with no exam", () => {
+    // The case the old patch-shaped check missed entirely: clearing the exam
+    // on its own left the link live and pointing at nothing.
+    const problems = validatePartnerState({ ...live, defaultExamCategory: null });
+
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatchObject({ field: "defaultExamCategory", status: 400 });
+  });
+
+  it("refuses an active partner with no code", () => {
+    expect(validatePartnerState({ ...live, partnerCode: null })[0]).toMatchObject({
+      field: "partnerCode",
+      status: 400,
+    });
+  });
+
+  it("refuses an active partner whose code could never resolve", () => {
+    expect(validatePartnerState({ ...live, partnerCode: "  " })[0]).toMatchObject({ field: "partnerCode" });
+  });
+
+  it.each(["prospect", "interested", "pilot", "inactive_partner", "not_a_fit"])(
+    "refuses an active link on a %s",
+    (status) => {
+      expect(validatePartnerState({ ...live, partnerStatus: status })[0]).toMatchObject({
+        field: "partnerStatus",
+        status: 400,
+      });
+    },
+  );
+
+  it("reports every problem, so the first one returned is a real choice", () => {
+    expect(validatePartnerState({ partnerActive: true })).toHaveLength(3);
+  });
+});
+
+describe("partnerCodeChangeProblem", () => {
+  const live = { partnerCode: "kw-southwest", partnerCreatedAt: new Date("2026-08-01") };
+  const draft = { partnerCode: "kw-southwest", partnerCreatedAt: null };
+
+  it("allows a code to be set before the link has ever been live", () => {
+    expect(partnerCodeChangeProblem(draft, "kw-score")).toBeNull();
+    expect(partnerCodeChangeProblem({ partnerCode: null, partnerCreatedAt: null }, "anything")).toBeNull();
+  });
+
+  it("refuses to rename a code that has been live", () => {
+    // Analytics events carry the code they were recorded under, and the report
+    // joins them to the partner's current code. Renaming does not move the
+    // history, it detaches it.
+    const problem = partnerCodeChangeProblem(live, "kw-score");
+
+    expect(problem).toMatchObject({ field: "partnerCode", status: 409 });
+    expect(problem!.message).toMatch(/cannot be changed/i);
+  });
+
+  it("refuses to clear a code that has been live", () => {
+    for (const cleared of ["", null]) {
+      const problem = partnerCodeChangeProblem(live, cleared);
+      expect(problem).toMatchObject({ status: 409 });
+      expect(problem!.message).toMatch(/cannot be cleared/i);
+    }
+  });
+
+  it("allows a request that does not touch the code", () => {
+    // Deactivating, renaming the display name, adding notes - none of these
+    // are code changes, and none may be blocked by this rule.
+    expect(partnerCodeChangeProblem(live, undefined)).toBeNull();
+  });
+
+  it("allows resubmitting the same code, however it was typed", () => {
+    // The admin form posts every field back, so the unchanged code arrives on
+    // requests that have nothing to do with it.
+    expect(partnerCodeChangeProblem(live, "kw-southwest")).toBeNull();
+    expect(partnerCodeChangeProblem(live, "KW Southwest")).toBeNull();
+  });
+
+  it("locks the code of a row that is switched on but never went through the route", () => {
+    // partner_created_at is stamped by the admin route. A row activated any
+    // other way - a fixture, a migration, a hand-written UPDATE during an
+    // incident - has a live link and no stamp, and its code is just as load
+    // bearing as anyone else's.
+    const activeWithoutStamp = { partnerCode: "kw-southwest", partnerCreatedAt: null, partnerActive: true };
+
+    expect(partnerCodeChangeProblem(activeWithoutStamp, "kw-score")).toMatchObject({ status: 409 });
+    expect(partnerCodeChangeProblem(activeWithoutStamp, null)).toMatchObject({ status: 409 });
+    expect(partnerCodeChangeProblem(activeWithoutStamp, "kw-southwest")).toBeNull();
+  });
+
+  it("keeps the code locked after the link is switched off", () => {
+    // Deactivating is not un-publishing: the events recorded under that code
+    // are still in the report, and the link may be switched back on.
+    const retired = { partnerCode: "kw-southwest", partnerCreatedAt: new Date("2026-08-01"), partnerActive: false };
+
+    expect(partnerCodeChangeProblem(retired, "kw-score")).toMatchObject({ status: 409 });
   });
 });

@@ -169,3 +169,117 @@ export function prospectKey(organizationName: string, market: string | null | un
     .replace(/\s+/g, " ");
   return place ? `${name}|${place}` : name;
 }
+
+/**
+ * The fields that decide whether a partner record is coherent.
+ *
+ * Deliberately a plain shape rather than the database row: this is validated
+ * before any write, and the caller assembles it from "what exists now" plus
+ * "what the admin just sent".
+ */
+export interface PartnerState {
+  partnerStatus?: string | null;
+  partnerCode?: string | null;
+  defaultExamCategory?: string | null;
+  partnerActive?: boolean | null;
+  /** Set the first time a link was switched on. Its presence means "live once". */
+  partnerCreatedAt?: Date | string | null;
+}
+
+export interface PartnerStateProblem {
+  field: "partnerCode" | "defaultExamCategory" | "partnerStatus";
+  message: string;
+  /** 409 for a conflict with an established fact, 400 for an incomplete request. */
+  status: 400 | 409;
+}
+
+/**
+ * Is the record the admin is about to create actually publishable?
+ *
+ * VALIDATE THE RESULT, NOT THE REQUEST
+ *
+ * The earlier version checked the incoming patch: it only ran when
+ * `partnerActive: true` was in the body. That let an already-live partner be
+ * edited into a contradictory state one field at a time - clear the exam
+ * category on its own, and the record stays active while pointing at no exam,
+ * because no rule was consulted. So this takes the record as it WILL BE and
+ * asks whether that is allowed, which cannot be sidestepped by splitting a
+ * change across two requests.
+ */
+export function validatePartnerState(next: PartnerState): PartnerStateProblem[] {
+  const problems: PartnerStateProblem[] = [];
+  if (next.partnerActive !== true) return problems;
+
+  if (next.partnerStatus !== "active_partner") {
+    problems.push({
+      field: "partnerStatus",
+      status: 400,
+      message: "Promote the organization to Active Partner before activating its link.",
+    });
+  }
+  if (!normalizePartnerCode(next.partnerCode ?? null)) {
+    problems.push({
+      field: "partnerCode",
+      status: 400,
+      message: "A partner code is required before activating.",
+    });
+  }
+  if (!next.defaultExamCategory) {
+    problems.push({
+      field: "defaultExamCategory",
+      status: 400,
+      message: "Choose the exam this partner sends before activating.",
+    });
+  }
+
+  return problems;
+}
+
+/**
+ * May this partner's code still be changed?
+ *
+ * Once a link has been live, no - and this is a reporting rule rather than a
+ * philosophical one. Analytics events are grouped by the partner_code recorded
+ * on them, and the performance query joins those events to the partner's
+ * CURRENT code. Rename a live partner and every event already recorded under
+ * the old code stops matching: the traffic does not move, it disappears from
+ * that partner's report entirely, and the partner appears to have sent nobody.
+ *
+ * Aliases and code history would solve it properly. That is a deliberate
+ * feature, not something to improvise here, so for now the code is fixed at
+ * the moment it first goes live. Deactivating is still allowed and keeps the
+ * code, so history stays joined up and the link can be switched back on.
+ */
+export function partnerCodeChangeProblem(
+  existing: {
+    partnerCode?: string | null;
+    partnerCreatedAt?: Date | string | null;
+    partnerActive?: boolean | null;
+  },
+  incomingCode: string | null | undefined,
+): PartnerStateProblem | null {
+  // Live now, or live at some point in the past. The two are asked separately
+  // because they can disagree: `partner_created_at` is stamped by the admin
+  // route, so a row switched on by any other means - a migration, a fixture, a
+  // hand-written UPDATE during an incident - would otherwise look like a draft
+  // while its link was serving traffic.
+  const hasBeenLive = Boolean(existing.partnerCreatedAt) || existing.partnerActive === true;
+
+  // Never been live: the code is still a draft and may be anything.
+  if (!hasBeenLive) return null;
+  // Not being touched by this request.
+  if (incomingCode === undefined) return null;
+
+  const next = normalizePartnerCode(incomingCode ?? null);
+  const current = existing.partnerCode ?? null;
+
+  if (next === current) return null;
+
+  return {
+    field: "partnerCode",
+    status: 409,
+    message: next
+      ? "This partner code is already active and cannot be changed."
+      : "This partner code is already active and cannot be cleared.",
+  };
+}

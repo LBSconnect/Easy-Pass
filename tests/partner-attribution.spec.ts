@@ -293,3 +293,170 @@ test.describe("partner attribution", () => {
     }
   });
 });
+
+/**
+ * The returning student, and the two questions that are not the same question.
+ *
+ * A student already belongs to Partner A. Later they follow Partner B's link.
+ * The database has always refused to move the attribution, so revenue stayed
+ * with A - but the funnel counts followed B, which produced a report where one
+ * partner had the visits and another had the sale. Two wrong funnels rather
+ * than two views of one.
+ */
+test.describe("returning student follows a second partner", () => {
+  test.beforeAll(async () => {
+    requireWritableTarget(process.env.TEST_BASE_URL);
+    await seedTwoPartners();
+  });
+
+  test.afterAll(async () => {
+    await closeJourneyDb();
+  });
+
+  test("acquisition stays with the first partner across a fresh session", async ({ baseURL }) => {
+    const email = `attr-return-${Date.now()}@example.com`;
+    const password = "TestPassw0rd!";
+
+    // Visit one: introduced by A, registers.
+    const first = await visitor(baseURL);
+    await first.get(`/api/partners/resolve/${FIRST_CODE}`);
+    await first.post("/api/register", { data: { email, password, firstName: "R", lastName: "T" } });
+    expect((await attributionOf(email)).partner_code).toBe(FIRST_CODE);
+    await first.dispose();
+
+    // Visit two: a genuinely new session - new cookie jar, nothing carried
+    // over - signs into the same account and follows B's link.
+    const second = await visitor(baseURL);
+    await second.post("/api/login", { data: { email, password } });
+    const resolved = await second.get(`/api/partners/resolve/${SECOND_CODE}`);
+    expect(resolved.status()).toBe(200);
+    const body = await resolved.json();
+
+    // The clicked link is reported as itself...
+    expect(body.partnerCode).toBe(SECOND_CODE);
+    // ...and the acquisition owner is still the partner who introduced them.
+    expect(body.attributionPartnerCode).toBe(FIRST_CODE);
+    // Navigation still uses the clicked partner's exam, which is the whole
+    // reason the two are separate fields rather than one.
+    expect(body.examCategory).toBe("life_insurance");
+
+    // The stored attribution is untouched.
+    expect((await attributionOf(email)).partner_code).toBe(FIRST_CODE);
+    await second.dispose();
+  });
+
+  test("the browser files the visit under the first partner, not the clicked one", async ({ page, baseURL }) => {
+    const email = `attr-return-ui-${Date.now()}@example.com`;
+    const password = "TestPassw0rd!";
+
+    const setup = await visitor(baseURL);
+    await setup.get(`/api/partners/resolve/${FIRST_CODE}`);
+    await setup.post("/api/register", { data: { email, password, firstName: "R", lastName: "T" } });
+    await setup.dispose();
+
+    // A real browser, signed in, following B's link.
+    await page.goto("/login");
+    await page.fill('input[type="email"]', email);
+    await page.fill('input[type="password"]', password);
+    await page.click('button[type="submit"]');
+    await page.waitForTimeout(2500);
+
+    await page.goto(`/p/${SECOND_CODE}`);
+    await page.waitForURL(/\/readiness-check/, { timeout: 20_000 });
+
+    // Routing followed the clicked partner...
+    expect(new URL(page.url()).searchParams.get("category")).toBe("life_insurance");
+
+    // ...while the acquisition envelope names the owner.
+    const envelope = await page.evaluate(() => {
+      try {
+        return JSON.parse(sessionStorage.getItem("myeasypass:first-touch:v1") ?? "null");
+      } catch {
+        return null;
+      }
+    });
+    expect(envelope?.partner_code).toBe(FIRST_CODE);
+
+    // And so does the event that visit produced.
+    const db = journeyDb();
+    const events = await db.query<{ metadata: Record<string, unknown> }>(
+      `SELECT metadata FROM analytics_events
+        WHERE event = 'partner_landing_view'
+        ORDER BY created_at DESC LIMIT 1`,
+    );
+    expect(events.rows[0].metadata.partner_code).toBe(FIRST_CODE);
+    // The clicked link is still visible, under its own name.
+    expect(events.rows[0].metadata.referral_partner_code).toBe(SECOND_CODE);
+  });
+
+  test("revenue and acquisition agree for that student", async ({ baseURL }) => {
+    const { recordPartnerConversion } = await import("../server/partners/partnerStore");
+    const email = `attr-agree-${Date.now()}@example.com`;
+    const password = "TestPassw0rd!";
+    const db = journeyDb();
+
+    const first = await visitor(baseURL);
+    await first.get(`/api/partners/resolve/${FIRST_CODE}`);
+    await first.post("/api/register", { data: { email, password, firstName: "R", lastName: "T" } });
+    await first.dispose();
+
+    const second = await visitor(baseURL);
+    await second.post("/api/login", { data: { email, password } });
+    await second.get(`/api/partners/resolve/${SECOND_CODE}`);
+    await second.dispose();
+
+    const user = await db.query<{ id: string }>(`SELECT id FROM users WHERE email = $1`, [email]);
+    const userId = user.rows[0].id;
+    const subscriptionId = `sub_agree_${Date.now()}`;
+
+    await recordPartnerConversion({
+      userId,
+      stripeSubscriptionId: subscriptionId,
+      examCategory: "real_estate",
+      billingPeriod: "monthly",
+      status: "active",
+    });
+
+    const credited = await db.query<{ partner_code: string; c: number }>(
+      `SELECT partner_code, COUNT(*)::int AS c FROM partner_conversions
+        WHERE user_id = $1 GROUP BY partner_code`,
+      [userId],
+    );
+
+    // One sale, credited to the partner who introduced them - the same partner
+    // the funnel counts are filed under.
+    expect(credited.rows).toHaveLength(1);
+    expect(credited.rows[0]).toMatchObject({ partner_code: FIRST_CODE, c: 1 });
+
+    await db.query(`DELETE FROM partner_conversions WHERE stripe_subscription_id = $1`, [subscriptionId]);
+  });
+
+  test("an anonymous visitor who follows two links keeps the first", async ({ baseURL }) => {
+    const context = await visitor(baseURL);
+
+    await context.get(`/api/partners/resolve/${FIRST_CODE}`);
+    const secondVisit = await context.get(`/api/partners/resolve/${SECOND_CODE}`);
+    const body = await secondVisit.json();
+
+    expect(body.partnerCode).toBe(SECOND_CODE);
+    expect(body.attributionPartnerCode).toBe(FIRST_CODE);
+    await context.dispose();
+  });
+
+  test("a student with no partner yet is introduced by the link they click", async ({ baseURL }) => {
+    // The rule is "the first partner ever recorded wins", not "never attribute
+    // a signed-in student" - somebody who joined organically and later follows
+    // a partner link genuinely was introduced by that partner.
+    const email = `attr-late-${Date.now()}@example.com`;
+    const password = "TestPassw0rd!";
+
+    const context = await visitor(baseURL);
+    await context.post("/api/register", { data: { email, password, firstName: "L", lastName: "T" } });
+    expect((await attributionOf(email)).partner_code).toBeNull();
+
+    const resolved = await context.get(`/api/partners/resolve/${SECOND_CODE}`);
+    expect((await resolved.json()).attributionPartnerCode).toBe(SECOND_CODE);
+    expect((await attributionOf(email)).partner_code).toBe(SECOND_CODE);
+    await context.dispose();
+  });
+});

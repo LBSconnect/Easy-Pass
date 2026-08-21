@@ -95,20 +95,31 @@ const ATTRIBUTION_KEY = "myeasypass:first-touch:v1";
  */
 const PARTNER_KEY = "myeasypass:partner:v1";
 
-/** Remember a server-confirmed partner for the rest of this visit. */
+/**
+ * Record the acquisition owner the server just named.
+ *
+ * The value written is always the server's, because only the server can answer
+ * the question. It holds the session's first partner for an anonymous visitor
+ * AND the stored attribution for a signed-in student, and it applies
+ * first-touch across both - so by the time a code reaches here it is already
+ * the right one.
+ *
+ * That is why this overwrites rather than keeping the first value it sees. An
+ * earlier version applied its own first-touch rule here, which sounds like
+ * belt and braces and is not: a browser holding a stale code from earlier in
+ * the visit would beat the server's answer, and the browser is the one that
+ * cannot see who owns the student.
+ */
 export function rememberPartner(partnerCode: string): void {
   try {
-    // First touch wins here too. A second partner link later in the same visit
-    // does not take the introduction away from the first.
-    if (!sessionStorage.getItem(PARTNER_KEY)) {
-      sessionStorage.setItem(PARTNER_KEY, partnerCode);
-    }
-    // The envelope may already have been written by an earlier page in this
-    // visit, in which case it needs the code adding rather than ignoring.
+    sessionStorage.setItem(PARTNER_KEY, partnerCode);
+    // The envelope is written on the first page of a visit, which may have
+    // been before the partner was known - so it is corrected here rather than
+    // left carrying whatever it was frozen with.
     const stored = sessionStorage.getItem(ATTRIBUTION_KEY);
     if (stored) {
       const parsed = JSON.parse(stored) as FirstTouchAttribution;
-      if (parsed && !parsed.partner_code) {
+      if (parsed) {
         parsed.partner_code = partnerCode;
         sessionStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(parsed));
       }

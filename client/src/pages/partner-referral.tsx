@@ -27,7 +27,16 @@ import { Loader2 } from "lucide-react";
 import { rememberPartner, trackEvent } from "@/lib/analytics";
 
 interface ResolvedPartner {
+  /** The link that was clicked. */
   partnerCode: string;
+  /**
+   * Who this visitor's acquisition belongs to.
+   *
+   * The same as partnerCode for anyone new. Different for a returning student
+   * who already belongs to someone else - the server decides, because only it
+   * can see the stored attribution.
+   */
+  attributionPartnerCode: string;
   displayName: string;
   examCategory: string | null;
   landingVariant: string | null;
@@ -70,11 +79,24 @@ export default function PartnerReferralPage() {
         }
 
         const partner = (await res.json()) as ResolvedPartner;
-        rememberPartner(partner.partnerCode);
+
+        // The owner, not the clicked link. A returning student who follows a
+        // second partner's link keeps producing events under the partner who
+        // actually introduced them, so their funnel and their eventual
+        // subscription describe the same relationship.
+        //
+        // Falls back to the clicked code only if an older server omits the
+        // field, which keeps this deployable ahead of the API.
+        rememberPartner(partner.attributionPartnerCode ?? partner.partnerCode);
 
         trackEvent("partner_landing_view", {
-          partner_code: partner.partnerCode,
+          // partner_code always means the acquisition owner. trackEvent fills
+          // it from the stored envelope; naming it here would overwrite that
+          // with the clicked link and reintroduce exactly the drift this fixes.
           exam_type: partner.examCategory ?? null,
+          // Which link was actually followed, kept as its own field so
+          // "who is sharing links" stays answerable without muddling ownership.
+          referral_partner_code: partner.partnerCode,
         });
 
         // Straight into the readiness check for the exam this partner sends.

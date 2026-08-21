@@ -405,3 +405,64 @@ export async function partnerPerformance(): Promise<PartnerPerformanceRow[]> {
     lastActivityAt: row.last_activity_at ? new Date(row.last_activity_at).toISOString() : null,
   }));
 }
+
+/**
+ * The partner a student already belongs to, if any.
+ *
+ * Read on every partner-link visit by a signed-in student, because the
+ * acquisition owner is a stored fact about that student rather than a property
+ * of the link they happen to have clicked.
+ */
+export async function storedAttribution(
+  userId: string,
+): Promise<{ partnerCode: string; prospectId: string } | null> {
+  const result = await pool.query<{ partner_code: string | null; partner_prospect_id: string | null }>(
+    `SELECT partner_code, partner_prospect_id FROM user_profiles WHERE user_id = $1 LIMIT 1`,
+    [userId],
+  );
+  const row = result.rows[0];
+  if (!row?.partner_code || !row.partner_prospect_id) return null;
+  return { partnerCode: row.partner_code, prospectId: row.partner_prospect_id };
+}
+
+/** The fields a PATCH has to be validated against. */
+export interface ProspectStateRow {
+  id: string;
+  partnerStatus: string;
+  partnerCode: string | null;
+  defaultExamCategory: string | null;
+  partnerActive: boolean;
+  partnerCreatedAt: Date | null;
+}
+
+/**
+ * One row, by id, for validation.
+ *
+ * Replaces reading the whole list and filtering it - that loaded sixty-two
+ * organizations and every note attached to them to check three fields on one.
+ */
+export async function prospectState(id: string): Promise<ProspectStateRow | null> {
+  const result = await pool.query<{
+    id: string;
+    partner_status: string;
+    partner_code: string | null;
+    default_exam_category: string | null;
+    partner_active: boolean;
+    partner_created_at: Date | null;
+  }>(
+    `SELECT id, partner_status, partner_code, default_exam_category,
+            partner_active, partner_created_at
+       FROM partner_prospects WHERE id = $1 LIMIT 1`,
+    [id],
+  );
+  const row = result.rows[0];
+  if (!row) return null;
+  return {
+    id: row.id,
+    partnerStatus: row.partner_status,
+    partnerCode: row.partner_code,
+    defaultExamCategory: row.default_exam_category,
+    partnerActive: row.partner_active,
+    partnerCreatedAt: row.partner_created_at,
+  };
+}

@@ -28,6 +28,8 @@ import { normalizePartnerCode } from "@shared/partners";
 import {
   resolveActivePartner,
   attributeUserToPartner,
+  storedAttribution,
+  prospectState,
   recordPartnerConversion,
   listProspects,
   updateProspect,
@@ -35,6 +37,7 @@ import {
 } from "./partners/partnerStore";
 import { buildOutreachDraft } from "@shared/partnerOutreach";
 import type { PartnerSegment } from "@shared/partners";
+import { validatePartnerState, partnerCodeChangeProblem } from "@shared/partners";
 import { examDatePatch } from "@shared/examDatePatch";
 import { checkGlossaryDraft } from "@shared/glossaryGate";
 import { glossaryCandidates } from "./alexi/glossaryCandidates";
@@ -1576,23 +1579,45 @@ export async function registerRoutes(
         patch.partnerCode = code;
       }
 
-      // Activation requires an exam. An insurance agency might send life,
-      // property and casualty or general lines candidates, and a link that
-      // guesses drops people into the wrong exam - so this is refused rather
-      // than defaulted.
-      if (patch.partnerActive === true) {
-        const existing = (await listProspects()).find((p) => p.id === req.params.id);
-        const code = (patch.partnerCode ?? existing?.partnerCode) as string | null | undefined;
-        const category = (patch.defaultExamCategory ?? existing?.defaultExamCategory) as string | null | undefined;
-        const status = (patch.partnerStatus ?? existing?.partnerStatus) as string | undefined;
+      // VALIDATE WHAT THE RECORD WILL BE, NOT WHAT THE REQUEST SAYS
+      //
+      // The previous version only checked anything when `partnerActive: true`
+      // appeared in the body, which meant a live partner could be edited into
+      // a broken state one field at a time - clearing the exam category on its
+      // own left the link active and pointing at nothing, because no rule ran.
+      //
+      // So the existing row is loaded, the patch applied on top, and the
+      // RESULT validated. Splitting a change across two requests no longer
+      // avoids the check.
+      const existing = await prospectState(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Prospect not found" });
 
-        if (!code) return res.status(400).json({ message: "A partner code is required before activating." });
-        if (!category) return res.status(400).json({ message: "Choose the exam this partner sends before activating." });
-        if (status !== "active_partner") {
-          return res.status(400).json({
-            message: "Promote the organization to Active Partner before activating its link.",
-          });
-        }
+      // Once a link has been live its code is fixed. Analytics events carry the
+      // code they were recorded under, and the performance report joins them to
+      // the partner's current code - so renaming a live partner does not move
+      // its history, it detaches it, and the partner appears to have sent
+      // nobody. Aliases would fix that properly and are deliberately not being
+      // improvised here.
+      const codeProblem = partnerCodeChangeProblem(existing, patch.partnerCode as string | null | undefined);
+      if (codeProblem) {
+        return res.status(codeProblem.status).json({ message: codeProblem.message });
+      }
+
+      const resulting = {
+        partnerStatus: ("partnerStatus" in patch ? patch.partnerStatus : existing.partnerStatus) as string | null,
+        partnerCode: ("partnerCode" in patch ? patch.partnerCode : existing.partnerCode) as string | null,
+        defaultExamCategory: ("defaultExamCategory" in patch
+          ? patch.defaultExamCategory
+          : existing.defaultExamCategory) as string | null,
+        partnerActive: ("partnerActive" in patch ? patch.partnerActive : existing.partnerActive) as boolean | null,
+        partnerCreatedAt: existing.partnerCreatedAt,
+      };
+
+      const problems = validatePartnerState(resulting);
+      if (problems.length > 0) {
+        // The first problem is the one to fix; listing all four at once reads
+        // as a form error rather than an answer.
+        return res.status(problems[0].status).json({ message: problems[0].message });
       }
 
       const updated = await updateProspect(req.params.id, patch);
@@ -2540,19 +2565,54 @@ export async function registerRoutes(
         };
       }
 
-      // A student already signed in gets attributed immediately, exactly as
-      // the diagnostic hand-off does; otherwise it waits for registration.
+      // WHO OWNS THIS STUDENT, AS OPPOSED TO WHOSE LINK THEY JUST CLICKED
+      //
+      // These are different questions and the answer differs for a returning
+      // student. The database already refused to move an existing attribution,
+      // so revenue stayed with the original partner - but the response still
+      // named the clicked partner, the client remembered that, and every event
+      // for the rest of the visit was filed under it. The result was a report
+      // where one partner had the visits and the diagnostics and another had
+      // the subscription, which is not two views of one funnel; it is two
+      // wrong funnels.
+      //
+      // So the owner is resolved here, from the student's stored attribution
+      // when there is one, and returned separately from the clicked code.
+      let attributionPartnerCode = partner.partnerCode;
+
       if (req.session.userId) {
-        await attributeUserToPartner(req.session.userId, {
-          prospectId: partner.prospectId,
-          partnerCode: partner.partnerCode,
-        }).catch((error) => {
-          console.error("Partner attribution failed:", error);
+        const existing = await storedAttribution(req.session.userId).catch((error) => {
+          console.error("Stored partner attribution lookup failed:", error);
+          return null;
         });
+
+        if (existing) {
+          // Already owned. Nothing is written, and the clicked partner does
+          // not become the analytics owner either.
+          attributionPartnerCode = existing.partnerCode;
+        } else {
+          // No owner yet: this link is the introduction, exactly as it is for
+          // an anonymous visitor who registers later.
+          await attributeUserToPartner(req.session.userId, {
+            prospectId: partner.prospectId,
+            partnerCode: partner.partnerCode,
+          }).catch((error) => {
+            console.error("Partner attribution failed:", error);
+          });
+        }
+      } else if (req.session.partnerAttribution) {
+        // An anonymous visitor who follows a second link in the same visit
+        // keeps the first one, which is what the session already holds.
+        attributionPartnerCode = req.session.partnerAttribution.partnerCode;
       }
 
       res.json({
+        // The link that was clicked. Drives navigation, and is reported as
+        // referral_partner_code so "which link is being shared" stays visible.
         partnerCode: partner.partnerCode,
+        // Who the acquisition belongs to. This is what analytics must group by,
+        // and it is the code the verified subscription will be credited to.
+        attributionPartnerCode,
         displayName: partner.displayName,
         examCategory: partner.examCategory,
         landingVariant: partner.landingVariant,

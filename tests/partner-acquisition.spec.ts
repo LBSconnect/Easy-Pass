@@ -17,7 +17,7 @@
  * rather than reasoned about.
  */
 
-import { test, expect, request as playwrightRequest } from "@playwright/test";
+import { test, expect, request as playwrightRequest, type APIRequestContext } from "@playwright/test";
 import { requireWritableTarget } from "./helpers/target";
 import { journeyDb, closeJourneyDb } from "./helpers/journey";
 
@@ -129,10 +129,13 @@ test.describe("partner referral route", () => {
     expect(body).not.toContain(SECRET_NOTE);
     expect(body).not.toContain("decisionMaker");
     expect(body).not.toContain("contactEmail");
-    // Only what rendering the visit requires.
+    // Only what rendering the visit requires. attributionPartnerCode is who
+    // the visitor already belongs to - for an anonymous request that is always
+    // the code just clicked, so it discloses nothing the caller did not send.
     expect(Object.keys(JSON.parse(body)).sort()).toEqual([
-      "displayName", "examCategory", "landingVariant", "partnerCode",
+      "attributionPartnerCode", "displayName", "examCategory", "landingVariant", "partnerCode",
     ]);
+    expect(JSON.parse(body).attributionPartnerCode).toBe(ACTIVE_CODE);
   });
 });
 
@@ -205,5 +208,305 @@ test.describe("prospect data stays private", () => {
       expect(body).not.toContain("Recruiting Signal");
       expect(body).not.toContain(SECRET_NOTE);
     }
+  });
+});
+
+/**
+ * A partner code is a published URL and the key its history is filed under.
+ *
+ * Those two facts are why the rules below exist. A live code has been printed
+ * on a flyer, pasted into a newsletter and typed into phones, so changing it
+ * breaks links that are already out in the world - and every analytics event
+ * and verified subscription already recorded carries the OLD code, so the
+ * report joins on a value that no longer exists and the partner appears to
+ * have sent nobody. The failure is silent in both directions.
+ *
+ * The other half is coherence. A record that is switched on while pointing at
+ * no exam, or carrying no code, is a live link that cannot work. The earlier
+ * version of this endpoint checked only the incoming patch, which meant that
+ * state was reachable one field at a time. What is checked now is the record
+ * as it WILL BE.
+ */
+
+const CODE_INTEGRITY_ORG = "E2E Code Integrity Partner";
+const LIVE_CODE = "e2e-integrity-live";
+
+interface IntegrityFixture {
+  liveId: string;
+  draftId: string;
+  admin: APIRequestContext;
+}
+
+/**
+ * An admin, made the way the journey fixture makes its world: registration
+ * goes through the real API, and the role - which no route grants - is set in
+ * SQL. Arranging the world is SQL; using the product is not.
+ */
+async function adminContext(baseURL: string | undefined): Promise<APIRequestContext> {
+  const db = journeyDb();
+  const context = await playwrightRequest.newContext({ baseURL });
+  const email = `partner-admin-${Date.now()}@example.com`;
+
+  await context.post("/api/register", {
+    data: { email, password: "TestPassw0rd!", firstName: "Admin", lastName: "Test" },
+  });
+
+  const user = await db.query<{ id: string }>(`SELECT id FROM users WHERE email = $1`, [email]);
+  await db.query(
+    `INSERT INTO user_profiles (user_id, role) VALUES ($1, 'admin')
+     ON CONFLICT (user_id) DO UPDATE SET role = 'admin'`,
+    [user.rows[0].id],
+  );
+
+  return context;
+}
+
+async function seedIntegrityFixture(baseURL: string | undefined): Promise<IntegrityFixture> {
+  const db = journeyDb();
+
+  await db.query(`DELETE FROM partner_conversions WHERE partner_code = $1`, [LIVE_CODE]);
+  await db.query(`DELETE FROM analytics_events WHERE metadata->>'partner_code' = $1`, [LIVE_CODE]);
+  await db.query(`DELETE FROM partner_prospects WHERE dedupe_key LIKE 'e2e-integrity-%'`);
+
+  // A partner whose link has been live: it has a stamp, a code, an exam and a
+  // switched-on flag, which is the state the admin route leaves behind.
+  const live = await db.query<{ id: string }>(
+    `INSERT INTO partner_prospects
+       (organization_name, dedupe_key, segment, partner_status, partner_code,
+        default_exam_category, partner_active, partner_created_at)
+     VALUES ($1,'e2e-integrity-live','real_estate_brokerage','active_partner',$2,
+             'real_estate', true, now())
+     RETURNING id`,
+    [CODE_INTEGRITY_ORG, LIVE_CODE],
+  );
+
+  // A record nobody has published: researched, never agreed to anything.
+  const draft = await db.query<{ id: string }>(
+    `INSERT INTO partner_prospects
+       (organization_name, dedupe_key, segment, partner_status, partner_active)
+     VALUES ('E2E Code Integrity Draft','e2e-integrity-draft','insurance_agency','prospect', false)
+     RETURNING id`,
+  );
+
+  return { liveId: live.rows[0].id, draftId: draft.rows[0].id, admin: await adminContext(baseURL) };
+}
+
+/** The fields the rules below are about, straight from the row. */
+async function partnerRow(id: string) {
+  const db = journeyDb();
+  const result = await db.query(
+    `SELECT partner_code, partner_status, default_exam_category, partner_active
+       FROM partner_prospects WHERE id = $1`,
+    [id],
+  );
+  return result.rows[0];
+}
+
+test.describe("partner code and active state stay coherent", () => {
+  let fixture: IntegrityFixture;
+
+  test.beforeAll(async ({ baseURL }) => {
+    requireWritableTarget(process.env.TEST_BASE_URL);
+    fixture = await seedIntegrityFixture(baseURL);
+  });
+
+  test.afterAll(async () => {
+    await fixture.admin.dispose();
+    await closeJourneyDb();
+  });
+
+  const patch = (id: string, data: Record<string, unknown>) =>
+    fixture.admin.patch(`/api/admin/partners/prospects/${id}`, { data });
+
+  test("a live partner's code cannot be renamed", async () => {
+    const res = await patch(fixture.liveId, { partnerCode: "e2e-integrity-renamed" });
+
+    expect(res.status()).toBe(409);
+    expect((await res.json()).message).toMatch(/cannot be changed/i);
+    // And the refusal is not cosmetic - nothing was written.
+    expect((await partnerRow(fixture.liveId)).partner_code).toBe(LIVE_CODE);
+  });
+
+  test("a live partner's code cannot be cleared", async () => {
+    for (const cleared of ["", null]) {
+      const res = await patch(fixture.liveId, { partnerCode: cleared });
+
+      expect(res.status()).toBe(409);
+      expect((await res.json()).message).toMatch(/cannot be cleared/i);
+      expect((await partnerRow(fixture.liveId)).partner_code).toBe(LIVE_CODE);
+    }
+  });
+
+  test("resubmitting the same code is not a change", async () => {
+    // The admin form posts every field back, so an unchanged code arrives on
+    // edits that have nothing to do with it. Blocking those would make the
+    // record uneditable rather than the code immutable.
+    const res = await patch(fixture.liveId, {
+      partnerCode: LIVE_CODE,
+      notes: "Edited without touching the code",
+    });
+
+    expect(res.status()).toBe(200);
+    expect((await partnerRow(fixture.liveId)).partner_code).toBe(LIVE_CODE);
+  });
+
+  test("a live partner cannot have its exam cleared one field at a time", async () => {
+    // The rule this pins: the endpoint validates the record as it WILL BE.
+    // Sending only `defaultExamCategory: null` used to be waved through
+    // because the patch said nothing about activation - leaving a live link
+    // pointing at no exam.
+    const res = await patch(fixture.liveId, { defaultExamCategory: null });
+
+    expect(res.status()).toBe(400);
+    expect((await res.json()).message).toMatch(/exam/i);
+    expect((await partnerRow(fixture.liveId)).default_exam_category).toBe("real_estate");
+  });
+
+  test("a live partner cannot be demoted while its link is still on", async () => {
+    const res = await patch(fixture.liveId, { partnerStatus: "prospect" });
+
+    expect(res.status()).toBe(400);
+    expect((await partnerRow(fixture.liveId)).partner_status).toBe("active_partner");
+  });
+
+  test("a rejected edit writes none of its other fields either", async () => {
+    // A partial write would be the worst outcome: the request is refused and
+    // the record changes anyway.
+    const before = await partnerRow(fixture.liveId);
+
+    const res = await patch(fixture.liveId, {
+      partnerCode: "e2e-integrity-sneaky",
+      partnerDisplayName: "Should Not Be Written",
+      notes: "Should not be written either",
+    });
+    expect(res.status()).toBe(409);
+
+    const db = journeyDb();
+    const after = await db.query(
+      `SELECT partner_code, partner_display_name, notes FROM partner_prospects WHERE id = $1`,
+      [fixture.liveId],
+    );
+    expect(after.rows[0].partner_code).toBe(before.partner_code);
+    expect(after.rows[0].partner_display_name).not.toBe("Should Not Be Written");
+    expect(after.rows[0].notes).not.toBe("Should not be written either");
+  });
+
+  test("the live partner still resolves after every refused edit", async ({ request }) => {
+    const res = await request.get(`/api/partners/resolve/${LIVE_CODE}`);
+
+    expect(res.status()).toBe(200);
+    expect((await res.json()).partnerCode).toBe(LIVE_CODE);
+  });
+
+  test("switching a partner off keeps its code and its history", async () => {
+    const db = journeyDb();
+
+    // Give the partner something to lose: one recorded visit and one verified
+    // subscription, both filed under its code.
+    const student = await db.query<{ id: string }>(
+      `INSERT INTO users (email, password) VALUES ($1,'x') RETURNING id`,
+      [`integrity-student-${Date.now()}@example.com`],
+    );
+    await db.query(
+      `INSERT INTO analytics_events (event, metadata) VALUES ('partner_landing_view', $1::jsonb)`,
+      [JSON.stringify({ partner_code: LIVE_CODE })],
+    );
+    await db.query(
+      `INSERT INTO partner_conversions
+         (partner_prospect_id, partner_code, user_id, stripe_subscription_id, status)
+       VALUES ($1,$2,$3,$4,'active')`,
+      [fixture.liveId, LIVE_CODE, student.rows[0].id, `sub_integrity_${Date.now()}`],
+    );
+
+    const before = await fixture.admin.get("/api/admin/partners/performance");
+    const beforeRow = (await before.json()).find((r: any) => r.partnerCode === LIVE_CODE);
+    expect(beforeRow).toMatchObject({ visits: 1, verifiedSubscriptions: 1 });
+
+    // Switching off is allowed, and is not the same as erasing the partner.
+    expect((await patch(fixture.liveId, { partnerActive: false })).status()).toBe(200);
+
+    const off = await partnerRow(fixture.liveId);
+    expect(off.partner_active).toBe(false);
+    expect(off.partner_code).toBe(LIVE_CODE);
+
+    // The link stops working...
+    expect((await fixture.admin.get(`/api/partners/resolve/${LIVE_CODE}`)).status()).toBe(404);
+
+    // ...and the history is exactly where it was.
+    const after = await fixture.admin.get("/api/admin/partners/performance");
+    const afterRow = (await after.json()).find((r: any) => r.partnerCode === LIVE_CODE);
+    expect(afterRow).toMatchObject({ visits: 1, verifiedSubscriptions: 1, partnerActive: false });
+
+    // A switched-off partner's code is still spoken for.
+    expect((await patch(fixture.liveId, { partnerCode: "e2e-integrity-reused" })).status()).toBe(409);
+
+    // Switching it back on restores the same relationship, not a new one.
+    expect((await patch(fixture.liveId, { partnerActive: true })).status()).toBe(200);
+    expect((await fixture.admin.get(`/api/partners/resolve/${LIVE_CODE}`)).status()).toBe(200);
+
+    const back = await fixture.admin.get("/api/admin/partners/performance");
+    expect((await back.json()).find((r: any) => r.partnerCode === LIVE_CODE)).toMatchObject({
+      visits: 1,
+      verifiedSubscriptions: 1,
+    });
+  });
+
+  test("a draft cannot be activated without an exam", async () => {
+    const res = await patch(fixture.draftId, {
+      partnerStatus: "active_partner",
+      partnerCode: "e2e-integrity-noexam",
+      partnerActive: true,
+    });
+
+    expect(res.status()).toBe(400);
+    expect((await res.json()).message).toMatch(/exam/i);
+    expect((await partnerRow(fixture.draftId)).partner_active).toBe(false);
+  });
+
+  test("a draft cannot be activated without a code", async () => {
+    const res = await patch(fixture.draftId, {
+      partnerStatus: "active_partner",
+      defaultExamCategory: "life_insurance",
+      partnerActive: true,
+    });
+
+    expect(res.status()).toBe(400);
+    expect((await res.json()).message).toMatch(/code/i);
+    expect((await partnerRow(fixture.draftId)).partner_active).toBe(false);
+  });
+
+  test("a draft cannot be activated while it is still only a prospect", async () => {
+    // The whole point of the two-field split: talking to an organization is
+    // not the same as being allowed to publish its name.
+    const res = await patch(fixture.draftId, {
+      partnerCode: "e2e-integrity-prospect",
+      defaultExamCategory: "life_insurance",
+      partnerActive: true,
+    });
+
+    expect(res.status()).toBe(400);
+    expect((await res.json()).message).toMatch(/active partner/i);
+    expect((await partnerRow(fixture.draftId)).partner_active).toBe(false);
+  });
+
+  test("a draft's code is free to change right up until it goes live", async () => {
+    expect((await patch(fixture.draftId, { partnerCode: "e2e-integrity-first-try" })).status()).toBe(200);
+    expect((await patch(fixture.draftId, { partnerCode: "e2e-integrity-second-try" })).status()).toBe(200);
+    expect((await partnerRow(fixture.draftId)).partner_code).toBe("e2e-integrity-second-try");
+
+    // A complete activation is accepted...
+    expect(
+      (
+        await patch(fixture.draftId, {
+          partnerStatus: "active_partner",
+          defaultExamCategory: "life_insurance",
+          partnerActive: true,
+        })
+      ).status(),
+    ).toBe(200);
+
+    // ...and from that moment the code is fixed.
+    expect((await patch(fixture.draftId, { partnerCode: "e2e-integrity-too-late" })).status()).toBe(409);
+    expect((await partnerRow(fixture.draftId)).partner_code).toBe("e2e-integrity-second-try");
   });
 });

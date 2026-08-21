@@ -18,8 +18,18 @@
 
 import { test, expect, type Page } from "@playwright/test";
 import { requireWritableTarget } from "./helpers/target";
+import { closeJourneyDb, seedQuestionBank } from "./helpers/journey";
 
 const LIFE = "life_insurance";
+
+/**
+ * Life Insurance topics from shared/studyTopics.ts.
+ *
+ * Four of them so the result page's weak areas have somewhere to differ, and
+ * so a run that misses everything still produces a capped list rather than a
+ * single entry.
+ */
+const LIFE_TOPICS = ["li_policies", "li_annuities", "li_health", "li_regulations"];
 
 /** Claims we must never make, in either language. */
 const FORBIDDEN = [
@@ -40,8 +50,17 @@ async function answerCurrentQuestion(page: Page): Promise<void> {
 }
 
 test.describe("life insurance paid-search funnel", () => {
-  test.beforeAll(() => {
+  test.beforeAll(async () => {
     requireWritableTarget(process.env.TEST_BASE_URL);
+    // CI starts with an empty questions table, so the diagnostic 404s on
+    // every exam until something seeds one. Verifying this funnel against a
+    // bank that happened to exist locally is exactly how it passed here and
+    // failed there.
+    await seedQuestionBank({ category: LIFE, topics: LIFE_TOPICS, marker: "[life-funnel-fixture]" });
+  });
+
+  test.afterAll(async () => {
+    await closeJourneyDb();
   });
 
   test("the landing page leads with the free readiness test", async ({ page }) => {
@@ -195,8 +214,13 @@ test.describe("life insurance paid-search funnel", () => {
 });
 
 test.describe("the funnel on a phone", () => {
-  test.beforeAll(() => {
+  test.beforeAll(async () => {
     requireWritableTarget(process.env.TEST_BASE_URL);
+    await seedQuestionBank({ category: LIFE, topics: LIFE_TOPICS, marker: "[life-funnel-fixture]" });
+  });
+
+  test.afterAll(async () => {
+    await closeJourneyDb();
   });
 
   // Paid traffic is mostly mobile, and the narrowest of these is where a CTA

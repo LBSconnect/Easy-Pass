@@ -314,6 +314,123 @@ const STEPS: Step[] = [
           CREATE INDEX IF NOT EXISTS idx_payment_history_created
             ON payment_history (created_at);`,
   },
+
+  // --- Partner acquisition channel ----------------------------------------
+  //
+  // One table, not two. A prospect and a partner are the same organization at
+  // different points in one relationship, and splitting them would mean a join
+  // on every screen plus a rule about which row is authoritative. The
+  // distinction that matters - may we say their name in public - is a status
+  // on the row, checked in exactly one place (isPubliclyActive).
+  {
+    name: "table partner_prospects",
+    sql: `CREATE TABLE IF NOT EXISTS partner_prospects (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+
+      -- Identity. dedupe_key is name+market normalised; see shared/partners.ts.
+      organization_name varchar(300) NOT NULL,
+      dedupe_key varchar(400) NOT NULL,
+      segment varchar(60) NOT NULL DEFAULT 'other',
+      segment_raw varchar(200),
+      market varchar(200),
+      state varchar(10),
+
+      -- Public research, refreshed by the importer.
+      website varchar(500),
+      public_contact varchar(300),
+      candidate_signal text,
+      known_exam_volume integer,
+      priority varchar(20),
+      why_it_matters text,
+      source_url varchar(1000),
+
+      -- CRM. Written by people, never overwritten by an import.
+      outreach_status varchar(40) NOT NULL DEFAULT 'not_contacted',
+      owner varchar(120),
+      decision_maker_name varchar(200),
+      decision_maker_title varchar(200),
+      contact_email varchar(320),
+      contact_phone varchar(60),
+      linkedin_url varchar(500),
+      facebook_url varchar(500),
+      instagram_url varchar(500),
+      partnership_hypothesis text,
+      notes text,
+      next_action text,
+      last_contact_at timestamp,
+
+      -- Scoring. Components are 0-5; the override wins when set.
+      score_candidate_pipeline integer,
+      score_product_fit integer,
+      score_decision_maker_access integer,
+      score_audience_scale integer,
+      score_override integer,
+
+      -- The relationship, and the link that depends on it.
+      partner_status varchar(40) NOT NULL DEFAULT 'prospect',
+      partner_code varchar(64),
+      default_exam_category exam_category,
+      partner_active boolean NOT NULL DEFAULT false,
+      partner_display_name varchar(200),
+      partner_landing_variant varchar(60),
+      partner_created_at timestamp,
+
+      created_at timestamp NOT NULL DEFAULT now(),
+      updated_at timestamp NOT NULL DEFAULT now()
+    );`,
+  },
+  {
+    name: "indexes partner_prospects",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS uq_partner_prospects_dedupe
+            ON partner_prospects (dedupe_key);
+          -- Partial, because most rows have no code and NULLs must not collide.
+          CREATE UNIQUE INDEX IF NOT EXISTS uq_partner_prospects_code
+            ON partner_prospects (partner_code)
+            WHERE partner_code IS NOT NULL;
+          CREATE INDEX IF NOT EXISTS idx_partner_prospects_segment
+            ON partner_prospects (segment);
+          CREATE INDEX IF NOT EXISTS idx_partner_prospects_partner_status
+            ON partner_prospects (partner_status);`,
+  },
+  {
+    // First-touch partner on the student. Set once and then left alone, so a
+    // later visit through a different link cannot move an existing student's
+    // attribution to whoever mailed them most recently.
+    name: "user_profiles partner attribution",
+    sql: `ALTER TABLE user_profiles
+            ADD COLUMN IF NOT EXISTS partner_code varchar(64),
+            ADD COLUMN IF NOT EXISTS partner_prospect_id varchar,
+            ADD COLUMN IF NOT EXISTS partner_attributed_at timestamp;`,
+  },
+  {
+    // Verified subscriptions credited to a partner.
+    //
+    // The unique index on stripe_subscription_id is the deduplication, and it
+    // is here rather than in application code on purpose: a reload, a second
+    // tab and a repeated sync all race each other, and the only place that
+    // reliably settles a race between three requests is the database.
+    name: "table partner_conversions",
+    sql: `CREATE TABLE IF NOT EXISTS partner_conversions (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      partner_prospect_id varchar NOT NULL,
+      partner_code varchar(64) NOT NULL,
+      user_id varchar NOT NULL,
+      stripe_subscription_id varchar NOT NULL,
+      exam_category exam_category,
+      billing_period varchar(20),
+      status varchar(40) NOT NULL,
+      created_at timestamp NOT NULL DEFAULT now()
+    );`,
+  },
+  {
+    name: "indexes partner_conversions",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS uq_partner_conversions_subscription
+            ON partner_conversions (stripe_subscription_id);
+          CREATE INDEX IF NOT EXISTS idx_partner_conversions_prospect
+            ON partner_conversions (partner_prospect_id);
+          CREATE INDEX IF NOT EXISTS idx_partner_conversions_created
+            ON partner_conversions (created_at);`,
+  },
 ];
 
 export interface MigrationResult {
@@ -374,6 +491,8 @@ export async function checkSchemaHealth(): Promise<{
     "generated_questions",
     "glossary_terms",
     "tutor_turns",
+    "partner_prospects",
+    "partner_conversions",
   ];
   const expectedColumns: Array<[string, string]> = [
     ["user_profiles", "exam_date"],
@@ -388,6 +507,7 @@ export async function checkSchemaHealth(): Promise<{
     ["user_profiles", "unsubscribe_token"],
     ["user_profiles", "last_seen_at"],
     ["payment_history", "stripe_subscription_id"],
+    ["user_profiles", "partner_code"],
   ];
 
   const tables = await pool.query(

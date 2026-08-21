@@ -11,6 +11,7 @@
  */
 export type AnalyticsEventName =
   | "diagnostic_cta_click"
+  | "partner_landing_view"
   | "diagnostic_start"
   | "diagnostic_progress"
   | "diagnostic_completed"
@@ -65,9 +66,67 @@ interface FirstTouchAttribution {
   utm_campaign: string | null;
   utm_content: string | null;
   utm_term: string | null;
+  /**
+   * The partner whose link brought this visitor, when one did.
+   *
+   * Sits alongside the UTM fields rather than replacing them: a partner who
+   * posts their link on Facebook produces utm_source=facebook AND a partner
+   * code, and both are true. Which channel the click came through and which
+   * relationship produced it are different questions.
+   *
+   * Set only by the partner route, and only after the server has confirmed the
+   * code belongs to a live partner - so this cannot be used to credit a sale
+   * to an organization by typing a code into the address bar. The server keeps
+   * its own copy in the session, which is what actually attributes revenue;
+   * this copy exists so funnel events can be grouped by partner.
+   */
+  partner_code: string | null;
 }
 
 const ATTRIBUTION_KEY = "myeasypass:first-touch:v1";
+/**
+ * Where the partner route leaves a confirmed code for the envelope to pick up.
+ *
+ * Separate from the envelope because the two are written at different moments:
+ * first touch is captured on the first page of the visit, and the partner is
+ * only known once the server has answered. Without this, a visitor whose first
+ * page IS the partner link would have their envelope frozen - partner-less -
+ * a moment before the code was confirmed.
+ */
+const PARTNER_KEY = "myeasypass:partner:v1";
+
+/** Remember a server-confirmed partner for the rest of this visit. */
+export function rememberPartner(partnerCode: string): void {
+  try {
+    // First touch wins here too. A second partner link later in the same visit
+    // does not take the introduction away from the first.
+    if (!sessionStorage.getItem(PARTNER_KEY)) {
+      sessionStorage.setItem(PARTNER_KEY, partnerCode);
+    }
+    // The envelope may already have been written by an earlier page in this
+    // visit, in which case it needs the code adding rather than ignoring.
+    const stored = sessionStorage.getItem(ATTRIBUTION_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as FirstTouchAttribution;
+      if (parsed && !parsed.partner_code) {
+        parsed.partner_code = partnerCode;
+        sessionStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(parsed));
+      }
+    }
+  } catch {
+    // Storage refused. Events lose their partner grouping for this visit; the
+    // server's session copy still attributes the revenue, which is the half
+    // that matters.
+  }
+}
+
+function storedPartner(): string | null {
+  try {
+    return sessionStorage.getItem(PARTNER_KEY);
+  } catch {
+    return null;
+  }
+}
 
 function clean(value: string | null): string | null {
   if (!value) return null;
@@ -96,6 +155,7 @@ function captureFirstTouch(): FirstTouchAttribution {
     utm_campaign: clean(params.get("utm_campaign")),
     utm_content: clean(params.get("utm_content")),
     utm_term: clean(params.get("utm_term")),
+    partner_code: storedPartner(),
   };
 }
 

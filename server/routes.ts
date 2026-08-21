@@ -24,6 +24,17 @@ import { difficultyFor } from "./alexi/nextBestAction";
 import { assessRisk, quarantineReason, type FeedbackType } from "./contentRisk";
 import { checkSchemaHealth } from "./migrations";
 import { weakTopics, type WeakTopic } from "@shared/diagnosticWeakness";
+import { normalizePartnerCode } from "@shared/partners";
+import {
+  resolveActivePartner,
+  attributeUserToPartner,
+  recordPartnerConversion,
+  listProspects,
+  updateProspect,
+  partnerPerformance,
+} from "./partners/partnerStore";
+import { buildOutreachDraft } from "@shared/partnerOutreach";
+import type { PartnerSegment } from "@shared/partners";
 import { examDatePatch } from "@shared/examDatePatch";
 import { checkGlossaryDraft } from "@shared/glossaryGate";
 import { glossaryCandidates } from "./alexi/glossaryCandidates";
@@ -1525,6 +1536,115 @@ export async function registerRoutes(
     return userId;
   }
 
+  // ---------------------------------------------------------------------
+  // Partner acquisition CRM. Admin only, without exception.
+  //
+  // Everything below discloses business-development data: which organizations
+  // we are approaching, who we spoke to there, what was said, and what we
+  // think the opportunity is. None of it belongs in front of a student, and
+  // the prospect list is not ours to publish - most of those organizations
+  // have never heard of MyEasyPass.
+  // ---------------------------------------------------------------------
+  app.get("/api/admin/partners/prospects", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      res.json(await listProspects());
+    } catch (error) {
+      console.error("Error listing prospects:", error);
+      res.status(500).json({ message: "Failed to list prospects" });
+    }
+  });
+
+  app.patch("/api/admin/partners/prospects/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+
+      const patch = { ...(req.body ?? {}) } as Record<string, unknown>;
+
+      // A partner code becomes a public URL, so it is normalised to the shape
+      // the route can actually resolve rather than stored as typed. Rejecting
+      // here - instead of silently storing something unreachable - is the
+      // difference between "that code is invalid" and a link that 404s for
+      // every one of the partner's students.
+      if (typeof patch.partnerCode === "string" && patch.partnerCode.trim() !== "") {
+        const code = normalizePartnerCode(patch.partnerCode);
+        if (!code) {
+          return res.status(400).json({
+            message: "Partner code must be letters, numbers and hyphens.",
+          });
+        }
+        patch.partnerCode = code;
+      }
+
+      // Activation requires an exam. An insurance agency might send life,
+      // property and casualty or general lines candidates, and a link that
+      // guesses drops people into the wrong exam - so this is refused rather
+      // than defaulted.
+      if (patch.partnerActive === true) {
+        const existing = (await listProspects()).find((p) => p.id === req.params.id);
+        const code = (patch.partnerCode ?? existing?.partnerCode) as string | null | undefined;
+        const category = (patch.defaultExamCategory ?? existing?.defaultExamCategory) as string | null | undefined;
+        const status = (patch.partnerStatus ?? existing?.partnerStatus) as string | undefined;
+
+        if (!code) return res.status(400).json({ message: "A partner code is required before activating." });
+        if (!category) return res.status(400).json({ message: "Choose the exam this partner sends before activating." });
+        if (status !== "active_partner") {
+          return res.status(400).json({
+            message: "Promote the organization to Active Partner before activating its link.",
+          });
+        }
+      }
+
+      const updated = await updateProspect(req.params.id, patch);
+      if (!updated) return res.status(404).json({ message: "Prospect not found" });
+
+      res.json({ updated: true });
+    } catch (error: any) {
+      // The unique index on partner_code is the only constraint an admin can
+      // realistically trip, and "that code is taken" is a far more useful
+      // answer than a 500.
+      if (error?.code === "23505") {
+        return res.status(409).json({ message: "That partner code is already in use." });
+      }
+      console.error("Error updating prospect:", error);
+      res.status(500).json({ message: "Failed to update prospect" });
+    }
+  });
+
+  app.get("/api/admin/partners/performance", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      res.json(await partnerPerformance());
+    } catch (error) {
+      console.error("Error loading partner performance:", error);
+      res.status(500).json({ message: "Failed to load partner performance" });
+    }
+  });
+
+  /**
+   * A draft email. Returned to the admin, never sent by us.
+   *
+   * There is no transport in this path on purpose - see shared/partnerOutreach.
+   */
+  app.get("/api/admin/partners/prospects/:id/outreach", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+
+      const prospect = (await listProspects()).find((p) => p.id === req.params.id);
+      if (!prospect) return res.status(404).json({ message: "Prospect not found" });
+
+      res.json(buildOutreachDraft({
+        organizationName: prospect.organizationName,
+        segment: prospect.segment as PartnerSegment,
+        decisionMakerName: prospect.decisionMakerName,
+        partnershipHypothesis: prospect.partnershipHypothesis,
+      }));
+    } catch (error) {
+      console.error("Error building outreach draft:", error);
+      res.status(500).json({ message: "Failed to build draft" });
+    }
+  });
+
   app.post("/api/admin/generate-questions/:category", isAuthenticated, async (req: any, res) => {
     try {
       const adminId = await requireAdmin(req, res);
@@ -2377,6 +2497,72 @@ export async function registerRoutes(
     metadata: z.record(z.string(), z.unknown()).optional(),
   });
 
+  /**
+   * Resolve a partner code for the public /p/:partnerCode route.
+   *
+   * Answers 404 for anything that is not a live partner - an unknown code, a
+   * prospect nobody activated, a partner switched off. One answer for all
+   * three on purpose: a distinguishable "exists but inactive" would confirm
+   * that MyEasyPass holds a record on that organization, and most of the
+   * organizations in that table have never heard of us.
+   *
+   * On success it returns the minimum needed to render the visit, and stashes
+   * the partner server-side so the attribution survives the rest of the funnel
+   * without the browser having to carry it.
+   */
+  app.get("/api/partners/resolve/:partnerCode", async (req: any, res) => {
+    try {
+      const clientIp = getClientIp(req);
+      // Codes are guessable by design - they are short and meant to be typed -
+      // so this is the thing that stops the endpoint being walked to enumerate
+      // which organizations we have activated.
+      const rateLimitResult = rateLimit(`partner-resolve:${clientIp}`, 30, 15 * 60 * 1000);
+      if (!rateLimitResult.allowed) {
+        return res.status(429).json({
+          message: "Too many requests. Please try again later.",
+          retryAfter: Math.ceil(rateLimitResult.resetIn / 1000),
+        });
+      }
+
+      const code = normalizePartnerCode(req.params.partnerCode);
+      if (!code) return res.status(404).json({ message: "Not found" });
+
+      const partner = await resolveActivePartner(code);
+      if (!partner) return res.status(404).json({ message: "Not found" });
+
+      // First touch wins. A visitor who arrives through a second partner's
+      // link later in the same session still belongs to the one that
+      // introduced them.
+      if (!req.session.partnerAttribution) {
+        req.session.partnerAttribution = {
+          prospectId: partner.prospectId,
+          partnerCode: partner.partnerCode,
+        };
+      }
+
+      // A student already signed in gets attributed immediately, exactly as
+      // the diagnostic hand-off does; otherwise it waits for registration.
+      if (req.session.userId) {
+        await attributeUserToPartner(req.session.userId, {
+          prospectId: partner.prospectId,
+          partnerCode: partner.partnerCode,
+        }).catch((error) => {
+          console.error("Partner attribution failed:", error);
+        });
+      }
+
+      res.json({
+        partnerCode: partner.partnerCode,
+        displayName: partner.displayName,
+        examCategory: partner.examCategory,
+        landingVariant: partner.landingVariant,
+      });
+    } catch (error) {
+      console.error("Error resolving partner code:", error);
+      res.status(500).json({ message: "Failed to resolve partner" });
+    }
+  });
+
   app.post("/api/analytics/events", async (req: any, res) => {
     try {
       const parsed = analyticsEventSchema.safeParse(req.body);
@@ -2760,6 +2946,39 @@ export async function registerRoutes(
       });
       
       console.log(`Synced subscription for user ${userId}: type=${subscriptionType}, categories=${allowedCategories?.join(',')}`);
+
+      // Credit the partner who introduced this student, if one did.
+      //
+      // Deliberately here and nowhere else in the request path. This is the
+      // point where the server has asked Stripe and been told the subscription
+      // is live - the same fact the Google Ads conversion has hung off since
+      // #160 - so "a partner sale" and "a reported conversion" mean the same
+      // thing. Attributing at checkout, or on the success URL, would count
+      // sales that never completed.
+      //
+      // Nothing in the request decides the partner: recordPartnerConversion
+      // reads it from the student's profile, where it was written when they
+      // first arrived. So a crafted checkout cannot credit anyone.
+      //
+      // Duplicates collapse on the unique subscription id, which is why a
+      // reload, a second tab and a repeated sync add up to one sale.
+      //
+      // A failure here must not fail the sync. Access is what the student paid
+      // for; internal reporting is not worth a 500 in front of someone who has
+      // just handed over money.
+      if (subscription.status === 'active' || subscription.status === 'trialing') {
+        try {
+          await recordPartnerConversion({
+            userId,
+            stripeSubscriptionId: subscription.id,
+            examCategory: (allowedCategories?.[0] as ExamCategory | undefined) ?? null,
+            billingPeriod: plan ?? null,
+            status: subscription.status,
+          });
+        } catch (partnerError) {
+          console.error("Partner conversion record failed:", partnerError);
+        }
+      }
       
       res.json({
         synced: true,

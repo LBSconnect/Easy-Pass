@@ -69,6 +69,13 @@ export const userProfiles = pgTable("user_profiles", {
   // When this student last made a request, used for the "online now" count.
   // Written at most once a minute per student - see shared/onlinePresence.ts.
   lastSeenAt: timestamp("last_seen_at"),
+  // Which partner sent this student, captured the first time they arrived
+  // through a live partner link and then left alone. First touch wins: a
+  // student who later follows a different partner's link still belongs to the
+  // relationship that actually introduced them.
+  partnerCode: varchar("partner_code", { length: 64 }),
+  partnerProspectId: varchar("partner_prospect_id"),
+  partnerAttributedAt: timestamp("partner_attributed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
@@ -729,3 +736,100 @@ export type SubscriptionType = "single" | "bundle";
 export type SubscriptionStatus = "active" | "canceled" | "past_due" | "trialing";
 export type UserRole = "user" | "admin";
 export type EmployerInquiryStatus = "new" | "contacted" | "closed";
+
+/**
+ * Partner acquisition: one organization, one row, from cold research to a live
+ * referral link.
+ *
+ * A prospect and a partner are the same organization at two points in one
+ * relationship, so they share a row. What separates them is `partnerStatus`
+ * plus `partnerActive`, and the single question that depends on the two -
+ * "may we show this organization's name in public?" - is answered by
+ * isPubliclyActive() in shared/partners.ts and nowhere else.
+ */
+export const partnerProspects = pgTable("partner_prospects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+
+  organizationName: varchar("organization_name", { length: 300 }).notNull(),
+  /** Normalised name+market. The importer's idea of "the same organization". */
+  dedupeKey: varchar("dedupe_key", { length: 400 }).notNull(),
+  segment: varchar("segment", { length: 60 }).notNull().default("other"),
+  /** The source file's own wording, kept because it is often more informative. */
+  segmentRaw: varchar("segment_raw", { length: 200 }),
+  market: varchar("market", { length: 200 }),
+  state: varchar("state", { length: 10 }),
+
+  website: varchar("website", { length: 500 }),
+  publicContact: varchar("public_contact", { length: 300 }),
+  candidateSignal: text("candidate_signal"),
+  knownExamVolume: integer("known_exam_volume"),
+  priority: varchar("priority", { length: 20 }),
+  whyItMatters: text("why_it_matters"),
+  sourceUrl: varchar("source_url", { length: 1000 }),
+
+  // Everything below is written by people. The importer never touches it.
+  outreachStatus: varchar("outreach_status", { length: 40 }).notNull().default("not_contacted"),
+  owner: varchar("owner", { length: 120 }),
+  decisionMakerName: varchar("decision_maker_name", { length: 200 }),
+  decisionMakerTitle: varchar("decision_maker_title", { length: 200 }),
+  contactEmail: varchar("contact_email", { length: 320 }),
+  contactPhone: varchar("contact_phone", { length: 60 }),
+  linkedinUrl: varchar("linkedin_url", { length: 500 }),
+  facebookUrl: varchar("facebook_url", { length: 500 }),
+  instagramUrl: varchar("instagram_url", { length: 500 }),
+  partnershipHypothesis: text("partnership_hypothesis"),
+  notes: text("notes"),
+  nextAction: text("next_action"),
+  lastContactAt: timestamp("last_contact_at"),
+
+  scoreCandidatePipeline: integer("score_candidate_pipeline"),
+  scoreProductFit: integer("score_product_fit"),
+  scoreDecisionMakerAccess: integer("score_decision_maker_access"),
+  scoreAudienceScale: integer("score_audience_scale"),
+  /** Wins outright when set. The score is a prompt, not a verdict. */
+  scoreOverride: integer("score_override"),
+
+  partnerStatus: varchar("partner_status", { length: 40 }).notNull().default("prospect"),
+  partnerCode: varchar("partner_code", { length: 64 }),
+  defaultExamCategory: examCategoryEnum("default_exam_category"),
+  partnerActive: boolean("partner_active").notNull().default(false),
+  partnerDisplayName: varchar("partner_display_name", { length: 200 }),
+  partnerLandingVariant: varchar("partner_landing_variant", { length: 60 }),
+  partnerCreatedAt: timestamp("partner_created_at"),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_partner_prospects_segment").on(table.segment),
+  index("idx_partner_prospects_partner_status").on(table.partnerStatus),
+]);
+
+/**
+ * A verified subscription credited to a partner.
+ *
+ * Written only where the server has already reconciled with Stripe and found
+ * the subscription live - the same point PR #160 fires the Google conversion
+ * from, and for the same reason: a URL is not a sale.
+ *
+ * `stripeSubscriptionId` is unique, which is what makes a reload, a second tab
+ * and a repeated sync add up to one row instead of three.
+ */
+export const partnerConversions = pgTable("partner_conversions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerProspectId: varchar("partner_prospect_id").notNull(),
+  partnerCode: varchar("partner_code", { length: 64 }).notNull(),
+  userId: varchar("user_id").notNull(),
+  stripeSubscriptionId: varchar("stripe_subscription_id").notNull(),
+  examCategory: examCategoryEnum("exam_category"),
+  billingPeriod: varchar("billing_period", { length: 20 }),
+  status: varchar("status", { length: 40 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_partner_conversions_prospect").on(table.partnerProspectId),
+  index("idx_partner_conversions_created").on(table.createdAt),
+]);
+
+export type PartnerProspect = typeof partnerProspects.$inferSelect;
+export type InsertPartnerProspect = typeof partnerProspects.$inferInsert;
+export type PartnerConversion = typeof partnerConversions.$inferSelect;
+export type InsertPartnerConversion = typeof partnerConversions.$inferInsert;

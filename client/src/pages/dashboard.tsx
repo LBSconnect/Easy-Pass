@@ -15,7 +15,7 @@
  * an exam, re-offering all four every visit is friction, not choice).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearch } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -26,6 +26,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { trackEvent } from "@/lib/analytics";
+import { reportVerifiedSubscription } from "@/lib/googleAds";
 import { deriveDashboardState, sectionsFor, type DashboardSection } from "@shared/dashboardState";
 import { useStudyAssistantConfig } from "@/lib/studyAssistant";
 import { CardErrorBoundary } from "@/components/error-boundary";
@@ -93,6 +94,14 @@ export default function DashboardPage() {
 
   // Preserved from the previous dashboard: students returning from Stripe
   // checkout need their subscription synced before the page means anything.
+  //
+  // Did this sync run because the student just came back from Stripe, or
+  // because their profile happened to look unsynced? Only the first is a
+  // subscription being bought, and only the first may be reported as one. A
+  // ref rather than state: the mutation callback needs to read it, and it must
+  // not cause a render of its own.
+  const cameFromCheckout = useRef(false);
+
   const syncMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/stripe/sync-subscription");
@@ -107,6 +116,22 @@ export default function DashboardPage() {
             ? "Tu suscripción ha sido sincronizada exitosamente."
             : "Your subscription has been synced successfully.",
         });
+
+        // The server has now checked with Stripe and found a live
+        // subscription. That - not the address bar - is what gets reported.
+        if (cameFromCheckout.current) {
+          reportVerifiedSubscription({
+            subscriptionId: data.subscriptionId,
+            synced: data.synced,
+            status: data.status,
+          });
+          trackEvent("subscription_completed", {
+            exam_type: Array.isArray(data.allowedCategories) ? data.allowedCategories[0] ?? null : null,
+            billing_period: data.plan ?? null,
+            subscription_type: data.subscriptionType ?? null,
+          });
+          cameFromCheckout.current = false;
+        }
       }
     },
   });
@@ -119,6 +144,7 @@ export default function DashboardPage() {
 
     if ((isFromCheckout || needsSync) && !syncMutation.isPending) {
       setHasSynced(true);
+      cameFromCheckout.current = isFromCheckout;
       syncMutation.mutate();
       if (isFromCheckout) window.history.replaceState({}, "", "/dashboard");
     }

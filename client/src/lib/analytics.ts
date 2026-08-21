@@ -11,7 +11,13 @@
  */
 export type AnalyticsEventName =
   | "diagnostic_cta_click"
+  | "diagnostic_start"
+  | "diagnostic_progress"
   | "diagnostic_completed"
+  | "diagnostic_result_view"
+  | "result_upgrade_click"
+  | "pricing_view"
+  | "subscription_completed"
   | "pricing_cta_click"
   | "checkout_start"
   | "checkout_session_created"

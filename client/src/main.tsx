@@ -21,15 +21,15 @@ googleTag.async = true;
 googleTag.src = "https://www.googletagmanager.com/gtag/js?id=AW-18360793283";
 document.head.appendChild(googleTag);
 
-// Google Ads "Subscribe" conversion. Stripe redirects successful checkouts
-// back to /dashboard?success=true, so this fires only on that success return.
-const checkoutParams = new URLSearchParams(window.location.search);
-if (window.location.pathname === "/dashboard" && checkoutParams.get("success") === "true") {
-  gtag("event", "conversion", {
-    send_to: "AW-18360793283/gQDnCM3rg-UcEMPxjbNE",
-    value: 1.0,
-    currency: "USD",
-  });
-}
+// The "Subscribe" conversion is deliberately not fired here.
+//
+// A URL is not a subscription. Firing on /dashboard?success=true counted
+// direct visits to that address, every reload of it, Stripe returns that never
+// activated, and returning subscribers - all of which inflate conversions and
+// so understate what a subscription actually costs to buy.
+//
+// It now fires from client/src/lib/googleAds.ts, once the server has
+// reconciled the subscription with Stripe and said it is active. See the
+// checkout return in client/src/pages/dashboard.tsx.
 
 createRoot(document.getElementById("root")!).render(<App />);

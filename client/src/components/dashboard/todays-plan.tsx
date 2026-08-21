@@ -113,7 +113,7 @@ export function TodaysPlanCard({ category }: { category: ExamCategory }) {
     return (
       <Card data-testid="card-plan-error">
         <CardContent className="flex flex-col items-center justify-center gap-3 py-10 text-center">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-base text-muted-foreground">
             {es ? "No pudimos cargar tu plan de hoy." : "We couldn't load today's plan."}
           </p>
           <Button variant="outline" size="sm" onClick={() => refetch()} data-testid="button-retry-plan">
@@ -133,7 +133,7 @@ export function TodaysPlanCard({ category }: { category: ExamCategory }) {
     return (
       <Card data-testid="card-plan-empty">
         <CardContent className="py-10 text-center">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-base leading-relaxed text-muted-foreground">
             {es
               ? "No hay tareas pendientes. Practica un poco para generar tu plan de mañana."
               : "Nothing scheduled right now. Practise a little to build tomorrow's plan."}
@@ -184,8 +184,8 @@ export function TodaysPlanCard({ category }: { category: ExamCategory }) {
                 >
                   <IconTile icon={meta.icon} tone={meta.tone} />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium">{copy.title}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{copy.sub}</span>
+                    <span className="block truncate text-base font-medium">{copy.title}</span>
+                    <span className="block truncate text-sm text-muted-foreground">{copy.sub}</span>
                   </span>
                   <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                     {task.estimatedMinutes} {es ? "min" : "min"}

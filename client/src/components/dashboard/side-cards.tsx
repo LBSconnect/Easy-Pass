@@ -147,8 +147,8 @@ export function QuickActionsCard({
                   <IconTile icon={a.icon} tone={a.tone} />
                 )}
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{a.title}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{a.sub}</span>
+                  <span className="block truncate text-base font-medium">{a.title}</span>
+                  <span className="block truncate text-sm text-muted-foreground">{a.sub}</span>
                 </span>
                 <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
               </Link>
@@ -259,8 +259,8 @@ export function StudyResourcesCard() {
             >
               <IconTile icon={r.icon} tone={r.tone} size="md" />
               <span className="min-w-0">
-                <span className="block text-sm font-medium">{r.title}</span>
-                <span className="block text-xs text-muted-foreground">{r.sub}</span>
+                <span className="block text-base font-medium">{r.title}</span>
+                <span className="block text-sm text-muted-foreground">{r.sub}</span>
               </span>
             </Link>
           ))}

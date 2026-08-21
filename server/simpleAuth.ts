@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { attributeUserToPartner } from "./partners/partnerStore";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import type { Express, RequestHandler } from "express";
@@ -121,6 +122,28 @@ async function claimSessionDiagnostic(req: any, userId: string): Promise<void> {
   }
 }
 
+/**
+ * Attach the introducing partner to a student who has just signed in or
+ * registered.
+ *
+ * Unlike the diagnostic stash, this is NOT deleted afterwards. The visitor may
+ * still be part-way through the funnel - they often register at checkout - and
+ * a second sign-in on the same visit should still find the partner. The
+ * first-touch rule lives in attributeUserToPartner, which refuses to overwrite
+ * an attribution that already exists, so leaving it in the session is safe.
+ */
+async function claimSessionPartner(req: any, userId: string): Promise<void> {
+  const partner = req.session?.partnerAttribution as SessionPartner | undefined;
+  if (!partner?.prospectId || !partner.partnerCode) return;
+
+  try {
+    await attributeUserToPartner(userId, partner);
+  } catch (error) {
+    // Signing in must never fail because an attribution write did.
+    console.error("Partner attribution claim failed:", error);
+  }
+}
+
 export function getSession() {
   if (!process.env.SESSION_SECRET) {
     console.error("[Session] ERROR: SESSION_SECRET is missing");
@@ -171,7 +194,21 @@ declare module "express-session" {
     userId: string;
     email: string;
     diagnosticEvidence?: DiagnosticEvidence;
+    /**
+     * The partner whose link brought this browser here.
+     *
+     * Server-side for two reasons. It survives the trip out to Stripe and back
+     * without depending on what the browser chose to keep, and it cannot be
+     * set by a visitor who fancies crediting a sale to someone - the only
+     * thing that writes it is a code that resolved to a live partner.
+     */
+    partnerAttribution?: SessionPartner;
   }
+}
+
+export interface SessionPartner {
+  prospectId: string;
+  partnerCode: string;
 }
 
 export async function setupAuth(app: Express) {
@@ -285,6 +322,7 @@ export async function setupAuth(app: Express) {
       req.session.userId = newUser.id;
       req.session.email = newUser.email!;
       await claimSessionDiagnostic(req, newUser.id);
+      await claimSessionPartner(req, newUser.id);
 
       res.json({
         id: newUser.id,
@@ -340,6 +378,7 @@ export async function setupAuth(app: Express) {
       req.session.userId = user.id;
       req.session.email = user.email!;
       await claimSessionDiagnostic(req, user.id);
+      await claimSessionPartner(req, user.id);
 
       res.json({
         id: user.id,

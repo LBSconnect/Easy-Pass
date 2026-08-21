@@ -35,6 +35,8 @@ import ForgotPasswordPage from "@/pages/forgot-password";
 import TexasRealEstateExamPrepPage from "@/pages/landing-texas-real-estate";
 import TexasPropertyCasualtyExamPrepPage from "@/pages/landing-texas-property-casualty";
 import TexasLifeInsuranceExamPrepPage from "@/pages/landing-texas-life-insurance";
+import PartnerReferralPage from "@/pages/partner-referral";
+import AdminPartnersPage from "@/pages/admin-partners";
 import TexasGeneralLinesExamPrepPage from "@/pages/landing-texas-general-lines";
 import TexasRealEstateExamPrepEsPage from "@/pages/landing-texas-real-estate-es";
 import TexasInsuranceExamPrepEsPage from "@/pages/landing-texas-insurance-es";
@@ -182,10 +184,19 @@ function Router() {
       <Route path="/es/:spanishExamSlug" component={TexasInsuranceExamPrepEsPage} />
       <Route path="/employer-inquiry" component={EmployerInquiryPage} />
       <Route path="/readiness-check" component={DiagnosticPage} />
+      {/* One route for every partner. Resolves the code server-side and hands
+          off into the ordinary funnel; an unknown or inactive code lands on
+          the normal readiness check with no organization named. */}
+      <Route path="/p/:partnerCode" component={PartnerReferralPage} />
       <Route path="/schedule-exam" component={ScheduleExamPage} />
       <Route path="/study-guide" component={() => <ProtectedRoute component={StudyGuidePage} />} />
       <Route path="/profile" component={() => <ProtectedRoute component={ProfilePage} />} />
       <Route path="/admin" component={() => <ProtectedRoute component={AdminPage} />} />
+      {/* Both partner views live behind one page. The route is protected the
+          same way /admin is, and every endpoint it calls re-checks the admin
+          role server-side - a client-side guard alone would only hide the
+          screen, not the data. */}
+      <Route path="/admin/partners" component={() => <ProtectedRoute component={AdminPartnersPage} />} />
       <Route path="/certificates/:slug" component={CertificatePage} />
       <Route path="/faq" component={FAQPage} />
       <Route path="/glossary" component={GlossaryPage} />

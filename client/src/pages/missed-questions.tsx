@@ -191,7 +191,7 @@ export default function MissedQuestionsPage() {
                   </Button>
                 </div>
 
-                <p className="mt-3 font-medium">
+                <p className="mt-3 text-lg font-medium leading-relaxed">
                   {es ? q.questionTextEs : q.questionTextEn}
                 </p>
 
@@ -201,7 +201,7 @@ export default function MissedQuestionsPage() {
                     return (
                       <li
                         key={i}
-                        className={`rounded-md px-3 py-2 text-sm ${
+                        className={`rounded-md px-3 py-2 text-base ${
                           isCorrect
                             ? "bg-emerald-500/10 font-medium"
                             : "bg-muted/40 text-muted-foreground"
@@ -219,7 +219,7 @@ export default function MissedQuestionsPage() {
                 </ul>
 
                 {explanation && (
-                  <p className="mt-3 border-l-2 border-primary/40 pl-3 text-sm text-muted-foreground">
+                  <p className="mt-3 border-l-2 border-primary/40 pl-3 text-base leading-relaxed text-muted-foreground">
                     {explanation}
                   </p>
                 )}

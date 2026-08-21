@@ -456,14 +456,14 @@ function TeachStep({
         {block.examples.map((e, i) => (
           <li key={e.questionId} className="rounded-lg border p-4">
             <Badge variant="secondary" className="text-xs">{e.topic}</Badge>
-            <p className="mt-2 text-sm font-medium">{e.questionText}</p>
-            <p className="mt-2 rounded-md bg-emerald-500/10 px-3 py-2 text-sm">
+            <p className="mt-2 text-base font-medium leading-relaxed">{e.questionText}</p>
+            <p className="mt-2 rounded-md bg-emerald-500/10 px-3 py-2 text-base">
               <span className="font-semibold text-emerald-700 dark:text-emerald-400">
                 {es ? "Respuesta: " : "Answer: "}
               </span>
               {e.options[e.correctIndex]}
             </p>
-            <p className="mt-2 border-l-2 border-primary/40 pl-3 text-sm text-muted-foreground">
+            <p className="mt-2 border-l-2 border-primary/40 pl-3 text-base leading-relaxed text-muted-foreground">
               {e.explanation}
             </p>
             {/* The tutor's precondition is an answered question. These are
@@ -598,7 +598,7 @@ function QuestionStep({
       testId={testId}
     >
       <Badge variant="secondary" className="mt-4 text-xs">{question.topic}</Badge>
-      <p className="mt-2 text-base font-medium" data-testid="text-session-question">
+      <p className="mt-2 text-lg font-medium leading-relaxed" data-testid="text-session-question">
         {question.questionText}
       </p>
 
@@ -619,7 +619,7 @@ function QuestionStep({
                   setPicked(i);
                   onAnswer(question.questionId, i);
                 }}
-                className={`flex min-h-11 w-full items-start gap-2.5 rounded-md border p-3 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                className={`flex min-h-11 w-full items-start gap-2.5 rounded-md border p-3 text-left text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                   isCorrect
                     ? "border-emerald-500/50 bg-emerald-500/10"
                     : isWrongPick
@@ -644,13 +644,13 @@ function QuestionStep({
 
       {result && (
         <div role="status" aria-live="polite">
-          <p className="mt-4 text-sm font-semibold" data-testid="text-session-verdict">
+          <p className="mt-4 text-base font-semibold" data-testid="text-session-verdict">
             {result.isCorrect
               ? es ? "Correcto" : "Correct"
               : es ? "Incorrecto" : "Not quite"}
           </p>
           {result.explanation && (
-            <p className="mt-1.5 border-l-2 border-primary/40 pl-3 text-sm text-muted-foreground">
+            <p className="mt-1.5 border-l-2 border-primary/40 pl-3 text-base leading-relaxed text-muted-foreground">
               {result.explanation}
             </p>
           )}

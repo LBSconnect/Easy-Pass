@@ -381,7 +381,7 @@ export function ExamHub() {
                   <h2 className="mt-2 text-lg font-bold leading-snug" data-testid="text-exams-alexi-headline">
                     {recommendation.recommendation.headline}
                   </h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p className="mt-1 text-base leading-relaxed text-muted-foreground">
                     {recommendation.phrasing}
                   </p>
                 </div>
@@ -477,7 +477,7 @@ export function ExamHub() {
                       <span className="mt-2.5 block text-sm font-semibold text-foreground">
                         {s.title}
                       </span>
-                      <span className="mt-1 block text-xs text-muted-foreground">{s.sub}</span>
+                      <span className="mt-1 block text-sm text-muted-foreground">{s.sub}</span>
                     </li>
                   ))}
                 </ol>

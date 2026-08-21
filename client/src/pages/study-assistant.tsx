@@ -229,7 +229,7 @@ export default function StudyAssistantPage() {
             {student.insight && (
               <Card className="border-primary/25 bg-primary/[0.04]">
                 <CardContent className="p-4">
-                  <p className="flex items-start gap-2 text-sm">
+                  <p className="flex items-start gap-2 text-base leading-relaxed">
                     <AlexiMark size={18} className="mt-0.5 text-primary" />
                     <span data-testid="text-page-insight">{student.insight}</span>
                   </p>
@@ -248,7 +248,7 @@ export default function StudyAssistantPage() {
                 </div>
 
                 <h2 className="mt-3 text-xl font-bold leading-snug">{rec.headline}</h2>
-                <p className="mt-1.5 text-sm text-muted-foreground">{data.phrasing}</p>
+                <p className="mt-1.5 text-base leading-relaxed text-muted-foreground">{data.phrasing}</p>
 
                 {rec.concept && (
                   <div className="mt-4">
@@ -270,7 +270,7 @@ export default function StudyAssistantPage() {
 
                 <ul className="mt-4 space-y-1.5">
                   {rec.blocks.map((block, i) => (
-                    <li key={i} className="flex items-baseline gap-2 text-sm">
+                    <li key={i} className="flex items-baseline gap-2 text-base">
                       <span
                         className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
                         aria-hidden="true"
@@ -322,7 +322,7 @@ export default function StudyAssistantPage() {
             {rec.suggestHumanHelp && (
               <Card className="border-amber-500/30 bg-amber-500/10">
                 <CardContent className="p-4">
-                  <p className="flex items-start gap-2 text-sm">
+                  <p className="flex items-start gap-2 text-base">
                     <LifeBuoy
                       className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
                       aria-hidden="true"

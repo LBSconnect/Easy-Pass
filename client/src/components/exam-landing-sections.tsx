@@ -191,7 +191,7 @@ export function ProblemSolution({ category, slug, isSpanish }: SectionProps) {
                   <s.Icon className="h-5 w-5 text-primary" />
                 </div>
                 <h3 className="mt-3 font-semibold">{s.title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{s.body}</p>
+                <p className="mt-1 text-base leading-relaxed text-muted-foreground">{s.body}</p>
               </CardContent>
             </Card>
           ))}
@@ -249,7 +249,7 @@ export function ExamStructure({ category, isSpanish }: SectionProps) {
                   <FileText className="h-4 w-4 text-primary" />
                   <h3 className="font-semibold">{isSpanish ? p.nameEs : p.name}</h3>
                 </div>
-                <dl className="mt-3 space-y-1.5 text-sm">
+                <dl className="mt-3 space-y-1.5 text-base">
                   <div className="flex justify-between gap-4">
                     <dt className="text-muted-foreground">{isSpanish ? "Preguntas" : "Questions"}</dt>
                     <dd className="font-medium tabular-nums">
@@ -370,7 +370,7 @@ export function RetakerRescueSection({ category, slug, isSpanish }: SectionProps
                     ? "Tu intento anterior te dio información. Enfoquémonos en lo que necesita mejorar."
                     : "Your previous attempt gave you information. Let's focus on what needs improvement."}
                 </p>
-                <ul className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+                <ul className="mt-4 grid gap-2 text-base sm:grid-cols-2">
                   {(isSpanish
                     ? ["Diagnóstico dirigido", "Identificación de áreas débiles", "Práctica enfocada", "Repaso de preguntas falladas"]
                     : ["Targeted diagnostic", "Weak-area identification", "Focused drills", "Missed-question review"]

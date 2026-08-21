@@ -99,7 +99,7 @@ function SampleQuestion({ categories, language }: { categories: string[]; langua
           );
         })}
         {selected !== null && explanation && (
-          <p className="text-sm text-muted-foreground pt-2 border-t">{explanation}</p>
+          <p className="text-base leading-relaxed text-muted-foreground pt-2 border-t">{explanation}</p>
         )}
       </CardContent>
     </Card>
@@ -295,7 +295,7 @@ function ExamLandingPageInner({ content }: { content: ExamLandingPageContent }) 
                     </Button>
                   </Link>
                 </div>
-                <ul className="flex flex-wrap gap-x-5 gap-y-2 pt-1 text-sm text-muted-foreground">
+                <ul className="flex flex-wrap gap-x-5 gap-y-2 pt-1 text-base text-muted-foreground">
                   {(isSpanish
                     ? ["Específico de Texas", "Práctica adaptativa", "Inglés + Español", "Estudia donde sea"]
                     : ["Texas-Specific", "Adaptive Practice", "English + Español", "Study Anywhere"]
@@ -343,14 +343,14 @@ function ExamLandingPageInner({ content }: { content: ExamLandingPageContent }) 
               {topicsByCategory.map(({ category, topics }) => (
                 <div key={category} className="space-y-3">
                   {topicsByCategory.length > 1 && (
-                    <h3 className="font-semibold text-sm text-primary">{CATEGORY_LABELS[category]?.[content.language]}</h3>
+                    <h3 className="font-semibold text-base text-primary">{CATEGORY_LABELS[category]?.[content.language]}</h3>
                   )}
                   {topics.map((topic) => (
                     <div key={topic.id} className="flex items-start gap-2">
                       <CheckCircle2 className="h-4 w-4 text-primary mt-1 shrink-0" />
                       <div>
-                        <p className="font-medium text-sm">{isSpanish ? topic.nameEs : topic.nameEn}</p>
-                        <p className="text-xs text-muted-foreground">{isSpanish ? topic.descriptionEs : topic.descriptionEn}</p>
+                        <p className="font-medium text-base">{isSpanish ? topic.nameEs : topic.nameEn}</p>
+                        <p className="text-sm leading-relaxed text-muted-foreground">{isSpanish ? topic.descriptionEs : topic.descriptionEn}</p>
                       </div>
                     </div>
                   ))}
@@ -391,8 +391,8 @@ function ExamLandingPageInner({ content }: { content: ExamLandingPageContent }) 
                   <div className="mx-auto h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
                     {i + 1}
                   </div>
-                  <h3 className="font-semibold text-sm">{step.title}</h3>
-                  <p className="text-xs text-muted-foreground">{step.description}</p>
+                  <h3 className="font-semibold text-base">{step.title}</h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground">{step.description}</p>
                 </div>
               ))}
             </div>

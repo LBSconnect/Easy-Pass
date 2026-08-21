@@ -1,0 +1,4779 @@
+{
+ "version": 1,
+ "source": "questions_export.sql (production export committed to this repository; 795 rows, all topic=NULL)",
+ "note": "Applied by scripts/backfill-question-topics.ts. Only ever sets topic where it is currently NULL; never touches question text, options, answers, or activity.",
+ "mappings": [
+  {
+   "id": "12f2ad6e-2c37-46d8-a7b1-382cf28d534f",
+   "category": "general_lines",
+   "topic": "gl_bonds",
+   "question": "What are the three parties to a surety bond?"
+  },
+  {
+   "id": "61c7e537-f2aa-4af2-b793-227cda716631",
+   "category": "general_lines",
+   "topic": "gl_bonds",
+   "question": "What is a bid bond?"
+  },
+  {
+   "id": "373ff501-47e9-4d79-8fba-f018ef742b27",
+   "category": "general_lines",
+   "topic": "gl_bonds",
+   "question": "What is a court bond?"
+  },
+  {
+   "id": "1350026e-e12e-4f23-bef8-f116dec5cff6",
+   "category": "general_lines",
+   "topic": "gl_bonds",
+   "question": "What is a fidelity bond used for?"
+  },
+  {
+   "id": "b182092c-e9cd-405f-bfb9-4fb051296f79",
+   "category": "general_lines",
+   "topic": "gl_bonds",
+   "question": "What is a fiduciary bond?"
+  },
+  {
+   "id": "f69e72ed-d0c2-47c2-8b0a-b596619176b6",
+   "category": "general_lines",
+   "topic": "gl_bonds",
+   "question": "What is a license and permit bond?"
+  },
+  {
+   "id": "8d99f95c-745e-421a-9c15-8143cc038b31",
+   "category": "general_lines",
+   "topic": "gl_bonds",
+   "question": "What is a lost instrument bond?"
+  },
+  {
+   "id": "42acbdf6-5b14-4236-90eb-04349d7dfd0d",
+   "category": "general_lines",
+   "topic": "gl_bonds",
+   "question": "What is a motor carrier bond?"
+  },
+  {
+   "id": "32781c6b-4b13-4fff-b884-bbf2303a24d6",
+   "category": "general_lines",
+   "topic": "gl_bonds",
+   "question": "What is a payment bond?"
+  },
+  {
+   "id": "7b881036-503b-42a6-b4f6-1c53cd8dc21e",
+   "category": "general_lines",
+   "topic": "gl_bonds",
+   "question": "What is a performance bond?"
+  },
+  {
+   "id": "33ae0a7c-e066-40fb-b430-405760560681",
+   "category": "general_lines",
+   "topic": "gl_bonds",
+   "question": "What is a public official bond?"
+  },
+  {
+   "id": "d8f045b1-ab3c-4e1f-a9cb-116ec4a99442",
+   "category": "general_lines",
+   "topic": "gl_bonds",
+   "question": "What is the purpose of a surety bond?"
+  },
+  {
+   "id": "59b63c38-20a1-4338-985e-3834f4594ab3",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What does 'defense costs inside limits' mean?"
+  },
+  {
+   "id": "04ab2f91-cd68-4954-9d5c-859fe0e5a14a",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What does a Commercial General Liability (CGL) policy primarily cover?"
+  },
+  {
+   "id": "a205b04a-63dd-45e4-b40b-e95024ecf9c6",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What does coinsurance mean in commercial property insurance?"
+  },
+  {
+   "id": "5cfcd9f9-6ccd-459b-82f9-799a51eb471b",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What does inland marine insurance typically cover?"
+  },
+  {
+   "id": "29c4a87b-729a-46a9-9072-4180f4a38af4",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What does the term 'aggregate limit' mean in liability insurance?"
+  },
+  {
+   "id": "c6ddd6f2-368e-4385-b1fa-b2c48c16400a",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is a builders risk policy?"
+  },
+  {
+   "id": "6c43b6ed-283e-480b-930f-4b700f309b8f",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is a certificate of insurance?"
+  },
+  {
+   "id": "e4112d15-94c6-44f7-96ce-5939f1afa4bf",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is a commercial crime policy?"
+  },
+  {
+   "id": "3e17da90-2e7c-4826-a57b-800f6c2cef4b",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is a commercial package policy (CPP)?"
+  },
+  {
+   "id": "8329eb85-b086-41a3-bb89-ae1b683fb439",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is a floater policy?"
+  },
+  {
+   "id": "d46ede2e-6a63-41af-a7a3-afce72bcdc1d",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is a general aggregate limit?"
+  },
+  {
+   "id": "5cc6ed00-561d-41b9-97fc-a91a637616d9",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is a retroactive date in a claims-made policy?"
+  },
+  {
+   "id": "c2e4b970-5431-46fd-b58c-4e71dc332b84",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is a schedule in an insurance policy?"
+  },
+  {
+   "id": "ed2386ca-d108-409a-8d03-99059ef343f5",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is a symbol system in commercial auto coverage?"
+  },
+  {
+   "id": "1574fb17-6917-488d-bbef-192a667a1a62",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is accounts receivable coverage?"
+  },
+  {
+   "id": "0e02d0ef-bf67-48c3-a50d-70a7c35dea38",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is an additional insured?"
+  },
+  {
+   "id": "3bcfb10f-3721-499a-be5b-afdf3f13d9dd",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is an experience modification factor in workers' compensation?"
+  },
+  {
+   "id": "06663448-3467-4a6c-bcdd-7e4dd40195b9",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is an occurrence in CGL policies?"
+  },
+  {
+   "id": "31d7c589-0718-4702-903e-d0d142aadb0e",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is aviation insurance?"
+  },
+  {
+   "id": "a7343255-d080-40da-9a9e-aa57bdc5c4b1",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is bailee coverage?"
+  },
+  {
+   "id": "dbbc5c3c-c09d-44d6-bd60-70afba755aea",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is business interruption insurance?"
+  },
+  {
+   "id": "1656e932-8f2f-49d5-8ba3-39d16d6dbfd5",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is commercial general liability limit per occurrence?"
+  },
+  {
+   "id": "04079454-5fc9-48e6-8580-3ed8e76d0dd9",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is completed operations coverage?"
+  },
+  {
+   "id": "dc112b1d-93d0-4f6b-998f-9694078b1b2f",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is contractual liability?"
+  },
+  {
+   "id": "364a43f2-14d4-482b-9364-d1d70281511e",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is crime insurance?"
+  },
+  {
+   "id": "132eaf97-f315-41e1-b8f5-0cb70d28d926",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is cyber liability insurance?"
+  },
+  {
+   "id": "b2dcc011-4f80-466d-939e-bf4287178f59",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is dealers open lot coverage?"
+  },
+  {
+   "id": "1a844ba0-c72f-4208-afee-62867e2ea6ea",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is defense cost coverage in liability insurance?"
+  },
+  {
+   "id": "cea9fff6-addd-4c33-92db-0e8c7731241c",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is directors and officers (D&O) liability insurance?"
+  },
+  {
+   "id": "2ce52f5e-73f5-465e-a629-ab035e36fa02",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is earthquake coverage?"
+  },
+  {
+   "id": "6a7d5f68-afcf-4137-972b-1b4c0e528c26",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is employee dishonesty coverage?"
+  },
+  {
+   "id": "3e48a5f7-b6d7-4096-8c25-7fc163da7464",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is employers' liability insurance?"
+  },
+  {
+   "id": "527f232f-de97-4fef-a301-39778ea6fdee",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is employment practices liability insurance (EPLI)?"
+  },
+  {
+   "id": "945f9a45-3b51-44fc-bdd2-4f9dee04b1e1",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is equipment breakdown insurance (formerly boiler and machinery)?"
+  },
+  {
+   "id": "96cdfbec-80e5-42cf-beec-d85b74746e43",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is extended reporting period coverage (tail coverage)?"
+  },
+  {
+   "id": "1b202a1e-091b-44ab-bea4-5e57416ac3f7",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is extra expense coverage?"
+  },
+  {
+   "id": "7c701ba5-1db0-47f0-921d-036f45637872",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is fire legal liability coverage?"
+  },
+  {
+   "id": "33d66fe9-9e33-46b8-9b81-347c4b2f868e",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is flood insurance typically excluded from?"
+  },
+  {
+   "id": "09344044-9c14-4b6d-bd69-2f1bd1f07d64",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is garage liability coverage?"
+  },
+  {
+   "id": "76ddf552-d5e3-4297-b333-bb8a6c9f7436",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is garagekeepers coverage?"
+  },
+  {
+   "id": "52234d0f-b38f-4a26-99a3-50da2ff85956",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is general average in marine insurance?"
+  },
+  {
+   "id": "4e23074b-7a08-4350-ac1c-b483bd8411e6",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is hired and non-owned auto coverage?"
+  },
+  {
+   "id": "e8a2f157-9fdb-4684-835b-9c585eaa54da",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is hull insurance?"
+  },
+  {
+   "id": "2ec121f1-7299-4d48-acea-b3fb95d8dafc",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is liquor liability insurance?"
+  },
+  {
+   "id": "f1dc7c09-6067-4bd4-bae6-062e091065cc",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is medical payments coverage in a CGL policy?"
+  },
+  {
+   "id": "ab6d08e1-6106-4b1a-acc1-345c69bad4b4",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is medical payments coverage in commercial auto?"
+  },
+  {
+   "id": "274cf9a1-3967-43c8-8a7f-ab69f5df3682",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is ocean marine insurance?"
+  },
+  {
+   "id": "0ca64e59-c636-4dd9-ba81-e805bfe1dd98",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is ordinance or law coverage?"
+  },
+  {
+   "id": "23816fcf-1c77-401b-bc87-a30afa448f3c",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is premises liability?"
+  },
+  {
+   "id": "0965cd50-9efe-4f70-8663-06053c841bb5",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is products liability insurance?"
+  },
+  {
+   "id": "7194be7a-c581-47ee-b4ca-859504592160",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is professional liability insurance also known as?"
+  },
+  {
+   "id": "de8ffd05-d309-4f67-a798-201c92578fcd",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is spoilage coverage?"
+  },
+  {
+   "id": "bfcb7d5d-3928-4360-b7a1-82855e0ba45c",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is supplementary payments coverage in CGL?"
+  },
+  {
+   "id": "b41056b1-1f68-4e6f-a754-c16dd2b556ad",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is terrorism insurance coverage?"
+  },
+  {
+   "id": "9d482eae-2401-45dd-b324-e287fd24e7f1",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is the FAIR Plan?"
+  },
+  {
+   "id": "40870fbe-42dd-4718-99e1-9eb3aa065bf4",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is the National Flood Insurance Program (NFIP)?"
+  },
+  {
+   "id": "8b1cf63f-6966-4b4f-8ffb-340c07ab4307",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is the difference between burglary and robbery?"
+  },
+  {
+   "id": "6ca64545-1c59-4875-b84c-4d048a5f7228",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is the difference between occurrence and claims-made coverage?"
+  },
+  {
+   "id": "34f5a539-05c2-47cc-a3cd-ced989dd6f2c",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is the difference between scheduled and blanket coverage?"
+  },
+  {
+   "id": "707bfcf2-95a0-48c8-8661-2b0b8db6eb3e",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is the duty to defend in liability insurance?"
+  },
+  {
+   "id": "13e83447-820d-4b7b-999c-26dd0a2b9244",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is the liberalization clause in a property policy?"
+  },
+  {
+   "id": "d25ed58d-5b76-49a2-b7ec-633ca9362eef",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is the mobile equipment exclusion in commercial auto policies?"
+  },
+  {
+   "id": "9c8dfd32-2cf5-4664-8af4-496535a694b7",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is the pollution exclusion in CGL policies?"
+  },
+  {
+   "id": "6e8bcd69-ae60-499c-befc-21283bb7f088",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is the primary purpose of workers' compensation insurance?"
+  },
+  {
+   "id": "9bf96d0d-76ba-4a51-a42d-028ffd38a9e7",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is the products-completed operations aggregate limit?"
+  },
+  {
+   "id": "dcf451de-3093-4ab6-9a7f-6db947790881",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is the purpose of a Business Owner's Policy (BOP)?"
+  },
+  {
+   "id": "767b3a96-fc2f-4ba4-a06d-2819f5b500cf",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is the purpose of a blanket policy?"
+  },
+  {
+   "id": "ad6718fb-4ea4-4132-80b6-7a6a84cb32b8",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is the purpose of a commercial auto policy?"
+  },
+  {
+   "id": "7a1a3d21-303a-428b-82fb-aa01e8a00292",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is the purpose of a commercial property policy?"
+  },
+  {
+   "id": "feefaf53-7954-4a3c-a94c-b47580d73c2e",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is the purpose of a manuscript policy?"
+  },
+  {
+   "id": "db37d948-65e9-47c6-80a9-1f220a104e7b",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is the purpose of umbrella liability insurance?"
+  },
+  {
+   "id": "184ab0d7-8871-46e1-81c7-5299275873d5",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is the standard fire policy?"
+  },
+  {
+   "id": "292e473b-f01b-4804-a91b-c8e8e6b329b4",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is utility services coverage?"
+  },
+  {
+   "id": "93e3f65f-dbb6-42fe-8c06-cc89e8c0c5c5",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is valuable papers coverage?"
+  },
+  {
+   "id": "c0e03ff6-9748-4316-b4a7-ac49e92f76c1",
+   "category": "general_lines",
+   "topic": "gl_commercial",
+   "question": "What is vicarious liability?"
+  },
+  {
+   "id": "6b5dec50-cb6e-478a-a649-0d0b721f4da7",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "In Texas, workers' compensation is:"
+  },
+  {
+   "id": "458048df-a31e-43d0-90f9-d65f9cd95a70",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What fiduciary duty does an agent owe to their clients?"
+  },
+  {
+   "id": "34ffecc4-c9aa-4d0f-b099-72fb3ae77dbf",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is General Lines insurance in Texas?"
+  },
+  {
+   "id": "c8bfd88e-3dbf-41f3-9abc-0d64f154e0f4",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is a material misrepresentation?"
+  },
+  {
+   "id": "2f8f8254-4dd6-4aca-bfbd-81974ace8cd3",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is an admitted insurance company?"
+  },
+  {
+   "id": "a90c14c8-4d78-4f47-a38c-7c6efe79d19c",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is an admitted insurance company?"
+  },
+  {
+   "id": "409a4859-2381-4564-9117-d2403bd8e44b",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is churning in insurance?"
+  },
+  {
+   "id": "8ace3fdd-1e23-4323-b4cf-2cc6fb46e442",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is churning in insurance?"
+  },
+  {
+   "id": "54bea775-a019-4a85-b467-c71ad45ddfd1",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is computer fraud coverage?"
+  },
+  {
+   "id": "1529258a-21a2-46e4-a71a-862c7ca779eb",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is personal and advertising injury coverage in CGL?"
+  },
+  {
+   "id": "5193afac-2b9d-4b9f-a7fa-91160aea1ddc",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is rebating in insurance?"
+  },
+  {
+   "id": "92a291a6-a6a6-4051-8446-4de717c9b4ac",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is rebating in insurance?"
+  },
+  {
+   "id": "589b7e8a-e1da-4b72-af8b-bcb0a71d4120",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is social engineering fraud coverage?"
+  },
+  {
+   "id": "281224aa-7384-43b7-9ec2-a0783c33427b",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is surplus lines insurance?"
+  },
+  {
+   "id": "ad31af8d-42b8-4aee-92e7-b5d5c23fa3dc",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is surplus lines insurance?"
+  },
+  {
+   "id": "94826d80-eae3-4bcc-ab4e-e1cd8e426fe3",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is the Texas Department of Insurance (TDI)?"
+  },
+  {
+   "id": "f90bf8a2-7a92-4b3f-8750-31852c2ce977",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is the Texas Windstorm Insurance Association (TWIA)?"
+  },
+  {
+   "id": "db84bdfe-23d7-43eb-af25-8f2e9f1c6725",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is the Texas agent licensing examination requirement?"
+  },
+  {
+   "id": "174a541b-7ea1-498d-96e5-9bcc67f8b5ca",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is the Texas personal auto policy minimum liability requirement?"
+  },
+  {
+   "id": "4b6f02d9-081e-4021-bc50-12979d5bde6b",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is the continuing education requirement for Texas insurance agents?"
+  },
+  {
+   "id": "0cb8e5cc-8deb-4b23-94bb-b928bcd4ae00",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is the difference between a broker and an agent in Texas?"
+  },
+  {
+   "id": "daff42a4-9fb4-4dd1-b4de-73933f62cda4",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is the difference between concealment and misrepresentation?"
+  },
+  {
+   "id": "002a97d2-c088-44e6-b2d9-350a21dfb2a5",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is the difference between fraud and misrepresentation?"
+  },
+  {
+   "id": "8737f97f-3d61-4b64-949b-cb5a0c0acc1f",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is the examination under oath provision?"
+  },
+  {
+   "id": "d0a1fb2a-5697-4229-9a8a-fa520c064579",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is the minimum age to be licensed as an insurance agent in Texas?"
+  },
+  {
+   "id": "c30bde0f-40dd-4a2a-8b0a-85ef7089cb98",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is the penalty for selling insurance without a license in Texas?"
+  },
+  {
+   "id": "1802c721-b1de-4937-9cb8-0f8d456bb6b0",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is the purpose of the Texas Guaranty Association?"
+  },
+  {
+   "id": "74e77e04-c489-4faf-bbcc-6477739a1940",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is twisting in insurance?"
+  },
+  {
+   "id": "dc315c29-d5d7-41c3-8f79-3006eb3c26f3",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "What is twisting in insurance?"
+  },
+  {
+   "id": "02513cc3-46aa-4716-9e6c-53ae0e79d091",
+   "category": "general_lines",
+   "topic": "gl_ethics",
+   "question": "Who regulates insurance in Texas?"
+  },
+  {
+   "id": "ad9412ac-90c1-42bf-82e7-2e865850da4b",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What are policy conditions?"
+  },
+  {
+   "id": "60ec0ca7-8676-4cd4-810b-ad7f920ce438",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What does 'aleatory' mean regarding insurance contracts?"
+  },
+  {
+   "id": "eb903c16-5736-4e02-89cc-5e8403e45528",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What does 'premium' mean in insurance terminology?"
+  },
+  {
+   "id": "9140a392-ddf8-43e5-88f3-4ee7fb3a8d47",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is MCS-90 endorsement?"
+  },
+  {
+   "id": "9ce2d06b-a3f1-4152-8487-9ae555a09762",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is Protection and Indemnity (P&I) coverage?"
+  },
+  {
+   "id": "0d08a702-32bd-48ec-b3b3-afcdcd403558",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is a captive insurance company?"
+  },
+  {
+   "id": "cb37a348-0bc8-43d7-b0ad-d2b02c1a8851",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is a claim adjuster?"
+  },
+  {
+   "id": "8bb114b3-998e-4d72-82bc-1aa0e43dfec6",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is a combined ratio in insurance?"
+  },
+  {
+   "id": "3f35bafa-3835-439b-b607-a27ed2e9fb6f",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is a conditional contract in insurance?"
+  },
+  {
+   "id": "11adfd76-0551-411e-9725-851417fe3eed",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is a large deductible program?"
+  },
+  {
+   "id": "35c8b8bd-e41b-4859-8946-d7d7fad1323a",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is a loading in insurance premiums?"
+  },
+  {
+   "id": "4f3c6445-4f68-4d75-a215-2b2210794e95",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is a loss exposure?"
+  },
+  {
+   "id": "5f7c427d-883a-49e7-b8f6-fab56c61cca9",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is a loss payee?"
+  },
+  {
+   "id": "fc639ea8-71e5-4baa-8985-18fb8913b8f0",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is a loss ratio?"
+  },
+  {
+   "id": "46e8c2f0-a795-45a3-832d-3a3c4a04891d",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is a physical hazard?"
+  },
+  {
+   "id": "ea0bbb81-c944-4b34-895d-c616cec6115f",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is a public adjuster?"
+  },
+  {
+   "id": "3f69707a-e81d-4e1e-970e-c7becac878df",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is a pure premium?"
+  },
+  {
+   "id": "721473e1-1073-4511-a319-dcbb474e9d76",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is a retrospective rating plan?"
+  },
+  {
+   "id": "9011f0ab-19f3-46fd-b326-be4022b5a7b7",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is a risk management program?"
+  },
+  {
+   "id": "cc86d6e3-84d9-4455-947b-c709c8c04679",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is a self-insured retention (SIR)?"
+  },
+  {
+   "id": "018bc75a-f9dc-4abd-a5a9-2a165c68a637",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is a unilateral contract?"
+  },
+  {
+   "id": "48ca7de1-8b16-4a5b-9a55-65c0a493676a",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is a valued policy?"
+  },
+  {
+   "id": "339fd630-7058-432b-b0cc-455b44f58a3e",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is a waiver of subrogation?"
+  },
+  {
+   "id": "306d0118-d22f-45ad-91ba-6288d4a60921",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is a warranty in an insurance contract?"
+  },
+  {
+   "id": "794e5628-9253-421f-96fc-6851b512ea9f",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is adverse selection in insurance?"
+  },
+  {
+   "id": "0c042660-9a94-410a-a659-8392d910577c",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is an aleatory contract?"
+  },
+  {
+   "id": "49f5d4ea-3586-44ec-8fb7-2d0249cf3aea",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is an appraisal clause?"
+  },
+  {
+   "id": "aa20a45f-ae66-4e24-8f13-47bdbe8a29d2",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is an endorsement in insurance?"
+  },
+  {
+   "id": "326ff389-d243-44ca-bc48-35bc27ef499d",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is an independent adjuster?"
+  },
+  {
+   "id": "2b4617e6-21bb-4db3-a2cf-9b00582f935a",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is an insurance binder?"
+  },
+  {
+   "id": "d12a6488-e811-4667-bb8f-08a29c731791",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is concurrent causation?"
+  },
+  {
+   "id": "d5425735-8258-4c96-a9c4-fedf074ad4be",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is facultative reinsurance?"
+  },
+  {
+   "id": "eab1b11d-3626-4c68-ad1e-8ee9d5c9bacc",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is frequency in risk analysis?"
+  },
+  {
+   "id": "5a26fb5f-998f-400b-96e7-6aabd1177633",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is insurable interest?"
+  },
+  {
+   "id": "6ecbde73-ff12-48d3-a47e-17dc4b186866",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is moral hazard?"
+  },
+  {
+   "id": "2f6504da-289c-4304-a799-0edb683830b2",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is morale hazard?"
+  },
+  {
+   "id": "b842c3c6-43a2-4562-b387-8d8439a5e5ac",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is nonrenewal in insurance?"
+  },
+  {
+   "id": "a2346ba7-868b-49aa-8f0a-ab7646a6988d",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is pro rata cancellation?"
+  },
+  {
+   "id": "5f135aed-15ab-4d06-b857-a1d3f88f7c0f",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is rate making in insurance?"
+  },
+  {
+   "id": "aa39bee7-c058-4de4-bb16-a70a8170ab78",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is risk avoidance?"
+  },
+  {
+   "id": "4c7e503c-01e0-4bfc-9cc2-18da3803a700",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is risk pooling?"
+  },
+  {
+   "id": "510c3960-4fb5-47c9-ac5d-1c5ec613a8c6",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is risk retention?"
+  },
+  {
+   "id": "b012e759-9c12-440c-b44f-c233540cb443",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is risk transfer?"
+  },
+  {
+   "id": "ac447b8a-a4ce-446a-af7b-9050e48609c7",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is salvage in insurance?"
+  },
+  {
+   "id": "a333e3e0-cd59-4571-8d2a-2a789cace869",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is severity in risk analysis?"
+  },
+  {
+   "id": "bcf79476-c59c-4140-8164-3f75e3b2f686",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is short rate cancellation?"
+  },
+  {
+   "id": "ee625aff-ec84-423a-b1f8-4b456595bea2",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is subrogation in insurance?"
+  },
+  {
+   "id": "8bcc4071-b916-4ea9-a873-d1e7e568fd15",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the adhesion characteristic of insurance contracts?"
+  },
+  {
+   "id": "75d06899-6aa5-448e-932e-8d7ddcc77ef8",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the cancellation provision in a policy?"
+  },
+  {
+   "id": "3eaef517-018b-4df0-b5a1-1f0fd90c4910",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the care, custody, or control exclusion?"
+  },
+  {
+   "id": "15ba82e4-61db-4d29-9342-f392b8ebd11b",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the difference between a representation and a warranty in insurance?"
+  },
+  {
+   "id": "6e707e71-7f7b-40fc-8148-4248d836ffa7",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the difference between named perils and open perils coverage?"
+  },
+  {
+   "id": "34517d00-48f1-483b-be6a-09ea66d6c706",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the difference between primary and excess insurance?"
+  },
+  {
+   "id": "349d75bb-30f3-4fd4-b538-bf00b0557d90",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the difference between replacement cost and actual cash value?"
+  },
+  {
+   "id": "a5c5891a-9ed3-423b-b45a-9b91d3d1d76e",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the doctrine of reasonable expectations?"
+  },
+  {
+   "id": "c6d9f444-8633-4c94-9bc2-ef9eda1002df",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the duty of utmost good faith in insurance?"
+  },
+  {
+   "id": "fdec2606-4724-4f21-8856-390c8ab9063e",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the duty to cooperate?"
+  },
+  {
+   "id": "1932bc6a-d972-41ac-889b-9822ff5c21f1",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the expected or intended injury exclusion?"
+  },
+  {
+   "id": "0cebf35a-65c7-4f1b-b86b-36512a8ffe74",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the law of large numbers?"
+  },
+  {
+   "id": "d66d646a-e9cf-4985-9042-d1a709caf736",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the notice of loss requirement?"
+  },
+  {
+   "id": "1d336e47-c478-48a5-932b-35ca42411446",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the principle of indemnity?"
+  },
+  {
+   "id": "5aa1f750-5a5f-416d-a8cb-b6ff590e602a",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the principle of indemnity?"
+  },
+  {
+   "id": "e3517be7-654f-41b7-b3e3-ad2ed3d884c7",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the proof of loss requirement?"
+  },
+  {
+   "id": "8dc49b8c-3e11-41ea-a1d1-269685ebb7ca",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the proximate cause of loss?"
+  },
+  {
+   "id": "957ad9aa-81cc-42db-903a-caf2227d5d91",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the purpose of a binder in insurance?"
+  },
+  {
+   "id": "ca4f73b1-deef-42b2-81d9-bd37a0973b36",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the purpose of a deductible in insurance?"
+  },
+  {
+   "id": "6cae3b63-2d8d-4f2f-bb71-f1b54146236c",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the purpose of a hold harmless agreement?"
+  },
+  {
+   "id": "80463efc-9438-45b3-919a-b3dd7b188e17",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the purpose of a reservation of rights letter?"
+  },
+  {
+   "id": "2478304e-0b00-4307-9385-ee151083198b",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the purpose of loss control services?"
+  },
+  {
+   "id": "e6b9b601-88f9-4458-b755-7b79c5f21567",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the purpose of reinsurance?"
+  },
+  {
+   "id": "9a65b824-de22-4256-a35a-ec1bfa877e25",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the purpose of the 'other insurance' clause?"
+  },
+  {
+   "id": "59563235-cf23-4868-ba69-1be111720ff9",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the purpose of the declarations page in an insurance policy?"
+  },
+  {
+   "id": "ee2f9fce-3209-4052-96b0-c20a771b8655",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is the role of an insurance underwriter?"
+  },
+  {
+   "id": "88c842c6-d58e-4692-9f9f-b7e45abf9a20",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is treaty reinsurance?"
+  },
+  {
+   "id": "42a5bdb0-8dd8-4d91-aca0-3560d1be984a",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is underwriting in insurance?"
+  },
+  {
+   "id": "0faa4583-688c-4b54-8ec3-ae99af78480f",
+   "category": "general_lines",
+   "topic": "gl_risk",
+   "question": "What is utmost good faith in insurance?"
+  },
+  {
+   "id": "4a5b1e5f-0d8a-435c-8fd5-59f74fde1842",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is a deferred annuity?"
+  },
+  {
+   "id": "651a3933-2bed-4afb-8ad1-1de261d58af5",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is a deferred annuity?"
+  },
+  {
+   "id": "9d1fcf84-d9fc-4c94-91b4-eedaffff9efa",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is a deferred annuity?"
+  },
+  {
+   "id": "c2a829af-6912-465b-b2b4-a95726f1d7a7",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is a fixed annuity?"
+  },
+  {
+   "id": "d21faeb7-2bf7-4b08-8b65-c32e5a8a1902",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is a fixed annuity?"
+  },
+  {
+   "id": "6583d687-c3c5-4755-be0d-01effd77c0b4",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is a flexible premium annuity?"
+  },
+  {
+   "id": "1e09e213-5b4c-4ac3-a009-fbee61e4dc80",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is a joint and survivor annuity?"
+  },
+  {
+   "id": "cf3fb4f2-53d9-4a5d-b2da-34711717e791",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is a life annuity?"
+  },
+  {
+   "id": "eaa44d2f-fde6-49e8-8879-bbb8dde7eaa2",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is a non-qualified annuity?"
+  },
+  {
+   "id": "2e29bd16-737f-4c74-97a5-5df0131980c5",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is a qualified annuity?"
+  },
+  {
+   "id": "bff7dc82-a12e-4cc6-9dc1-a3bdb0cf753b",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is a refund annuity?"
+  },
+  {
+   "id": "41621cec-4623-4788-b241-5c8abe0aef23",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is a single premium annuity?"
+  },
+  {
+   "id": "17f491ff-bbcc-4e8a-a54a-4e2edbd9fad3",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is a variable annuity?"
+  },
+  {
+   "id": "df1bf2da-b566-4212-98ab-f88f965c3601",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is an annuity period certain?"
+  },
+  {
+   "id": "e6e00041-0cb6-4c2e-a554-5f2385d3e5aa",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is an annuity's accumulation period?"
+  },
+  {
+   "id": "889c3394-8261-4812-ac01-0d90d0b85c3f",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is an annuity?"
+  },
+  {
+   "id": "933135e4-0745-4aa1-a91a-169ee31f55e6",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is an annuity?"
+  },
+  {
+   "id": "5cfc5310-2ab6-4f45-8154-abcb861da599",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is an equity-indexed annuity?"
+  },
+  {
+   "id": "b8693cc8-5ea2-4956-a57d-112b578572b6",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is an exclusion ratio in annuities?"
+  },
+  {
+   "id": "ee4a51fa-f908-4965-b6f8-85c08eb64b7f",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is an immediate annuity?"
+  },
+  {
+   "id": "ff9d2f62-0a1d-4cec-aa79-8d66e71040c4",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is the 10% early withdrawal penalty for annuities?"
+  },
+  {
+   "id": "b0dd4dbf-778f-4915-a2d1-60d8197ed19d",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is the accumulation period of an annuity?"
+  },
+  {
+   "id": "1bfbab19-683e-447f-bfca-7fe26c64ec4b",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is the annuity period (annuitization)?"
+  },
+  {
+   "id": "597848be-a4f0-4a6a-997a-6d130d624487",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is the death benefit guarantee in a variable annuity?"
+  },
+  {
+   "id": "72ad4098-a339-4502-974f-e52d5f778e84",
+   "category": "life_insurance",
+   "topic": "li_annuities",
+   "question": "What is the surrender charge in an annuity?"
+  },
+  {
+   "id": "0fadb19c-5018-4c1e-ba28-17a91817e9ab",
+   "category": "life_insurance",
+   "topic": "li_health",
+   "question": "What is a long-term care rider?"
+  },
+  {
+   "id": "fca750ae-e4e2-4ef2-819e-568f5f061b85",
+   "category": "life_insurance",
+   "topic": "li_health",
+   "question": "What is an HMO?"
+  },
+  {
+   "id": "1877512e-aec0-4406-9ae1-650021d27c80",
+   "category": "life_insurance",
+   "topic": "li_health",
+   "question": "What is disability income insurance?"
+  },
+  {
+   "id": "4754b034-a37d-4169-b5a8-9ed1d06278c4",
+   "category": "life_insurance",
+   "topic": "li_health",
+   "question": "What is long-term care insurance?"
+  },
+  {
+   "id": "97b9dc6e-303a-4acd-884c-d75345e3257f",
+   "category": "life_insurance",
+   "topic": "li_health",
+   "question": "What is the Texas Life and Health Insurance Guaranty Association?"
+  },
+  {
+   "id": "21d2890c-1ac3-4f20-8d9c-a2eba6f509bc",
+   "category": "life_insurance",
+   "topic": "li_health",
+   "question": "What is the accidental death benefit rider?"
+  },
+  {
+   "id": "9d20d823-f4bb-433f-82a6-f9eb505a14ea",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "Are life insurance death benefits generally taxable as income?"
+  },
+  {
+   "id": "2c247b87-e5d6-4a7b-b92b-66909d90f781",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "Are life insurance dividends taxable?"
+  },
+  {
+   "id": "82648de4-2c37-4472-9f7d-5fb01a049a9c",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "Is cash value growth in a life insurance policy taxable?"
+  },
+  {
+   "id": "82e59fc0-39e9-4ec4-810c-7aea11b57a8c",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What are non-forfeiture options?"
+  },
+  {
+   "id": "06af5744-91ae-4206-8372-4ffc3bd8f2a8",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What are policy loans?"
+  },
+  {
+   "id": "fb7e4916-929b-4ab6-9a56-4f502e9f3a8d",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What dividend option applies dividends toward premium payments?"
+  },
+  {
+   "id": "ba2286d3-fcea-42ed-a1f2-36bde6884588",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What dividend option uses dividends to purchase additional paid-up insurance?"
+  },
+  {
+   "id": "c0960afb-bfb0-424f-8fb0-2885e7ec3430",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What happens if a policy loan is not repaid?"
+  },
+  {
+   "id": "905e8090-f19a-4561-88af-a3ff0a8478f0",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What happens when a universal life insurance policy lapses due to insufficient cash value?"
+  },
+  {
+   "id": "b9897cd5-d0ed-415b-9f94-c245e0d9d16b",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a 1035 exchange?"
+  },
+  {
+   "id": "5a5e1954-50ce-468b-8110-cab1e24858c8",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a Modified Endowment Contract (MEC) in life insurance?"
+  },
+  {
+   "id": "36a2c72d-250a-45d3-89f6-e739e0cba74b",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a Modified Endowment Contract (MEC)?"
+  },
+  {
+   "id": "bd5122d9-e605-4c02-a695-81c97cc426dd",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a beneficiary in a life insurance policy?"
+  },
+  {
+   "id": "46e804dd-2e04-4928-b8b4-5c1ff072198a",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a beneficiary in life insurance?"
+  },
+  {
+   "id": "1fa6e17e-8963-4be5-95ae-7e41666c1666",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a beneficiary?"
+  },
+  {
+   "id": "247baf52-51e5-4c67-b072-0e05b9eec66c",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a buy-sell agreement funded with life insurance?"
+  },
+  {
+   "id": "933a864a-a187-4fc5-afbc-eb9b3689fb9e",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a certificate of insurance in group life?"
+  },
+  {
+   "id": "3b56aa54-edc7-4ca9-85ae-0f231a617cb8",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a child term rider?"
+  },
+  {
+   "id": "50901347-8098-4eea-baa5-7627be71ed4b",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a collateral assignment?"
+  },
+  {
+   "id": "dfc1393a-a924-4bf8-a20a-f5d89c952a18",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a contingent beneficiary?"
+  },
+  {
+   "id": "8517b699-5685-42c4-8fc9-0aaa57929961",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a cost of living rider?"
+  },
+  {
+   "id": "343aebf3-d559-4958-b3b4-c88e88890fc0",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a cross-purchase buy-sell agreement?"
+  },
+  {
+   "id": "6ddb95af-d4d9-4b68-b445-5d0323fbfec2",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a graded death benefit?"
+  },
+  {
+   "id": "87c7d020-231c-464c-b7d2-c0a47cdf9d3b",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a guaranteed insurability rider?"
+  },
+  {
+   "id": "a483d177-0bc4-4c25-8faf-4cc89c2f5912",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a hazardous occupation rider?"
+  },
+  {
+   "id": "6297f28d-acd6-4cd8-bb72-0801c9912275",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a joint life insurance policy?"
+  },
+  {
+   "id": "48179d4f-9389-41ba-906d-9a862932072a",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a key person life insurance policy?"
+  },
+  {
+   "id": "dbf10af0-d9e2-4f48-be15-984edfb67f8d",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a life settlement?"
+  },
+  {
+   "id": "039d4040-8a4c-4ed3-ab14-a967dacab689",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a lump-sum settlement option?"
+  },
+  {
+   "id": "8e6d9757-3c76-4ea1-863f-daea5a4c5c09",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a mortality table?"
+  },
+  {
+   "id": "4aa6a928-25c6-4de3-9852-d9255bae1b18",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a non-participating policy?"
+  },
+  {
+   "id": "4409c2b3-3420-45df-bdc8-8c8612ea09a0",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a participating policy?"
+  },
+  {
+   "id": "5f27403c-d92d-4bf5-b282-4158f189a57c",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a policy surrender?"
+  },
+  {
+   "id": "97d95992-7d77-4801-9523-1b9ee5833df3",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a preferred risk classification?"
+  },
+  {
+   "id": "68c94851-5587-49a5-9111-658e3886014a",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a premium in life insurance?"
+  },
+  {
+   "id": "ec7beeca-e043-4468-8ee5-acc02e9bc626",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a primary beneficiary?"
+  },
+  {
+   "id": "cff49d00-07d4-4d9c-8d45-fa6b61b51a1c",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a spendthrift clause?"
+  },
+  {
+   "id": "07c2c3c2-4597-4cc5-ba3e-681264531115",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a standard risk classification?"
+  },
+  {
+   "id": "b34cd67f-62f2-462d-a9fa-2e6dc2474e97",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a substandard (rated) risk classification?"
+  },
+  {
+   "id": "9e8e8166-a565-445d-9fab-f9c93ac74cba",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a survivorship life insurance policy (second-to-die)?"
+  },
+  {
+   "id": "6b426efa-dd43-49b9-a268-49717025648f",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a term conversion rider?"
+  },
+  {
+   "id": "40db72d8-8894-47d9-92eb-a82ea12e2ca1",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a viatical settlement?"
+  },
+  {
+   "id": "d6f23033-223a-49a9-a364-32e9e09acf6c",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is a waiver of premium rider?"
+  },
+  {
+   "id": "47a37e4b-d4e1-4c5d-a5cb-42fc8e1dbd97",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is an absolute assignment?"
+  },
+  {
+   "id": "b470a26d-d9f3-4425-9426-dbc9da0b6e92",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is an entity (stock redemption) buy-sell agreement?"
+  },
+  {
+   "id": "0f019f21-f6f1-4fc0-abca-ad421dc0cf0f",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is an irrevocable beneficiary?"
+  },
+  {
+   "id": "a8aba55e-0f74-4615-bd9c-7de33e23d0d6",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is an irrevocable life insurance trust (ILIT)?"
+  },
+  {
+   "id": "d18e6c1a-dddb-42f4-9ac3-e0ce8e573c42",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is cash value in life insurance?"
+  },
+  {
+   "id": "af9c30da-5724-43e2-bca7-f70f4a83047b",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is chronic illness rider?"
+  },
+  {
+   "id": "12e5e3c2-125e-4477-9511-d7c08838f597",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is convertible term life insurance?"
+  },
+  {
+   "id": "d8247d86-81d1-4248-b92a-61488d4e4eb5",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is corporate-owned life insurance (COLI)?"
+  },
+  {
+   "id": "cd5e8442-4d51-4801-bc1a-b77899ab26e2",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is credit life insurance?"
+  },
+  {
+   "id": "55d4b07c-e475-469f-95d2-3bce2c964f37",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is decreasing term life insurance?"
+  },
+  {
+   "id": "2154c63e-cbf5-4034-8dc1-b11f7128d5db",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is extended term insurance as a nonforfeiture option?"
+  },
+  {
+   "id": "b3424594-4156-44ba-bdaa-6e7a1a94d3f1",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is family income policy?"
+  },
+  {
+   "id": "287af7b5-6be0-4632-b5d7-adef29ef87a1",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is family maintenance policy?"
+  },
+  {
+   "id": "c3583c5c-07f2-4bb1-8ed6-6cca29d9d129",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is final expense insurance?"
+  },
+  {
+   "id": "baf21d85-d5c8-43d4-9f1b-5791cbdd5097",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is graded premium whole life insurance?"
+  },
+  {
+   "id": "9cdc1b15-6f5d-46d4-9926-8552f1dd45d4",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is group life insurance?"
+  },
+  {
+   "id": "dca4bd73-1e8a-4c9c-9a3b-fddedf47c4c9",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is guaranteed issue life insurance?"
+  },
+  {
+   "id": "a5838474-3d4c-4f5e-8bcd-4f5d3665b511",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is indexed universal life insurance?"
+  },
+  {
+   "id": "6b2142db-f297-4ced-814f-ae2d3a3e9f01",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is industrial life insurance?"
+  },
+  {
+   "id": "638943d3-21b2-41b7-bdce-b384e04a4000",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is insurable interest in life insurance?"
+  },
+  {
+   "id": "257a4fbc-b432-46ee-b3b2-52f220f2e047",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is joint life insurance?"
+  },
+  {
+   "id": "18530c44-f647-464f-a6ac-30568ab76924",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is juvenile life insurance?"
+  },
+  {
+   "id": "5a74d8aa-309d-4e46-84c9-f94a1b363213",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is key person life insurance?"
+  },
+  {
+   "id": "8fe0c47b-7dc1-42e9-897b-9cf66577148b",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is level term life insurance?"
+  },
+  {
+   "id": "adef0823-56a9-4013-bc3f-912d3ceadf9d",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is limited pay life insurance?"
+  },
+  {
+   "id": "864a1086-daa7-40db-bb98-a4456a428a99",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is modified whole life insurance?"
+  },
+  {
+   "id": "ec1ba495-a691-4edf-9c37-7c40ee4094d6",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is mortgage life insurance?"
+  },
+  {
+   "id": "53446db7-877c-476b-a617-7716cce03de0",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is needs-based selling?"
+  },
+  {
+   "id": "ab5cb65e-c59d-4ff3-9481-8e1798d737b2",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is nonforfeiture in life insurance?"
+  },
+  {
+   "id": "ad9f637f-f217-465b-a1df-289894a117df",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is reduced paid-up insurance as a nonforfeiture option?"
+  },
+  {
+   "id": "22357ded-6260-4ea6-9132-7876cbd2901f",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is renewable term life insurance?"
+  },
+  {
+   "id": "144d6f85-0682-4fa0-b41e-31c61c69ef12",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is simplified issue life insurance?"
+  },
+  {
+   "id": "1ab8dc46-65f1-4715-8cf1-f062e763afc2",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is single premium life insurance?"
+  },
+  {
+   "id": "3aaa2145-1367-4417-846a-1ea260f672ae",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is split-dollar life insurance?"
+  },
+  {
+   "id": "7dea9d75-9f8c-4d87-a268-0fac5b86faa7",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is survivorship (second-to-die) life insurance?"
+  },
+  {
+   "id": "38b216f0-7325-419c-b28a-85f21cb0ea0f",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is term life insurance?"
+  },
+  {
+   "id": "3e0811e6-0d0b-45f0-9f9e-88bde762c109",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the 7-pay test?"
+  },
+  {
+   "id": "21cbb1f3-864e-48ba-abdb-d16be8854437",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the Medical Information Bureau (MIB)?"
+  },
+  {
+   "id": "ecf0c72a-b965-4e30-a5b4-11192eb79955",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the accelerated death benefit rider?"
+  },
+  {
+   "id": "961e5253-c8ec-4599-9160-f6ec9506fd36",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the accumulate at interest dividend option?"
+  },
+  {
+   "id": "2ee85687-c9d0-4e59-953b-2cc5bbed4a28",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the assignment provision?"
+  },
+  {
+   "id": "bf116350-ae51-4281-9aa1-2f6ccad873d5",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the automatic premium loan provision?"
+  },
+  {
+   "id": "2f329ffd-d730-44e0-a1c2-f5915eefbe2e",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the aviation exclusion?"
+  },
+  {
+   "id": "f750f8b4-b8c3-4280-9448-88d5598138e9",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the common disaster clause?"
+  },
+  {
+   "id": "1d8c1e99-faa2-4be9-beb3-223c9160b874",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the contestability period?"
+  },
+  {
+   "id": "bc9e4a66-9ad2-4917-ac45-b1ead51914b3",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the contestability period?"
+  },
+  {
+   "id": "70e0487d-ca65-45af-9e4c-c7d53d196ab2",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the conversion privilege in group life insurance?"
+  },
+  {
+   "id": "24b47ae7-ee30-45df-ae3b-ef77e6cc214b",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the cost basis in a life insurance policy?"
+  },
+  {
+   "id": "d637631f-229b-45e3-ab79-3f81e86631bd",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the cost of insurance in a life insurance policy?"
+  },
+  {
+   "id": "3ceb6fb9-b3f4-464d-b7d3-dfcc5dcd3147",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the difference between a revocable and irrevocable beneficiary?"
+  },
+  {
+   "id": "7d5742bb-b07f-42b7-b4df-ab9bfdec43ff",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the difference between current assumption whole life and traditional whole life?"
+  },
+  {
+   "id": "ffed64bb-808d-4e18-82bf-6cb30c92d993",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the difference between term and whole life insurance?"
+  },
+  {
+   "id": "ffe03b52-4e91-4212-b1b8-d65c392b231c",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the entire contract provision?"
+  },
+  {
+   "id": "da4b083b-e06f-4112-82c5-8e5c6fc4a239",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the face amount of a life insurance policy?"
+  },
+  {
+   "id": "1439692f-ae68-46cf-ad9c-561a6a69933c",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the fixed amount settlement option?"
+  },
+  {
+   "id": "e6b05ce2-a165-4209-8f79-0f61a4a660fe",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the fixed period settlement option?"
+  },
+  {
+   "id": "d0cc6a18-f84e-43e7-8636-536371ba2bf5",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the grace period in life insurance?"
+  },
+  {
+   "id": "de64fa5d-89d1-4676-a64e-0e1f7759d992",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the grace period in life insurance?"
+  },
+  {
+   "id": "f52282ff-1986-4b04-bd0e-62294b956cae",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the guaranteed insurability rider?"
+  },
+  {
+   "id": "820541c3-27fc-469b-bf35-581430064da1",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the human life value approach?"
+  },
+  {
+   "id": "17f76270-307e-481a-8f5c-c6aa7d70f630",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the incontestability clause?"
+  },
+  {
+   "id": "7450d9cf-3275-471e-bccc-7d50cd7ec48f",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the incontestability clause?"
+  },
+  {
+   "id": "84f64c80-529b-4dea-8c82-b435ecb1d2db",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the interest only settlement option?"
+  },
+  {
+   "id": "adb9ec73-4c51-467e-9119-fa6ee9437ae3",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the life income settlement option?"
+  },
+  {
+   "id": "60c44516-a9ab-45c7-8409-e808e6ff558b",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the main difference between term life and whole life insurance?"
+  },
+  {
+   "id": "bc16c3e2-22e8-4183-81e0-c0b87d44d2cd",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the misstatement of age or sex provision?"
+  },
+  {
+   "id": "9db39d85-23a8-4d2d-8122-791e5554a366",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the needs approach to life insurance?"
+  },
+  {
+   "id": "a306a8a8-ff89-4404-b92a-bf7ea5733234",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the payor benefit rider?"
+  },
+  {
+   "id": "0d51dc26-4c2e-4a3a-91c6-c9278ef58d91",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the primary purpose of the life insurance needs analysis?"
+  },
+  {
+   "id": "88aba305-aa7e-405e-8d03-07d4d7279540",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the purpose of a conditional receipt in life insurance?"
+  },
+  {
+   "id": "b6edb908-5c3d-466a-a933-12ed5b6892bf",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the purpose of a life settlement?"
+  },
+  {
+   "id": "f4b71a3a-fa34-4eee-8255-6c31dfe1a7d6",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the purpose of a spendthrift clause in a life insurance policy?"
+  },
+  {
+   "id": "2b61aa84-8f47-458f-97f9-55e5c5d8b5e4",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the purpose of an accelerated death benefit rider?"
+  },
+  {
+   "id": "83233cfc-0f08-41dc-b191-87fa2f997a1d",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the purpose of life insurance?"
+  },
+  {
+   "id": "b0b37b85-7189-444d-917a-da925d2e92e0",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the purpose of the Medical Information Bureau (MIB) in life insurance underwriting?"
+  },
+  {
+   "id": "6d8c9833-425e-4c51-b331-a2f21ed14fb8",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the purpose of the automatic premium loan provision?"
+  },
+  {
+   "id": "6e503837-2960-4c80-8bfb-6c4a4c0e3770",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the purpose of the life insurance policy's assignment provision?"
+  },
+  {
+   "id": "53923857-22ba-4283-8eb2-e45e2878513a",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the purpose of the life insurance policy's entire contract provision?"
+  },
+  {
+   "id": "0d3ace5f-4127-4263-b5cd-a65897fa3d5e",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the purpose of the life insurance policy's incontestability clause?"
+  },
+  {
+   "id": "b0380894-6a57-4615-9757-133acdaf7b85",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the purpose of the life insurance policy's reinstatement provision?"
+  },
+  {
+   "id": "aeadc7da-5ff7-4de5-a784-51b79d0f1eca",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the purpose of the payor benefit rider in life insurance?"
+  },
+  {
+   "id": "3f30230f-2113-42c7-a685-023741c3ca5a",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the reinstatement provision?"
+  },
+  {
+   "id": "f6244f0f-7fa9-4654-9d28-41040c9a76f6",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the return of premium rider?"
+  },
+  {
+   "id": "3f745841-962f-46ec-b7cd-fd66e1b98f91",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the suicide clause?"
+  },
+  {
+   "id": "548a3a54-abe8-418a-a00e-98c1910707e4",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the tax treatment of policy loans?"
+  },
+  {
+   "id": "96853099-b0ce-442c-8ce6-021193ef7c43",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the taxation treatment of life insurance death benefits paid to a beneficiary?"
+  },
+  {
+   "id": "7ab0f7a0-4bbc-4a99-b556-1a23087439ed",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the three-year rule for life insurance and estate taxes?"
+  },
+  {
+   "id": "5fc8a15d-cdcb-437c-a061-9398d25379f8",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the transfer for value rule?"
+  },
+  {
+   "id": "981be4f1-9a4f-470f-b608-934580f78bbc",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the waiver of premium rider?"
+  },
+  {
+   "id": "6f1fa4f8-7748-42fe-891c-cbcb5ad3408e",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is the war exclusion?"
+  },
+  {
+   "id": "8d1e2c0c-e941-4665-98e7-0e7d190dfaa0",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is underwriting in life insurance?"
+  },
+  {
+   "id": "59d144a6-acc7-4f67-b9b1-ff2590c23dd2",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is universal life insurance?"
+  },
+  {
+   "id": "974ac8c7-32cb-47b9-8c65-9fbef46d4f9b",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is universal life insurance?"
+  },
+  {
+   "id": "897aae46-3189-48ca-8aaa-0a87d97f21a7",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is variable life insurance?"
+  },
+  {
+   "id": "1b06127d-4edd-46d7-aa8a-277aea0b47f8",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What is whole life insurance?"
+  },
+  {
+   "id": "2d24abee-a1d5-471e-a4f4-f50483abdd8d",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What type of life insurance provides coverage for a specific period and has no cash value?"
+  },
+  {
+   "id": "f518ebd7-aea3-4853-bca5-9aae1cc2289c",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "What types of exchanges qualify under Section 1035?"
+  },
+  {
+   "id": "e9a03872-eef2-4a28-aeec-29042d064949",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "When must insurable interest exist for life insurance?"
+  },
+  {
+   "id": "bd782827-eb53-4a9d-8eca-ad04baafa065",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "Who owns a group life insurance policy?"
+  },
+  {
+   "id": "cf96a6cf-4f8b-413d-bae1-25f736d3b0ce",
+   "category": "life_insurance",
+   "topic": "li_policies",
+   "question": "Who owns a juvenile life insurance policy?"
+  },
+  {
+   "id": "ce1ffbae-2f3f-4cf3-a7d1-f00942576725",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "How many hours of pre-licensing education are required for a life insurance license in Texas?"
+  },
+  {
+   "id": "201a7c6a-8920-4990-95d7-0fd19bb93d08",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "How often must a Texas life insurance license be renewed?"
+  },
+  {
+   "id": "770b5bf8-5cf8-4ed4-8581-a2a020062966",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "In Texas, what is a viatical settlement?"
+  },
+  {
+   "id": "0f5518b2-2366-469b-9770-39b43ed28bab",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "In Texas, what is required before an agent can sell variable life insurance?"
+  },
+  {
+   "id": "00d8af37-faff-4868-a145-65704b59b3da",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "In Texas, what is the minimum age requirement to obtain a life insurance agent license?"
+  },
+  {
+   "id": "1f49a0e1-3015-4c70-8eee-7179cc1416a3",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "In Texas, what is the standard free look period for life insurance policies?"
+  },
+  {
+   "id": "7078b814-11de-446b-aac4-69a3b47960a1",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "Under Texas law, how long does a life insurance company have to pay a death claim after receiving pr"
+  },
+  {
+   "id": "dd06f34b-0f50-41be-83f3-d9831275e8af",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "Under Texas law, what happens to a life insurance policy if the insured dies during the grace period"
+  },
+  {
+   "id": "8baf7794-030e-4937-921d-7b62043fc3dc",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "Under Texas law, what is the maximum period for a life insurance policy's suicide exclusion clause?"
+  },
+  {
+   "id": "ec60ab67-7af6-4911-9443-84c86671f509",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "What additional license is required to sell variable life insurance?"
+  },
+  {
+   "id": "4f1982e0-90a2-4fcf-a012-b77f113c02ad",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "What form must be completed in Texas when replacing a life insurance policy?"
+  },
+  {
+   "id": "f058d8bf-7854-4fc3-ba68-3909d9b9ecf8",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "What is a fiduciary?"
+  },
+  {
+   "id": "6effe423-e39f-4d31-8e1a-8c3508d0f9cf",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "What is an unfair trade practice in insurance?"
+  },
+  {
+   "id": "78eecaf6-975b-42f4-acab-d8d953a4a036",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "What is replacement in life insurance?"
+  },
+  {
+   "id": "5100aa05-f0d9-4ab6-8eb0-a601196dd308",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "What is stranger-originated life insurance (STOLI)?"
+  },
+  {
+   "id": "b1c733ad-d574-4a52-b891-03fced2cdc8c",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "What is the continuing education requirement for Texas life insurance license renewal?"
+  },
+  {
+   "id": "d8ebedee-d804-4397-b886-7248e5ffcb6c",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "What is the free look period?"
+  },
+  {
+   "id": "0dafc35f-422d-4e67-8684-8b966931663d",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "What is the free-look period for life insurance in Texas?"
+  },
+  {
+   "id": "7114d777-10c6-42b0-9d5d-4168eaaff30e",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "What is the minimum age to obtain a Texas life insurance license?"
+  },
+  {
+   "id": "72c7634f-8a90-4959-af60-4f6af984723b",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "What is the minimum grace period for life insurance premiums in Texas?"
+  },
+  {
+   "id": "001f99cf-9854-4b82-ab25-81366e542355",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "What is the purpose of FINRA in relation to variable life insurance?"
+  },
+  {
+   "id": "c56d058a-b500-4069-a9be-b4e560439dd7",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "What is the purpose of a life insurance policy illustration in Texas?"
+  },
+  {
+   "id": "e1a93370-fd06-44ed-b117-087648b386aa",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "What is the purpose of the Texas Guaranty Association for life insurance?"
+  },
+  {
+   "id": "414e7fa1-8c7e-4f59-91bc-51117e6c5c4d",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "What is the purpose of the insurance company's annual statement?"
+  },
+  {
+   "id": "462299b1-b385-4ea4-845f-1e6902b7a427",
+   "category": "life_insurance",
+   "topic": "li_regulations",
+   "question": "What state agency regulates life insurance in Texas?"
+  },
+  {
+   "id": "cdb2dae1-602f-46fe-b3c4-fbe4ff4349ec",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What are the minimum liability limits required for auto insurance in Texas?"
+  },
+  {
+   "id": "ea7df247-8575-441e-8025-41cd9476089d",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What does PIP coverage provide in auto insurance?"
+  },
+  {
+   "id": "7cfac447-6d0b-4822-a54a-966bfb5e062f",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What factors affect auto insurance premiums?"
+  },
+  {
+   "id": "303a6104-f7ac-4269-a74a-ce0198866f7a",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What happens if you let an uninsured friend drive your car and they cause an accident?"
+  },
+  {
+   "id": "0b40b44c-79dd-4abc-a357-3f4fdce25745",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What is Personal Injury Protection (PIP) in Texas?"
+  },
+  {
+   "id": "b5cfd76a-d3e1-4a1a-be1e-fc629862515c",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What is a personal auto policy (PAP)?"
+  },
+  {
+   "id": "017c9e12-fe64-4c93-b149-38f6d36da0aa",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What is collision coverage?"
+  },
+  {
+   "id": "02a88d57-10bc-4fa6-a767-a1eb2a9f2dc0",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What is commercial auto insurance?"
+  },
+  {
+   "id": "fd9abe01-f4dc-4903-9bbe-d2c4fa4374b0",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What is comprehensive coverage?"
+  },
+  {
+   "id": "5c0f10dc-ec57-48fd-a8bc-6dbaa8a7f52a",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What is gap coverage?"
+  },
+  {
+   "id": "29f4f853-58e7-4135-9297-856665f92951",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What is liability coverage in auto insurance?"
+  },
+  {
+   "id": "5e8aebe4-91c3-4a73-ad66-9fad3fa27b3c",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What is medical payments coverage in auto insurance?"
+  },
+  {
+   "id": "872c20b6-948e-4130-99c7-3919ae4cb8e5",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What is recreational vehicle (RV) insurance?"
+  },
+  {
+   "id": "00ea4305-55ad-45d4-8872-7bce57999ab0",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What is rental reimbursement coverage?"
+  },
+  {
+   "id": "3d99ce30-1208-4543-9273-9fc087943a66",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What is the Texas Automobile Insurance Plan Association (TAIPA)?"
+  },
+  {
+   "id": "1a3d0400-6bc0-4644-a907-4af00d0b1f45",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What is the difference between collision and comprehensive auto coverage?"
+  },
+  {
+   "id": "37fba652-c390-412c-bb4a-64bf33d65544",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What is the good student discount in auto insurance?"
+  },
+  {
+   "id": "55f1a1ee-af40-47fe-8cf3-454ccae8e53a",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What is the motor vehicle exclusion in homeowners policies?"
+  },
+  {
+   "id": "3ca05689-c2a0-4e14-96b4-2bd6f96be4e5",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What is towing and labor coverage?"
+  },
+  {
+   "id": "1e1e5a40-9c98-4353-a8a6-d9d5aab3157d",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What is underinsured motorist coverage?"
+  },
+  {
+   "id": "3417456f-21a9-45dc-9d6b-b5ef91a9e64e",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What is uninsured motorist coverage?"
+  },
+  {
+   "id": "a3b26f17-ff19-45e7-ab36-0168a4488c2c",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "What is uninsured motorist coverage?"
+  },
+  {
+   "id": "901d39f7-c13f-47a4-8f2a-67b029036feb",
+   "category": "property_casualty",
+   "topic": "pc_auto",
+   "question": "Who is covered under a personal auto policy's liability coverage?"
+  },
+  {
+   "id": "d82ec964-eb63-4b60-85b4-6e84876e594a",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is a claims-made policy?"
+  },
+  {
+   "id": "999198f8-133d-4e87-9002-a566268c962a",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is a first-party claim?"
+  },
+  {
+   "id": "5c1f84e9-021b-4b0d-8d5a-3baed413d29e",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is a proof of loss?"
+  },
+  {
+   "id": "4638b5ea-1c4a-4dae-b5a0-874d859e1e49",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is a public adjuster?"
+  },
+  {
+   "id": "e48374d5-ee23-4850-ad7e-4fc8b41c15ed",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is a third-party claim?"
+  },
+  {
+   "id": "e9afc7ff-6322-4d71-8ca7-c0388c7e250c",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is actual cash value (ACV)?"
+  },
+  {
+   "id": "7a5075d6-5803-4022-8a22-b136ced03b16",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is contribution by equal shares?"
+  },
+  {
+   "id": "d65650d1-b711-4c94-a85c-29511a99e72f",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is negligence in liability claims?"
+  },
+  {
+   "id": "47ac72df-a67e-4534-a43d-ebfff5fda534",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is pair and set coverage?"
+  },
+  {
+   "id": "e00f19ef-aed3-4506-a7a6-e2dae7691525",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is replacement cost coverage?"
+  },
+  {
+   "id": "821048f3-a078-4dc7-8a80-205e5659e1f9",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is reservation of rights?"
+  },
+  {
+   "id": "f3252818-b2ed-4b13-9368-16fca921b5c0",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is salvage in insurance?"
+  },
+  {
+   "id": "0ae5560a-6ede-437b-af2c-9a610a87f7d4",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is subrogation in insurance?"
+  },
+  {
+   "id": "07d0f908-8d05-46cd-983b-f448686fc0b0",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is subrogation?"
+  },
+  {
+   "id": "4fb8a248-13e6-44e4-8f10-8cfe052a73ad",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is the appraisal clause?"
+  },
+  {
+   "id": "14aa78d7-8d74-4948-a771-00cb4760b4c1",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is the difference between actual cash value and replacement cost?"
+  },
+  {
+   "id": "9f2695bb-306f-42cf-ae9b-b0cbb1e7dbce",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is the difference between replacement cost and market value?"
+  },
+  {
+   "id": "2802dcff-16cf-4c77-a6a8-7129ea54d02a",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is the duties after loss condition?"
+  },
+  {
+   "id": "ab1e2561-ca96-4603-a7aa-67cf0cf1385f",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is the other insurance condition?"
+  },
+  {
+   "id": "60a2fd1b-c02b-4345-a71b-9c53fa41258d",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is the role of a claims adjuster?"
+  },
+  {
+   "id": "1d13d7e4-fefa-41bf-946b-b28e2d6eb81e",
+   "category": "property_casualty",
+   "topic": "pc_claims",
+   "question": "What is valued policy law?"
+  },
+  {
+   "id": "73b4fcf4-cb24-4c05-aabb-88f434ec7687",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "Is workers' compensation required in Texas?"
+  },
+  {
+   "id": "a35149fa-fcf4-4fc6-bd0b-a07c76b0c39c",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "Texas follows what type of negligence rule?"
+  },
+  {
+   "id": "a4699565-53bb-4a30-8181-2aab15f3d7f5",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What are the four elements required to prove negligence?"
+  },
+  {
+   "id": "05b27548-f2e9-44e3-9f8d-5d097fa8ab80",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What benefits does workers compensation typically provide?"
+  },
+  {
+   "id": "8bece97d-a1ff-4cd4-8a54-bbf7dc0413e9",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What does 'additional insured' mean?"
+  },
+  {
+   "id": "fe018e84-a1c7-486e-b96e-849e3e13f06b",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is Commercial General Liability (CGL) insurance?"
+  },
+  {
+   "id": "8f40a6d3-ed57-4ee5-9151-5ceb4aaba1f0",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is Directors and Officers (D&O) liability insurance?"
+  },
+  {
+   "id": "c178f929-4b28-4c7f-8bf7-abb0007d21da",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is Employment Practices Liability Insurance (EPLI)?"
+  },
+  {
+   "id": "009e6257-fa4a-41be-af2b-e81795c2bd71",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is a fidelity bond?"
+  },
+  {
+   "id": "af48a4b1-19c1-481c-8ef2-b1aaf795fde5",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is a garage keeper's legal liability policy?"
+  },
+  {
+   "id": "a1a60ba0-a25f-48cb-9cab-61538de6b364",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is a hold harmless agreement?"
+  },
+  {
+   "id": "f93a5fd5-fb5a-4bed-90a8-704f19532dc7",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is a surety bond?"
+  },
+  {
+   "id": "b1bac7b4-75a7-4a41-aed8-906a0932aaa3",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is a workers compensation premium audit?"
+  },
+  {
+   "id": "fe0c9afe-35c2-4716-ae55-00e40c9959c6",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is an occurrence trigger in liability insurance?"
+  },
+  {
+   "id": "1b493cf1-1962-4362-9b57-32aaf4b4db90",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is an umbrella policy?"
+  },
+  {
+   "id": "529254ff-71a9-4132-8b98-afbcf4ff7576",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is an umbrella policy?"
+  },
+  {
+   "id": "4b669792-e8b0-43cf-8261-5cabd44cdbca",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is comparative negligence?"
+  },
+  {
+   "id": "c4ec66b6-ae7b-4869-8cea-9a7ace470954",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is contractual liability coverage?"
+  },
+  {
+   "id": "98ab0ed0-2569-48ea-89dc-7ba97a43c5ae",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is cyber liability insurance?"
+  },
+  {
+   "id": "c43a367d-5c0a-4d23-b59a-5a868c8adf4a",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is employers liability coverage in a workers compensation policy?"
+  },
+  {
+   "id": "14a843ea-50fd-4bce-a85d-53f486871cac",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is environmental impairment liability insurance?"
+  },
+  {
+   "id": "379f3c68-120a-4e2e-9543-551d988488fc",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is experience modification in workers compensation?"
+  },
+  {
+   "id": "903d2a7a-3fff-469e-8e50-c42701f0be78",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is fiduciary liability insurance?"
+  },
+  {
+   "id": "691b6625-8b91-455c-beb2-2422884bfebb",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is liability insurance?"
+  },
+  {
+   "id": "da6f3c44-fcf3-4840-a832-e6f762477a36",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is liquor liability insurance?"
+  },
+  {
+   "id": "60a44f6f-92f2-4371-8572-3e95b7723b32",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is negligence in insurance terms?"
+  },
+  {
+   "id": "6df541a9-306d-4611-9a93-d9266a70c726",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is pro rata liability?"
+  },
+  {
+   "id": "39154463-a4d6-492e-a884-ab50e082d6c4",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is products liability coverage?"
+  },
+  {
+   "id": "01b46799-b17b-436c-b88c-959551a90a11",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is professional liability insurance (E&O)?"
+  },
+  {
+   "id": "f9596b52-de20-4ebc-a8ac-0ad7396f7311",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is professional malpractice insurance?"
+  },
+  {
+   "id": "797ebb12-4277-4c18-838c-4185768a5019",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is special events insurance?"
+  },
+  {
+   "id": "16d945e1-d765-4bf3-8b92-a447401166ce",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is strict liability?"
+  },
+  {
+   "id": "54c00c91-3352-42fa-b715-fc7bbf985298",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is the attractive nuisance doctrine?"
+  },
+  {
+   "id": "db5fbca7-ec83-471a-8f84-03cd578f275b",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is the duty to mitigate damages?"
+  },
+  {
+   "id": "a4f555e8-6cdb-4659-b7d0-637729ab8c65",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is the exclusive remedy doctrine in workers compensation?"
+  },
+  {
+   "id": "c70f7a9c-2b5f-4d2b-8150-4923869d62fb",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is the pollution exclusion?"
+  },
+  {
+   "id": "81c67f78-6b2c-4962-837e-35c38128adff",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is the standard workers compensation policy form?"
+  },
+  {
+   "id": "d1465eb2-8897-4150-b8f0-72c1a3c53207",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is vicarious liability?"
+  },
+  {
+   "id": "2d78f9e1-f961-4d13-ab48-424f79e597b8",
+   "category": "property_casualty",
+   "topic": "pc_liability",
+   "question": "What is workers' compensation insurance?"
+  },
+  {
+   "id": "aa0a3a2c-a5af-4f9a-8695-d153c86dc740",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What does 'concurrent causation' mean?"
+  },
+  {
+   "id": "7901195c-3727-4598-b0fc-f8134e85daa5",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What does Coverage A in a homeowners policy cover?"
+  },
+  {
+   "id": "e0671398-fdd9-4ffd-98f5-8c8c117ebb2c",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What does Coverage B in a homeowners policy cover?"
+  },
+  {
+   "id": "4bb99428-0860-4f91-ae2f-c3a9ec96649f",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What does Coverage C in a homeowners policy cover?"
+  },
+  {
+   "id": "5b60ce62-8391-4bf3-8f3e-06b402291370",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What does Coverage D in a homeowners policy cover?"
+  },
+  {
+   "id": "641012e8-0d5c-48cc-ae7b-237700109ebf",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What does Coverage E in a homeowners policy cover?"
+  },
+  {
+   "id": "56edbe18-336e-425d-80d6-144da4b014cf",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What does Coverage F in a homeowners policy cover?"
+  },
+  {
+   "id": "f9278240-d96c-451e-be38-ae5f7f519845",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What does a homeowner's HO-3 policy cover?"
+  },
+  {
+   "id": "3f4e9293-eef5-4718-b783-5da07bdd832c",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What does a homeowner's insurance policy typically cover?"
+  },
+  {
+   "id": "c1d3320b-2067-4b4a-b753-bb2245a49400",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What does a homeowners insurance policy typically cover?"
+  },
+  {
+   "id": "e752e67d-e9e9-4e06-b17a-38f27b1112f0",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What factors affect homeowners insurance premiums?"
+  },
+  {
+   "id": "037e0687-4253-458a-b396-69df98b369d8",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is Texas FAIR Plan?"
+  },
+  {
+   "id": "0ea4b7a4-8ce2-4bb9-a2de-54439889f38c",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is a contractor's equipment floater?"
+  },
+  {
+   "id": "ea5b398f-56bd-4fb7-bc4b-f5af262dd9e4",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is a dwelling policy?"
+  },
+  {
+   "id": "5a414d28-6bc2-43bc-8778-c3ada7cde7d1",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is a loss of income endorsement for homeowners?"
+  },
+  {
+   "id": "71c5fa85-0c2e-45f0-8180-6f42a80c9718",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is a peril in insurance terms?"
+  },
+  {
+   "id": "43e80a97-5880-41ed-ba86-1c2479d0ecb9",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is a scheduled personal property endorsement?"
+  },
+  {
+   "id": "3eed9b25-5cf8-46cf-9d73-b6c1dbea5631",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is agreed value coverage?"
+  },
+  {
+   "id": "e8b94267-fdf1-4cdf-bbc3-f13686ba7875",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is an HO-4 policy?"
+  },
+  {
+   "id": "f67392c7-7ab1-4205-b8e7-711c1d73f082",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is an HO-6 policy?"
+  },
+  {
+   "id": "dc7c0c2e-6aa0-43c0-9843-2df01d7fe50d",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is an anti-concurrent causation clause?"
+  },
+  {
+   "id": "9692677e-b604-4602-baa0-dd250af27553",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is bailee coverage?"
+  },
+  {
+   "id": "7be007d3-049e-4413-bb94-642747c00299",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is blanket coverage?"
+  },
+  {
+   "id": "976899f5-c40f-43c1-86eb-e56c83a7b12b",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is boatowners insurance?"
+  },
+  {
+   "id": "3da59830-0095-4665-865d-a81f91008d4d",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is builders risk insurance?"
+  },
+  {
+   "id": "def7c764-4b55-4403-8f72-3ea4ebe32a84",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is business interruption insurance?"
+  },
+  {
+   "id": "afe8260b-d277-4ec8-a887-e54b64147c50",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is coinsurance in property insurance?"
+  },
+  {
+   "id": "d58c04e9-442d-4c8a-b613-5aa746dbd48f",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is coinsurance in property insurance?"
+  },
+  {
+   "id": "c24e3b83-cf5a-4872-8f96-bcbb0c87a339",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is crime insurance?"
+  },
+  {
+   "id": "7807fd71-923b-4196-befc-06b9b2825d05",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is crop insurance?"
+  },
+  {
+   "id": "2b424ee3-f693-411a-aee5-07dfd0481766",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is debris removal coverage?"
+  },
+  {
+   "id": "e7fd1eef-f451-4cb3-9a5a-122e270bd214",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is earth movement typically classified as in property policies?"
+  },
+  {
+   "id": "a9373877-460e-4083-82a1-1445e721a4ef",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is equipment breakdown coverage?"
+  },
+  {
+   "id": "4ec55b52-9122-42fd-9b5f-886d4c254d4b",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is farm insurance?"
+  },
+  {
+   "id": "5fc83c43-07b0-40f7-a805-1e982569f167",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is identity theft coverage?"
+  },
+  {
+   "id": "f73bf3e8-6825-4c04-b900-3153a96feb2d",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is inland marine insurance?"
+  },
+  {
+   "id": "bad0c0f6-33b3-4c72-ac05-3c62a13fd0aa",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is livestock insurance?"
+  },
+  {
+   "id": "7a3ce5da-69f4-4203-8aec-529d66af7505",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is mobile home insurance?"
+  },
+  {
+   "id": "9154f202-63ac-48cc-bfaa-fd25a8827be9",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is motor truck cargo insurance?"
+  },
+  {
+   "id": "469c1539-bdcb-4563-859c-f2b1cc53bca6",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is ordinance or law coverage?"
+  },
+  {
+   "id": "5bf839c9-bcc9-4127-ae39-cb49a731c660",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is personal watercraft insurance?"
+  },
+  {
+   "id": "90a068f6-14f1-4784-bfeb-26adb4b5eeaa",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is sewer backup coverage?"
+  },
+  {
+   "id": "6554880c-207c-40f6-a447-4670c67bfaa9",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is specific coverage?"
+  },
+  {
+   "id": "2789d76c-cdea-45cf-bc8a-25972f369588",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is the HO-3 policy form?"
+  },
+  {
+   "id": "68e7019f-e126-4ce5-8735-53734d13bc3e",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is the National Flood Insurance Program (NFIP)?"
+  },
+  {
+   "id": "a6540dfe-61a0-483f-a08e-6e34e913c9c6",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is the National Flood Insurance Program (NFIP)?"
+  },
+  {
+   "id": "e94f1cab-5485-4430-b2d2-6400f2dec6ae",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is the Texas FAIR Plan?"
+  },
+  {
+   "id": "30880f9f-ae35-42ee-b41e-725f02009407",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is the Texas Windstorm Insurance Association (TWIA)?"
+  },
+  {
+   "id": "78e70b0a-397f-4d14-92f9-e8ba5e0aec8c",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is the Texas Windstorm Insurance Association (TWIA)?"
+  },
+  {
+   "id": "1f9f1d91-2eaf-41a3-9507-f596f2d4f488",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is the aircraft exclusion?"
+  },
+  {
+   "id": "1896082b-33f0-48f4-bcc6-46401483b970",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is the business pursuits exclusion?"
+  },
+  {
+   "id": "08594812-af75-4a0a-8bf0-3bbcbccf38c4",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is the cancellation notice period for a homeowners policy in Texas?"
+  },
+  {
+   "id": "39bb345f-5fd8-4479-b3da-e484063affec",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is the difference between named perils and open perils coverage?"
+  },
+  {
+   "id": "b5fc448b-c2ed-41be-954f-57269a134cb5",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is the loss payee clause?"
+  },
+  {
+   "id": "e862c42c-7697-42b3-9323-503707239ada",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is the mortgagee clause?"
+  },
+  {
+   "id": "86db343f-90f3-4fcf-ba26-535a4645ba70",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is the watercraft exclusion?"
+  },
+  {
+   "id": "d511093d-de80-4f63-b47b-26087b9101d8",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "What is water damage in standard homeowners policies?"
+  },
+  {
+   "id": "0d6e0bd1-873e-4360-84c6-5e863aa092c9",
+   "category": "property_casualty",
+   "topic": "pc_property",
+   "question": "Which peril is typically excluded from standard homeowners policies?"
+  },
+  {
+   "id": "c8cb52ea-aeab-4c5a-8b38-d2cec238be03",
+   "category": "real_estate",
+   "topic": "re_agency",
+   "question": "A buyer's agent owes the buyer:"
+  },
+  {
+   "id": "4b8f3559-2184-438a-a8da-7eb96973d6aa",
+   "category": "real_estate",
+   "topic": "re_agency",
+   "question": "A listing agreement in Texas creates what type of agency relationship?"
+  },
+  {
+   "id": "ca8b88b2-5e58-4a89-9853-bc72cc89734e",
+   "category": "real_estate",
+   "topic": "re_agency",
+   "question": "An agent's duty of loyalty requires the agent to:"
+  },
+  {
+   "id": "868769dd-a6a2-4c67-a772-853481d49d12",
+   "category": "real_estate",
+   "topic": "re_agency",
+   "question": "In Texas, a sales agent must work under:"
+  },
+  {
+   "id": "194a3cda-37bd-4760-af68-5781b6db9a0a",
+   "category": "real_estate",
+   "topic": "re_agency",
+   "question": "In Texas, what type of agency relationship exists when a broker represents both buyer and seller?"
+  },
+  {
+   "id": "b1202ea3-23d1-4bd4-86e8-2a265c8a3de2",
+   "category": "real_estate",
+   "topic": "re_agency",
+   "question": "In Texas, when must the Information About Brokerage Services form be provided?"
+  },
+  {
+   "id": "d529d53b-c91e-4f00-a8f8-c8027762c97d",
+   "category": "real_estate",
+   "topic": "re_agency",
+   "question": "Under Texas law, a real estate broker must maintain a trust account at:"
+  },
+  {
+   "id": "896f4948-32f8-4b55-98e5-f588a323a8ee",
+   "category": "real_estate",
+   "topic": "re_agency",
+   "question": "What are the duties of a fiduciary in a real estate transaction?"
+  },
+  {
+   "id": "022882d4-57b0-4b26-85c6-c5dbbfe8a359",
+   "category": "real_estate",
+   "topic": "re_agency",
+   "question": "What is a property manager's primary responsibility?"
+  },
+  {
+   "id": "4f98d375-44f3-4202-9f48-ac5aad689ec1",
+   "category": "real_estate",
+   "topic": "re_agency",
+   "question": "What is a real estate broker?"
+  },
+  {
+   "id": "add5b93e-e170-41ea-9fe4-9ad805c4db96",
+   "category": "real_estate",
+   "topic": "re_agency",
+   "question": "What is dual agency?"
+  },
+  {
+   "id": "32d1e4bc-35b1-499a-8ba2-5d6ea784d15b",
+   "category": "real_estate",
+   "topic": "re_agency",
+   "question": "What is fiduciary duty in real estate?"
+  },
+  {
+   "id": "70f8290c-4352-4459-8911-e4a77b8f73bb",
+   "category": "real_estate",
+   "topic": "re_agency",
+   "question": "What is the Texas Association of Realtors (TAR)?"
+  },
+  {
+   "id": "26f3b193-5711-452c-916e-df3e255d4003",
+   "category": "real_estate",
+   "topic": "re_agency",
+   "question": "What is the difference between a listing agent and a buyer's agent?"
+  },
+  {
+   "id": "783b271e-b616-4b5a-b5d5-78222dea053d",
+   "category": "real_estate",
+   "topic": "re_agency",
+   "question": "What is the difference between a listing agent and a buyer's agent?"
+  },
+  {
+   "id": "3dec0bde-4985-423d-bb85-09c84c5c55c7",
+   "category": "real_estate",
+   "topic": "re_agency",
+   "question": "What is the primary source of income for a real estate agent?"
+  },
+  {
+   "id": "e8448c5a-615d-4227-8df1-1e1960c5604e",
+   "category": "real_estate",
+   "topic": "re_agency",
+   "question": "What must a broker do upon receiving earnest money from a buyer?"
+  },
+  {
+   "id": "389b8c12-7cef-4323-9dcf-ac54e798ea71",
+   "category": "real_estate",
+   "topic": "re_agency",
+   "question": "When may a broker act as an intermediary in Texas?"
+  },
+  {
+   "id": "c8df0b68-07cd-478b-a12c-d1b396733660",
+   "category": "real_estate",
+   "topic": "re_agency",
+   "question": "Which party pays the commission does NOT determine:"
+  },
+  {
+   "id": "13f0c3cd-4f27-4f1a-8a83-8ffbd5d7f166",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "A counteroffer in real estate:"
+  },
+  {
+   "id": "44f06697-f949-47bd-96dd-a5b64934ec4a",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "An exclusive right-to-sell listing means:"
+  },
+  {
+   "id": "4c165417-bce1-46f6-be43-c7b0939fef85",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "In Texas, who holds the earnest money deposit?"
+  },
+  {
+   "id": "23d2c3e4-e03f-4292-abf1-0e8237abe592",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "The amendment versus addendum: An addendum is used to:"
+  },
+  {
+   "id": "9cb9b774-e98e-4f3e-99e7-6f627804c599",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "Under Texas law, how long does a landlord have to return a security deposit after move-out?"
+  },
+  {
+   "id": "f9f37685-cadd-4951-ad46-8a44d7ac2d89",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "Under the Statute of Frauds, which contracts must be in writing?"
+  },
+  {
+   "id": "63924a58-f077-43a4-8b52-ea2ec1024e44",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What are the essential elements of a valid real estate contract?"
+  },
+  {
+   "id": "2f8918f0-76d1-4898-a443-46171bfc3424",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What does 'time is of the essence' mean in a contract?"
+  },
+  {
+   "id": "5c69581d-a01f-485c-9db4-ab5c382191ef",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What happens if a buyer defaults on a purchase contract?"
+  },
+  {
+   "id": "95bb3cce-a3ff-48ca-a6a1-a3becb98b64a",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What happens if a buyer defaults on a real estate contract?"
+  },
+  {
+   "id": "7579e0e0-b21b-4c25-89e7-c952435e093d",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is MLS (Multiple Listing Service)?"
+  },
+  {
+   "id": "2dc3621a-dc34-4d23-94b3-32799e21b853",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is a Multiple Listing Service (MLS)?"
+  },
+  {
+   "id": "5bdd5bd0-ce24-4053-913b-e3194ac4d0cb",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is a contingency clause in a real estate contract?"
+  },
+  {
+   "id": "09887f1d-27b1-4c81-b3a5-d8a937c1e96d",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is a contingency in a real estate contract?"
+  },
+  {
+   "id": "f53ea526-2771-401c-874b-474ab3208f94",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is a lease option?"
+  },
+  {
+   "id": "6b9c1060-9552-421f-a264-4dc49bfa434e",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is a lease?"
+  },
+  {
+   "id": "4d57491c-8f35-46fd-904b-08d5a7eec764",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is a month-to-month tenancy?"
+  },
+  {
+   "id": "fafd7147-28d4-431d-b7c9-5544cd06c37b",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is a purchase agreement?"
+  },
+  {
+   "id": "31faf6b4-a95a-451b-834d-1c0c6a1ef294",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is a security deposit?"
+  },
+  {
+   "id": "9406185b-4abc-4bbe-8265-b03f64bdee53",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is a triple net (NNN) lease?"
+  },
+  {
+   "id": "cee824ac-0170-4dcb-ad75-afe4c540e261",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is an eviction?"
+  },
+  {
+   "id": "8c3354a1-bcda-4384-8e2d-8c45a9993728",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is constructive eviction?"
+  },
+  {
+   "id": "649712db-6e6e-4ec5-99da-8ccd83cc5ca4",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is earnest money?"
+  },
+  {
+   "id": "c8dd500e-b5eb-45fc-b8b2-c7e66f71a9bd",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is joint tenancy?"
+  },
+  {
+   "id": "80c62493-0f47-46d8-b499-2f24f9ce3be3",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is specific performance in a real estate contract?"
+  },
+  {
+   "id": "b2945f90-b40d-4b5a-bdf2-87a6af7a211a",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is tenancy in common?"
+  },
+  {
+   "id": "ccf8345f-dccc-4c01-9585-84fbbbc13eaa",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is the difference between a landlord and a lessor?"
+  },
+  {
+   "id": "cb23d4cc-8b17-441a-b4de-fd65f98b3e06",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is the implied warranty of habitability?"
+  },
+  {
+   "id": "af9b45a3-733c-4bc8-9af9-c425d6eb322b",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is the option period in a Texas residential contract?"
+  },
+  {
+   "id": "93bedb7e-12a8-4bdf-bf57-61c6d32c45bb",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is the purpose of earnest money in a real estate transaction?"
+  },
+  {
+   "id": "a25f2eda-d754-40cb-9fca-f07af123bf18",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What is the statute of frauds?"
+  },
+  {
+   "id": "8bf6fb13-7186-4e0f-bbde-86d2ec5a91e9",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "What type of lease has a specific beginning and ending date?"
+  },
+  {
+   "id": "aef3631b-bf5c-4dbc-bc8e-df508626e12c",
+   "category": "real_estate",
+   "topic": "re_contracts",
+   "question": "Which addendum would be used for a property in a homeowners association?"
+  },
+  {
+   "id": "7af7b07a-c1be-4872-a46f-eaae74549f77",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "FHA loans are designed primarily for:"
+  },
+  {
+   "id": "15369f5f-bff4-4617-a389-8aba24eb0e14",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "Private Mortgage Insurance (PMI) is typically required when:"
+  },
+  {
+   "id": "7d1e54bd-c6c1-43ac-8894-ca0e8fbe413c",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "The Third Party Financing Addendum specifies:"
+  },
+  {
+   "id": "6233697b-4cb8-410e-be15-db7e60cce5e3",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What does 'escrow' mean in a real estate transaction?"
+  },
+  {
+   "id": "7379df14-c20d-4ebc-b3a7-09734be1be04",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What does 'escrow' mean in a real estate transaction?"
+  },
+  {
+   "id": "d555e350-506e-4109-8445-400a02851ea5",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What does it mean when a property goes into foreclosure?"
+  },
+  {
+   "id": "9a816e7e-49e7-4b9b-9b93-2b456e431de6",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is PITI in mortgage terms?"
+  },
+  {
+   "id": "5aa84d3b-5711-47e4-bbbc-2e1624d71c51",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is PMI?"
+  },
+  {
+   "id": "a2c00d73-ec99-4270-955d-28ccda57f0ee",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is a VA loan?"
+  },
+  {
+   "id": "44141d31-f7de-469d-9bb0-e84f85a05dcb",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is a conventional loan?"
+  },
+  {
+   "id": "cd0bf9dc-3052-40e2-870d-9748799529f6",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is a conventional loan?"
+  },
+  {
+   "id": "63cff12d-627f-4d8d-8a4b-dd1bd908ce27",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is a deed of trust?"
+  },
+  {
+   "id": "bdbb3680-d439-4100-9fc4-ac440e9e5736",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is a home equity line of credit (HELOC)?"
+  },
+  {
+   "id": "d871187f-3b88-4996-9886-30144fba92c4",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is a lien on a property?"
+  },
+  {
+   "id": "fdd80893-3dbe-4942-9406-8e57190e9896",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is a lien on a property?"
+  },
+  {
+   "id": "55f3b1bb-6dcc-492b-9ef7-9f3fcf0d1b8b",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is a mechanic's lien?"
+  },
+  {
+   "id": "2495282c-4985-4b7d-a970-fddcc9ce44c9",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is a mortgage assumption?"
+  },
+  {
+   "id": "b450468f-c668-4925-8c07-848f0195f1dc",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is a mortgage prepayment penalty?"
+  },
+  {
+   "id": "984dc748-ac25-403a-b509-1264c49dac4b",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is a prepayment penalty?"
+  },
+  {
+   "id": "9af67bac-c95f-49ba-b6f9-003de0ce1637",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is a short sale?"
+  },
+  {
+   "id": "a52ad124-e0e7-45b1-a83f-8f19ce5e6d7b",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is amortization in a mortgage?"
+  },
+  {
+   "id": "8cdc6094-7133-4566-8fec-001302ca2e75",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is amortization?"
+  },
+  {
+   "id": "193949ec-cd27-4687-a3e8-4d7375dc7a10",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is an ARM in mortgage lending?"
+  },
+  {
+   "id": "8d815a2e-6ba1-40a1-9838-c33e4fa10802",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is equity in a home?"
+  },
+  {
+   "id": "fe0076ea-7c18-4e14-9b0d-456ea7e26876",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is equity in real estate?"
+  },
+  {
+   "id": "43985e74-62b2-48d8-97dc-1b96f2e5a6e5",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is foreclosure?"
+  },
+  {
+   "id": "0ab8e55f-2097-47f2-932d-5a924d08dbdc",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is loan-to-value ratio (LTV)?"
+  },
+  {
+   "id": "7ac9c939-608a-46ac-bff5-d5c4dbea9789",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is the difference between a fixed-rate and adjustable-rate mortgage?"
+  },
+  {
+   "id": "93175a54-7c58-4420-9f25-4746ac5037c5",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is the difference between a mortgage and a deed of trust?"
+  },
+  {
+   "id": "1b2ff0f3-90ef-4153-bcf1-9f294dd618f0",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is the difference between the primary and secondary mortgage markets?"
+  },
+  {
+   "id": "03537271-c0a6-4bc7-8d84-3c47f3b9395d",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is the loan estimate?"
+  },
+  {
+   "id": "8604fe27-b9a8-456e-88e1-66bde64a2ed0",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is the loan-to-value ratio (LTV)?"
+  },
+  {
+   "id": "4acd1e91-786a-4fcd-9808-b91e9b257b24",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is the purpose of RESPA?"
+  },
+  {
+   "id": "327fb379-cceb-41b8-b5ae-f597bc1eeaa2",
+   "category": "real_estate",
+   "topic": "re_financing",
+   "question": "What is the purpose of a loan estimate?"
+  },
+  {
+   "id": "f7f4efec-3a0d-4473-ba95-ed09b07363c2",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "A Texas real estate license must be renewed every:"
+  },
+  {
+   "id": "ca8cb5b3-5924-4903-9cd8-369f505da73e",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "A real estate licensee must treat all parties to a transaction:"
+  },
+  {
+   "id": "7e6c5240-69cf-42ec-8538-beb047a8e871",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "A sales agent's license is automatically inactivated when:"
+  },
+  {
+   "id": "04fefd63-5452-4c2a-a2b7-456f14b317fc",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "How long does an applicant have to pass the Texas real estate exam after completing the required edu"
+  },
+  {
+   "id": "fa974e44-d5de-480f-9ebd-9381ab94195a",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "How many classroom hours of qualifying education are required for a Texas sales agent license?"
+  },
+  {
+   "id": "1beb2e53-fdee-4cda-9e6c-17f7bc55b0a4",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "How many hours of pre-licensing education are required for a Texas sales agent license?"
+  },
+  {
+   "id": "c6f69e60-4e70-4f23-bce4-e68cf1c9d36c",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "In an intermediary relationship, an appointed licensee may:"
+  },
+  {
+   "id": "f7b56e0f-97d7-408d-a190-c64ecb6fbd75",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "In the TREC One to Four Family Residential Contract, the effective date is:"
+  },
+  {
+   "id": "2bfbf184-ae3b-4088-aba2-8bc398bd7c3f",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "TREC promulgated contract forms are:"
+  },
+  {
+   "id": "2c636912-2def-46b7-92d9-d67284ac3a44",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "The Americans with Disabilities Act (ADA) requires:"
+  },
+  {
+   "id": "357d0dfa-d6e9-48c9-83da-63ac76b8e8a4",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "The Fair Housing Act prohibits discrimination based on:"
+  },
+  {
+   "id": "8624b56f-2e8d-4e0d-a040-8b9254d8abd1",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "The Seller's Disclosure Notice in Texas must disclose:"
+  },
+  {
+   "id": "acd7918b-fd97-4ddc-a706-57c69e60bb9e",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "Under Fair Housing, which of the following IS permitted?"
+  },
+  {
+   "id": "957d36c0-5388-4a3d-9313-c90316397d7a",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "Under TREC rules, how many hours of continuing education are required for license renewal?"
+  },
+  {
+   "id": "83271e41-2513-49cd-9dae-4391baa3e9c1",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "Under TREC rules, when must a license holder provide the Information About Brokerage Services form?"
+  },
+  {
+   "id": "9564ace7-cbd2-42f6-b270-a8b653a9ffff",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "Under Texas law, sellers must disclose:"
+  },
+  {
+   "id": "e2793177-e012-47ec-9988-ae4e47c035a4",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What does TREC stand for?"
+  },
+  {
+   "id": "bf5c02ca-d75f-4343-b147-e5ab144d7224",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What information must an agent disclose to all parties regardless of representation?"
+  },
+  {
+   "id": "ac01011c-a1cd-48e9-bc09-17c5566bd7da",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is a closing disclosure?"
+  },
+  {
+   "id": "384a2306-185e-4ae8-82f5-19156a2a22b0",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is a reasonable accommodation under Fair Housing?"
+  },
+  {
+   "id": "9da1a053-559c-4169-ba96-3b1424bb0831",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is an environmental impact assessment?"
+  },
+  {
+   "id": "bd126e57-0cf1-4a24-a290-d08d6bb365c1",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is asbestos?"
+  },
+  {
+   "id": "6c6786f0-24be-47b6-b304-0a5cb1378c76",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is blockbusting?"
+  },
+  {
+   "id": "801d19ca-5e0f-4ec2-8cf2-19053ee93ee5",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is blockbusting?"
+  },
+  {
+   "id": "63af280e-0ddc-4013-8e09-493c809029f7",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is radon?"
+  },
+  {
+   "id": "11102e87-1742-4323-978b-8c9cd4fc6cb4",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is redlining?"
+  },
+  {
+   "id": "2a797d8b-47ea-41f6-a2ba-ca2bb3c8f413",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is redlining?"
+  },
+  {
+   "id": "a028a7f8-8a8e-473e-8624-39c229e3b2d8",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is steering in real estate?"
+  },
+  {
+   "id": "a547328d-39a6-4a4f-a4ae-383bcfc28208",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is steering in real estate?"
+  },
+  {
+   "id": "4f4ee498-311c-40b9-83c6-dcebd57f6c36",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is the Closing Disclosure?"
+  },
+  {
+   "id": "0938a4fc-75cf-4ee6-8759-b54036a68bea",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is the Fair Housing Act?"
+  },
+  {
+   "id": "0d2b74a1-a310-4373-8044-d26119f3ed64",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is the Texas Property Code requirement for seller's disclosure?"
+  },
+  {
+   "id": "c8424aff-3029-4d0e-afae-7e8a4ad92732",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is the Texas Real Estate License Act (TRELA)?"
+  },
+  {
+   "id": "957083e2-10bc-4ebd-9e34-2b993f1e77d4",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is the maximum penalty TREC can assess for a single violation of the Real Estate License Act?"
+  },
+  {
+   "id": "979d1530-5d80-4d89-9791-3b65e8855c29",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is the minimum age requirement to obtain a Texas real estate sales agent license?"
+  },
+  {
+   "id": "52665f0d-e7e6-4d78-a1fd-83e1b2beb498",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is the option period in Texas real estate?"
+  },
+  {
+   "id": "acc79193-0e24-4b4c-bb9c-ae1eb1bc8b50",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is the penalty for violating the Fair Housing Act?"
+  },
+  {
+   "id": "0d3ce6e6-5c4a-40fa-bfe1-a0d1af134c4c",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is the purpose of the Texas Real Estate Recovery Fund?"
+  },
+  {
+   "id": "c6a4967e-3d71-4f73-a190-8f9593b8d575",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What is the term for a licensed sales agent working under a broker's supervision?"
+  },
+  {
+   "id": "668077bd-7bb8-4547-864a-8af3f576101c",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What must be disclosed about lead-based paint?"
+  },
+  {
+   "id": "8969f8a7-416b-4ecf-af83-c23fc26e3461",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What organization administers the Texas real estate license exam?"
+  },
+  {
+   "id": "68782151-c726-43ca-b29f-6bec09175cb6",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "What should be disclosed about a property in a flood zone?"
+  },
+  {
+   "id": "1c9a8242-8dea-44a7-b421-2f6b10988eed",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "Which agency enforces Fair Housing laws?"
+  },
+  {
+   "id": "a4cdedf6-6009-4741-b490-478c811ca9be",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "Which of the following activities requires a real estate license in Texas?"
+  },
+  {
+   "id": "7d219fec-40f3-4465-b1ae-54034fa3edcf",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "Which of the following is NOT a TREC promulgated form?"
+  },
+  {
+   "id": "143d5da6-df77-4574-b93e-7a8df3ca66e1",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "Which of the following would be grounds for TREC to deny a license application?"
+  },
+  {
+   "id": "1b7f2c63-7576-4be9-90b0-c94537e585a6",
+   "category": "real_estate",
+   "topic": "re_laws",
+   "question": "Which properties are exempt from the Texas Seller's Disclosure requirement?"
+  },
+  {
+   "id": "942fbab7-7727-4477-9547-3ec8f014620c",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "The cost approach to value is based on:"
+  },
+  {
+   "id": "72416c99-c030-4d21-b580-6c0c71cb4095",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "The income approach to value is used primarily for:"
+  },
+  {
+   "id": "ed8baa4c-2444-4b0f-9593-c0fb17e885c0",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "The sales comparison approach to value uses:"
+  },
+  {
+   "id": "1d3df294-5a07-46b8-ac93-902b144212ff",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What are common buyer closing costs?"
+  },
+  {
+   "id": "525ec678-5b4d-42fa-919c-72dfc5c18ca2",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What are deed restrictions?"
+  },
+  {
+   "id": "a7d86b10-2756-4730-8cfb-0d59b0116263",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What document transfers title from seller to buyer?"
+  },
+  {
+   "id": "68afff3c-ac25-4b1c-87f8-919c2b080353",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What does CMA stand for in real estate?"
+  },
+  {
+   "id": "7259a034-6de4-4a6a-b8ce-81cc01c1fedf",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is a Comparative Market Analysis (CMA)?"
+  },
+  {
+   "id": "315b385d-1305-4c47-aa53-efa97ec492a3",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is a building permit?"
+  },
+  {
+   "id": "40177235-2122-4af0-97a7-11a65367d928",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is a cap rate in real estate investing?"
+  },
+  {
+   "id": "709e3e55-08e6-45b0-827c-cd4712175a13",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is a cloud on title?"
+  },
+  {
+   "id": "b3e40c89-4b56-4677-a5a8-ea014fca8ff2",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is a condominium?"
+  },
+  {
+   "id": "9f978652-b959-4811-ad49-e2439a215f67",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is a dry closing?"
+  },
+  {
+   "id": "c9b08d3c-b932-4272-a083-f02a44938390",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is a fixture in real estate?"
+  },
+  {
+   "id": "8f128cbe-a13b-461d-9c34-cb02069b4705",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is a home inspection?"
+  },
+  {
+   "id": "fa09bdf8-561f-4c38-bdb2-10ef3c32b0b9",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is a homestead exemption in Texas?"
+  },
+  {
+   "id": "b514a7f3-90b6-4b8c-8b62-495891ee56d7",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is a nonconforming use?"
+  },
+  {
+   "id": "4499f7d3-a94a-4b8e-9217-72f10f96a54f",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is a plat?"
+  },
+  {
+   "id": "1ed3e747-f0fc-4712-aad8-43c0fa0fdbc8",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is a quitclaim deed used for?"
+  },
+  {
+   "id": "9b767710-5cfe-4e02-8413-a36a3d7deb2f",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is a settlement statement?"
+  },
+  {
+   "id": "815afd19-034d-4bfc-9a4c-830baf5575ed",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is a subdivision?"
+  },
+  {
+   "id": "5ce0279b-0b73-4a6f-bbbb-e6c771d6d636",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is a variance in zoning?"
+  },
+  {
+   "id": "78b4703d-116d-451c-8ef2-a99b1eef7fc7",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is a variance in zoning?"
+  },
+  {
+   "id": "89e1df8f-6267-40fa-8df4-738774d2268f",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is a walk-through inspection?"
+  },
+  {
+   "id": "e693f374-7d6a-440b-a300-22305acfb39b",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is adverse possession?"
+  },
+  {
+   "id": "37bdca3b-39d1-49b6-ab64-0375dbf000e8",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is an HOA?"
+  },
+  {
+   "id": "754e57d5-fef7-41c7-86d0-308d1cb48df0",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is an abstract of title?"
+  },
+  {
+   "id": "c24db5cc-3da1-43eb-9d80-a1c25c755752",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is an easement?"
+  },
+  {
+   "id": "be3062ef-c8fe-4c91-8b29-4bad888ac004",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is an encroachment?"
+  },
+  {
+   "id": "aa93425e-8aae-4ce3-a70e-a959316ae669",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is an encumbrance on property?"
+  },
+  {
+   "id": "f32d9b7c-53a0-49c0-a892-b511a6040009",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is appreciation in real estate?"
+  },
+  {
+   "id": "b46a7328-441a-4371-b879-95d3247c69a1",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is community property in Texas?"
+  },
+  {
+   "id": "17a3fc8e-9ab4-4e73-8548-2b7d964797b9",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is depreciation in real estate appraisal?"
+  },
+  {
+   "id": "12681757-a0d8-4347-92cf-c615af65cda2",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is depreciation in real estate?"
+  },
+  {
+   "id": "789fb61e-6686-472c-be73-b739cfa9c2e7",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is eminent domain used for?"
+  },
+  {
+   "id": "cfd6ee34-5041-4b98-840b-05bd90983d52",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is eminent domain?"
+  },
+  {
+   "id": "64c38286-1d71-4c18-a244-8f8acb5c1a15",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is external obsolescence?"
+  },
+  {
+   "id": "d66bd489-4f71-4be6-ac47-b9a54787ba34",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is fee simple absolute ownership?"
+  },
+  {
+   "id": "b2edbb16-f35b-4375-82f6-6844700caab2",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is functional obsolescence?"
+  },
+  {
+   "id": "149e3dd7-02ac-4f46-9f92-f6415372cd32",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is gross rent multiplier (GRM)?"
+  },
+  {
+   "id": "005700e7-9d90-4508-adfb-7d96f52358d3",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is market value?"
+  },
+  {
+   "id": "9814c66f-0f8d-40c7-be60-05b4a87cccdf",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is market value?"
+  },
+  {
+   "id": "65e13b97-9acd-4392-bf60-e264eb3c03fd",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is prorating in real estate?"
+  },
+  {
+   "id": "e919c4ba-4abd-4a59-add0-e335fad19a8e",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is proration at closing?"
+  },
+  {
+   "id": "70ba42ce-8efa-4e79-b153-0395a66ce749",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is recording a deed?"
+  },
+  {
+   "id": "f083bba2-29e9-4a4d-a663-070b385385a3",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is the bundle of rights in real estate?"
+  },
+  {
+   "id": "e4b61c24-ce8e-473a-9661-864fa7c2194d",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is the capitalization rate (cap rate)?"
+  },
+  {
+   "id": "55299d44-ff98-4579-991e-3f2a20b559f1",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is the difference between zoning and deed restrictions?"
+  },
+  {
+   "id": "c3da97c0-fbb7-4016-ae0b-b5df6ef39a1e",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is the income approach to valuation primarily used for?"
+  },
+  {
+   "id": "1b418ace-8b1a-4432-ba49-e48eeb4bbc61",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is the most common method of property appraisal for residential properties?"
+  },
+  {
+   "id": "7079c928-9128-4abc-aee8-3ae8bbcd1e03",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is the primary purpose of a deed?"
+  },
+  {
+   "id": "f76576c6-321b-4bc6-8d0a-e7a314fffe8f",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is the primary purpose of a deed?"
+  },
+  {
+   "id": "bf7ef6a9-4c41-4b02-abcb-28520d85e280",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is the purpose of a home inspection?"
+  },
+  {
+   "id": "2f27051c-35d6-4d9a-babe-ef8ea5764a5b",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is the purpose of a homeowners association (HOA)?"
+  },
+  {
+   "id": "cd5b9a48-d1ef-4da8-acf6-7b6e27ac2125",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is the purpose of a real estate appraisal?"
+  },
+  {
+   "id": "31dfddd7-3536-4297-ba86-3cef030d357a",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is the purpose of a survey in real estate?"
+  },
+  {
+   "id": "dee0ee91-010f-4852-b168-a34ab124cc95",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is the purpose of a title search?"
+  },
+  {
+   "id": "d335cc13-489c-474f-b1fa-a4dabdc9685a",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is the purpose of title insurance?"
+  },
+  {
+   "id": "35fb9b43-5d1c-4521-b80d-8403131df6cc",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is the role of a title company?"
+  },
+  {
+   "id": "2ec3dff4-5083-498f-9ed2-59ac9dfcc485",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is title insurance?"
+  },
+  {
+   "id": "2470858e-3383-4cc1-92cb-ae2f3d4ac804",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is zoning?"
+  },
+  {
+   "id": "f09ddc1b-6072-4e3e-b9e3-02c63c13ccb5",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What is zoning?"
+  },
+  {
+   "id": "d2c63774-0a96-4212-b3f9-eb7ddfd002fa",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What test determines if an item is a fixture?"
+  },
+  {
+   "id": "3d559d3d-ed1d-4191-8748-0f5025017d06",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "What type of deed provides the greatest protection to the buyer?"
+  },
+  {
+   "id": "503d26bb-3288-4659-a6ea-13f20b7d8cf2",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "When does ownership legally transfer in Texas?"
+  },
+  {
+   "id": "276a590e-31e4-45bb-af41-d4b560a9ecd8",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "Which of the following is considered real property?"
+  },
+  {
+   "id": "2f75356e-6100-494a-81d3-276db84a106b",
+   "category": "real_estate",
+   "topic": "re_ownership",
+   "question": "Who typically attends a real estate closing in Texas?"
+  }
+ ],
+ "unmapped": [
+  {
+   "id": "0e647051-466c-4a5d-a5ee-2948a9b834f2",
+   "category": "general_lines",
+   "question": "What is personal injury protection (PIP)?",
+   "reason": "Personal-auto coverage question; the General Lines topic set has no auto bucket."
+  },
+  {
+   "id": "46cb0847-e4bb-4e2f-a6e1-8ab572f0d754",
+   "category": "general_lines",
+   "question": "What is the difference between comprehensive and collision coverage?",
+   "reason": "Personal-auto coverage question; the General Lines topic set has no auto bucket."
+  },
+  {
+   "id": "f14dac2b-c499-4161-99a0-6e7468ae96c0",
+   "category": "general_lines",
+   "question": "What is uninsured/underinsured motorist coverage?",
+   "reason": "Personal-auto coverage question; the General Lines topic set has no auto bucket."
+  },
+  {
+   "id": "cb0225a3-b445-4576-839c-6946f4c92463",
+   "category": "property_casualty",
+   "question": "An insurance agent who represents multiple insurance companies is called a:",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "3f3b0927-9109-46c8-83c3-b80cd5e4032b",
+   "category": "property_casualty",
+   "question": "How many hours of pre-licensing education are required for a Property & Casualty license in Texas?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "bfb93e93-6862-43a9-a240-64e27a679c12",
+   "category": "property_casualty",
+   "question": "How often must a Texas P&C insurance license be renewed?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "1260e1fd-410e-4aa3-bae1-f3c6ceadf1a3",
+   "category": "property_casualty",
+   "question": "What action can TDI take against an agent who commits fraud?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "8e769492-c9c4-4748-bab0-a16cbbf595fe",
+   "category": "property_casualty",
+   "question": "What does 'premium' mean in insurance?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "179d42ee-f5c0-4948-834a-519356bd2b4d",
+   "category": "property_casualty",
+   "question": "What is a Business Owners Policy (BOP)?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "84aace06-33a8-4353-b31f-b577ef33fc3b",
+   "category": "property_casualty",
+   "question": "What is a Commercial Package Policy (CPP)?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "c8f1cb46-0df4-4c6d-8f64-54dcc79ce2ee",
+   "category": "property_casualty",
+   "question": "What is a binder in insurance?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "d447335a-558b-4ffd-acaf-cc8f6f877e2a",
+   "category": "property_casualty",
+   "question": "What is a declarations page?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "34be9bde-9d8a-4b2b-b4f3-8a15db04e13d",
+   "category": "property_casualty",
+   "question": "What is a deductible?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "e9d9f6d8-f102-41b6-8b4e-840f302a23fc",
+   "category": "property_casualty",
+   "question": "What is a deductible?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "3cda1974-283b-414f-9870-a7056b5133e8",
+   "category": "property_casualty",
+   "question": "What is a hazard in insurance?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "56e861f3-6c54-465d-9bd7-aba32a507939",
+   "category": "property_casualty",
+   "question": "What is a loss ratio?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "135e1f38-9e38-4bb7-bca1-b2d86bae9900",
+   "category": "property_casualty",
+   "question": "What is a moral hazard?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "9a3c32dc-d327-4735-a88b-a0c4676df10a",
+   "category": "property_casualty",
+   "question": "What is a morale hazard?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "ad775ab9-c63d-4684-8c8f-e295ccf50648",
+   "category": "property_casualty",
+   "question": "What is a per-occurrence limit?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "a6b7d7aa-428a-453b-893b-08f67410b7c4",
+   "category": "property_casualty",
+   "question": "What is a physical hazard?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "0c3be785-6785-4c26-9c39-cf5ff03a2efb",
+   "category": "property_casualty",
+   "question": "What is a policy condition?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "47009666-7eeb-441e-a5dd-fb49fb7cd0a5",
+   "category": "property_casualty",
+   "question": "What is a policy endorsement?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "783c574f-8bbf-4335-8155-1a902cb652d6",
+   "category": "property_casualty",
+   "question": "What is a representation in insurance?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "d70bb951-268b-414e-8e5f-22e810aec0e3",
+   "category": "property_casualty",
+   "question": "What is a surplus lines insurer?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "56d55f5c-40fd-4456-b34d-2a56ab8c90af",
+   "category": "property_casualty",
+   "question": "What is adverse selection?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "5ee4e3c1-56f2-44ac-9142-d6fbb62caa26",
+   "category": "property_casualty",
+   "question": "What is an aggregate limit?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "e26d78d5-29ca-4e84-9286-7a46ecd37a59",
+   "category": "property_casualty",
+   "question": "What is an endorsement in insurance?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "ea337e1b-7b66-4d7d-85d1-1db7f1783d0a",
+   "category": "property_casualty",
+   "question": "What is an exclusion in an insurance policy?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "870f3471-67b9-4e25-b4ec-4269dd0edb89",
+   "category": "property_casualty",
+   "question": "What is an insurance fraud?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "e19b23b5-5281-4e2c-86cc-52baccd23dd7",
+   "category": "property_casualty",
+   "question": "What is an insurance producer?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "baa94f8d-9936-452f-b505-8826dfa1f86a",
+   "category": "property_casualty",
+   "question": "What is an occurrence-based policy?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "0c715da9-25d3-44a3-a4c2-8d153146c28c",
+   "category": "property_casualty",
+   "question": "What is estoppel in insurance?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "b7998afc-fdb0-4a12-827a-54737cbd6056",
+   "category": "property_casualty",
+   "question": "What is insurable interest?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "f36353fa-b4c5-4323-96e2-c4d345422a03",
+   "category": "property_casualty",
+   "question": "What is insurable interest?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "7bc84645-2abf-42b2-9006-ca8b800ac63f",
+   "category": "property_casualty",
+   "question": "What is material misrepresentation?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "15959a54-f237-428a-9ecd-cac9e04bdb81",
+   "category": "property_casualty",
+   "question": "What is rebating in insurance?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "d0fb214e-080d-4928-b515-39decf09c995",
+   "category": "property_casualty",
+   "question": "What is reinsurance?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "72a77cbd-4587-4b54-8477-02efedd3ff37",
+   "category": "property_casualty",
+   "question": "What is the concealment or fraud condition?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "6431ba5f-4008-4fcb-8e19-dfaba76964c8",
+   "category": "property_casualty",
+   "question": "What is the continuing education requirement for Texas P&C license renewal?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "41b24e9a-5b09-438b-8821-4c918126d1a3",
+   "category": "property_casualty",
+   "question": "What is the declarations page?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "1b180e0f-1b6c-4cbe-9e3f-15e5e19aff14",
+   "category": "property_casualty",
+   "question": "What is the difference between an agent and a broker?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "cbcc2ddb-9ea3-4421-a67a-68844b89abed",
+   "category": "property_casualty",
+   "question": "What is the difference between primary and excess coverage?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "7140050a-2869-4958-828d-f75b7b8d89b2",
+   "category": "property_casualty",
+   "question": "What is the doctrine of reasonable expectations?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "cbdc2b6b-8838-42a8-87e9-80d463111659",
+   "category": "property_casualty",
+   "question": "What is the entire contract provision?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "d1dc5d48-5c9f-47c0-bdd3-cbaf48a12d65",
+   "category": "property_casualty",
+   "question": "What is the expected or intended injury exclusion?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "71025fef-1721-4494-8cf6-436f309bdb99",
+   "category": "property_casualty",
+   "question": "What is the grace period for premium payment in Texas?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "ccd6fd0b-2756-47be-b314-17839ce20753",
+   "category": "property_casualty",
+   "question": "What is the insuring agreement?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "eef4c690-d806-451d-bba3-1b50d0b8636c",
+   "category": "property_casualty",
+   "question": "What is the insuring agreement?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "a2020980-5b55-4dd2-a6dd-4f8c5268b1c9",
+   "category": "property_casualty",
+   "question": "What is the law of large numbers?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "84c4347f-7cf8-40dd-987f-534a667af017",
+   "category": "property_casualty",
+   "question": "What is the minimum age to obtain a Texas insurance license?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "0b820e00-027c-4b1d-b9a3-2b0c16ab9649",
+   "category": "property_casualty",
+   "question": "What is the parol evidence rule?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "35252c8d-2ec3-47ad-ae88-d05b4b7e585d",
+   "category": "property_casualty",
+   "question": "What is the principle of indemnity?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "f4252dc7-e8c3-4c60-80ac-7fa83df6b6de",
+   "category": "property_casualty",
+   "question": "What is the purpose of a deductible in an insurance policy?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "3f3b613a-fb5d-4507-b3b2-2f429fb7cd1b",
+   "category": "property_casualty",
+   "question": "What is the purpose of a policy limit?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "ac477013-8e50-451f-adc2-047a224f41c7",
+   "category": "property_casualty",
+   "question": "What is the purpose of a premium?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "fb4f582a-4d66-4e44-b458-0c1c0dd08c1e",
+   "category": "property_casualty",
+   "question": "What is the purpose of policy exclusions?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "3bee314f-ba0d-4f63-837a-5aea4ffad070",
+   "category": "property_casualty",
+   "question": "What is twisting in insurance?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "ece33b0c-459f-4dc5-9dd0-46e57b2eb7f3",
+   "category": "property_casualty",
+   "question": "What is underwriting?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "f6fd044e-0e8f-47b5-99e5-20c7e902bda7",
+   "category": "property_casualty",
+   "question": "What is utmost good faith in insurance?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "a247b393-7b1a-4f43-95c1-dc7621e46de4",
+   "category": "property_casualty",
+   "question": "What is waiver in insurance?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "819053c1-146c-4584-9d9a-bf3c4faab2ee",
+   "category": "property_casualty",
+   "question": "What is warranty in insurance?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  },
+  {
+   "id": "202efc08-a5fc-4170-8fee-84e50555d351",
+   "category": "property_casualty",
+   "question": "What state agency regulates insurance in Texas?",
+   "reason": "No canonical P&C study topic covers Texas licensing/regulation or general insurance-contract basics; mapping to an unrelated topic would misdescribe the question."
+  }
+ ]
+}

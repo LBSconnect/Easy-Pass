@@ -13,7 +13,8 @@
     "test:e2e": "npx playwright test",
     "db:push": "drizzle-kit push",
     "check:tests": "tsc -p tsconfig.test.json",
-    "prospects:import": "tsx scripts/import-prospects.ts"
+    "prospects:import": "tsx scripts/import-prospects.ts",
+    "questions:backfill-topics": "tsx scripts/backfill-question-topics.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.117.1",

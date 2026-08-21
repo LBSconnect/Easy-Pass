@@ -119,6 +119,23 @@ export default function PricingPage() {
       : null;
   });
 
+  // The step between the result card and checkout. Without it the funnel has a
+  // gap exactly where people are deciding, and an abandonment between "saw the
+  // price" and "started checkout" is indistinguishable from never arriving.
+  //
+  // Records whether the exam arrived preselected, because a visitor who still
+  // has to choose one here is in a different position from one who does not.
+  const arrivedPreselected = selectedCategory !== null;
+  useEffect(() => {
+    trackEvent("pricing_view", {
+      exam_type: arrivedPreselected ? selectedCategory : null,
+      preselected: arrivedPreselected,
+    });
+    // Once per arrival. Re-firing as they click between exams would count one
+    // visit several times and make this step look busier than it is.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const {
     data: prices,
     isLoading: pricesLoading,

@@ -23,6 +23,7 @@ import { selectAdaptiveQuestions, buildHistory } from "./adaptiveSelection";
 import { difficultyFor } from "./alexi/nextBestAction";
 import { assessRisk, quarantineReason, type FeedbackType } from "./contentRisk";
 import { checkSchemaHealth } from "./migrations";
+import { weakTopics, type WeakTopic } from "@shared/diagnosticWeakness";
 import { examDatePatch } from "@shared/examDatePatch";
 import { checkGlossaryDraft } from "@shared/glossaryGate";
 import { glossaryCandidates } from "./alexi/glossaryCandidates";
@@ -358,15 +359,41 @@ export async function registerRoutes(
       }
 
       const answerOrder = attempt.answerOrder as Record<string, number>;
+      const questionIds = attempt.questionIds as string[];
+      const outcomes = new Map<string, boolean>();
       let correctAnswers = 0;
-      for (const questionId of attempt.questionIds as string[]) {
-        if (parsed.data.answers[questionId] === answerOrder[questionId]) {
-          correctAnswers++;
-        }
+      for (const questionId of questionIds) {
+        const correct = parsed.data.answers[questionId] === answerOrder[questionId];
+        outcomes.set(questionId, correct);
+        if (correct) correctAnswers++;
       }
       const score = Math.round((correctAnswers / attempt.totalQuestions) * 100);
 
       const updated = await storage.completeDiagnosticAttempt(attemptId, { score, correctAnswers });
+
+      // Which areas cost them marks. This is the same pass that produced the
+      // score, read for topic rather than thrown away, so it needs no extra
+      // storage and cannot disagree with the number above it. Topic names
+      // only - never which option was right.
+      let weakAreas: WeakTopic[] = [];
+      try {
+        const questions = await storage.getQuestionsByIds(questionIds);
+        weakAreas = weakTopics(
+          questions.map((question) => ({
+            topic: question.topic,
+            correct: outcomes.get(question.id) === true,
+          })),
+          (topicId) => {
+            const found = getTopicById(topicId);
+            return found ? { nameEn: found.topic.nameEn, nameEs: found.topic.nameEs } : undefined;
+          },
+        );
+      } catch (weaknessError) {
+        // A student who finished their diagnostic is owed their score. Losing
+        // the "focus next on" list is a smaller failure than turning a
+        // completed attempt into a 500, so this degrades rather than throws.
+        console.error("Error deriving diagnostic weak areas:", weaknessError);
+      }
 
       res.json({
         score,
@@ -374,6 +401,7 @@ export async function registerRoutes(
         totalQuestions: attempt.totalQuestions,
         category: attempt.category,
         completedAt: updated?.completedAt,
+        weakAreas,
       });
     } catch (error) {
       console.error("Error submitting diagnostic assessment:", error);
@@ -2733,12 +2761,17 @@ export async function registerRoutes(
       
       console.log(`Synced subscription for user ${userId}: type=${subscriptionType}, categories=${allowedCategories?.join(',')}`);
       
-      res.json({ 
-        synced: true, 
+      res.json({
+        synced: true,
+        // The client uses this to report a subscription to Google Ads exactly
+        // once. It stays in the browser as a deduplication key and is never
+        // sent on to Google. It is the caller's own subscription, and this
+        // route is behind isAuthenticated.
+        subscriptionId: subscription.id,
         subscriptionType,
         allowedCategories,
         plan,
-        status: subscription.status 
+        status: subscription.status
       });
     } catch (error) {
       console.error("Error syncing subscription:", error);

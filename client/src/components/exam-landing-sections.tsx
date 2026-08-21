@@ -387,7 +387,10 @@ export function RetakerRescueSection({ category, slug, isSpanish }: SectionProps
                   data-testid="button-retaker-plan"
                 >
                   <Link
-                    href={profile ? "/dashboard" : "/readiness-check"}
+                    // Same funnel as everyone else, with the exam already
+                    // chosen. Someone who has sat this exam before is the last
+                    // person who should be asked which exam they mean.
+                    href={profile ? "/dashboard" : `/readiness-check?category=${category}`}
                     onClick={() =>
                       trackEvent("retaker_rescue_start", { slug, exam_type: category, source: "landing" })
                     }

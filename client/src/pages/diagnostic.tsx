@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -12,10 +12,20 @@ import { EXAM_VISUALS } from "@/lib/examVisuals";
 import { trackEvent } from "@/lib/analytics";
 import { useSEO, buildUrl } from "@/hooks/use-seo";
 import { useAuth } from "@/hooks/use-auth";
+import { useStudyAssistantConfig } from "@/lib/studyAssistant";
+import { STUDY_ASSISTANT } from "@shared/studyAssistant";
 import { ArrowRight, Loader2, RotateCcw, Target, Sparkles, TrendingUp } from "lucide-react";
 import type { ExamCategory } from "@shared/schema";
 
 const categories: ExamCategory[] = ["real_estate", "property_casualty", "life_insurance", "general_lines"];
+
+/** Named the way the exam is sold, so the CTA reads as the thing they came for. */
+const EXAM_LABELS: Record<ExamCategory, { en: string; es: string }> = {
+  real_estate: { en: "Real Estate", es: "Bienes Raíces" },
+  property_casualty: { en: "Property & Casualty", es: "Propiedad y Accidentes" },
+  life_insurance: { en: "Life Insurance", es: "Seguro de Vida" },
+  general_lines: { en: "General Lines", es: "Líneas Generales" },
+};
 
 interface SavedDiagnostic {
   category: string;
@@ -33,11 +43,21 @@ interface DiagnosticQuestion {
   optionsEs: string[];
 }
 
+interface WeakArea {
+  id: string;
+  nameEn: string;
+  nameEs: string;
+  missed: number;
+  asked: number;
+}
+
 interface DiagnosticResult {
   score: number;
   correctAnswers: number;
   totalQuestions: number;
   category?: string;
+  /** Optional: an older server, or one that could not resolve topics, omits it. */
+  weakAreas?: WeakArea[];
 }
 
 function readinessCopy(score: number, isSpanish: boolean) {
@@ -71,6 +91,7 @@ export default function DiagnosticPage() {
   const { t, i18n } = useTranslation();
   const isSpanish = i18n.language === "es";
   const { isAuthenticated } = useAuth();
+  const search = useSearch();
 
   useSEO({
     title: isSpanish
@@ -95,7 +116,7 @@ export default function DiagnosticPage() {
    * as before, and a signed-in student who has already done one is shown what
    * they scored instead of being walked through it again.
    */
-  const { data: saved } = useQuery<SavedDiagnostic | null>({
+  const { data: saved, isLoading: savedLoading } = useQuery<SavedDiagnostic | null>({
     queryKey: ["/api/diagnostic/latest"],
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
@@ -160,11 +181,40 @@ export default function DiagnosticPage() {
     },
   });
 
-  const handleSelectCategory = (cat: ExamCategory) => {
+  const handleSelectCategory = (cat: ExamCategory, source: "chooser" | "preselected" = "chooser") => {
     setCategory(cat);
     trackEvent("diagnostic_cta_click", { category: cat, step: "start" });
+    trackEvent("diagnostic_start", { category: cat, source });
     startMutation.mutate(cat);
   };
+
+  // Arriving with the exam already chosen - from a landing page or a retaker
+  // CTA - starts it, rather than showing a chooser with one obvious answer.
+  //
+  // Guarded on `attemptId` and `startMutation.isPending` as well as `category`
+  // because this runs on every render: without them, a re-render mid-request
+  // would fire a second attempt, and the student would answer questions
+  // belonging to an attempt that had already been replaced.
+  //
+  // Anyone opening /readiness-check with no parameter, or with one that is not
+  // an exam we run, still gets the chooser. An unknown value is ignored rather
+  // than guessed at.
+  const requestedCategory = new URLSearchParams(search).get("category");
+  const preselected =
+    requestedCategory && (categories as string[]).includes(requestedCategory)
+      ? (requestedCategory as ExamCategory)
+      : null;
+
+  useEffect(() => {
+    if (!preselected) return;
+    if (category || attemptId || retaking) return;
+    if (startMutation.isPending || savedLoading) return;
+    // A returning student with a saved result keeps seeing it; auto-starting
+    // over the top of their own history would look like it had been lost.
+    if (saved?.completedAt) return;
+    handleSelectCategory(preselected, "preselected");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselected, category, attemptId, retaking, startMutation.isPending, savedLoading, saved?.completedAt]);
 
   const handleSelectAnswer = (questionId: string, index: number) => {
     setAnswers((prev) => ({ ...prev, [questionId]: index }));
@@ -172,7 +222,17 @@ export default function DiagnosticPage() {
 
   const handleNext = () => {
     if (currentIndex < questions.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
+      const nextIndex = currentIndex + 1;
+      // A single midpoint marker. Enough to see where a ten-question run loses
+      // people without turning every answer into an analytics write.
+      if (nextIndex === Math.floor(questions.length / 2)) {
+        trackEvent("diagnostic_progress", {
+          category: category ?? undefined,
+          question_number: nextIndex,
+          total_questions: questions.length,
+        });
+      }
+      setCurrentIndex(nextIndex);
     } else {
       submitMutation.mutate();
     }
@@ -197,6 +257,36 @@ export default function DiagnosticPage() {
   const alexiHref = isAuthenticated
     ? alexiDestination
     : `/signup?next=${encodeURIComponent(alexiDestination)}&source=readiness-check`;
+
+  // Carries the exam into pricing, which preselects from it and then carries
+  // it through login and into checkout. Nobody picks their exam twice.
+  const pricingHref = activeCategory ? `/pricing?category=${activeCategory}` : "/pricing";
+  const examLabel = activeCategory
+    ? (isSpanish ? EXAM_LABELS[activeCategory].es : EXAM_LABELS[activeCategory].en)
+    : (isSpanish ? "tu examen" : "your exam");
+
+  // Only ever what the server sent back. A saved result is a score without the
+  // per-question evidence, so it correctly shows no areas rather than stale ones.
+  const weakAreas = result?.weakAreas ?? [];
+
+  // Named from config so the assistant can be renamed in one place, and hidden
+  // entirely when it is switched off rather than advertised and then missing.
+  const { data: assistantConfig } = useStudyAssistantConfig();
+  const assistantName = assistantConfig?.displayName ?? STUDY_ASSISTANT.displayName;
+  const assistantEnabled = assistantConfig?.flags?.enabled === true;
+
+  // One view event per revealed score, whether it was just earned or restored
+  // from a previous visit - both are someone looking at their result.
+  const viewedScore = activeScore;
+  useEffect(() => {
+    if (viewedScore === null) return;
+    trackEvent("diagnostic_result_view", {
+      category: activeCategory ?? undefined,
+      score: viewedScore,
+      weak_area_count: weakAreas.length,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewedScore, activeCategory]);
 
   const renderScoreCard = (score: number, correctAnswers: number, totalQuestions: number, savedMode = false) => (
     <Card data-testid={savedMode ? "card-diagnostic-saved" : "card-diagnostic-result"}>
@@ -226,22 +316,50 @@ export default function DiagnosticPage() {
           )}
         </div>
 
-        <div className="rounded-xl border bg-muted/30 p-4 text-left">
-          <div className="flex gap-3">
-            <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-            <div>
-              <p className="font-semibold">{isSpanish ? "Tu próximo paso: Alexi" : "Your next step: Alexi"}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {isAuthenticated
-                  ? (isSpanish
-                      ? "Alexi puede usar tu progreso real, tus áreas débiles y tu tiempo disponible para recomendar qué estudiar después."
-                      : "Alexi can use your real progress, weak areas, and available study time to recommend what to study next.")
-                  : (isSpanish
-                      ? "Crea una cuenta gratis y continúa directamente con Alexi para convertir esta evaluación en un plan de estudio personalizado."
-                      : "Create a free account and continue directly to Alexi to turn this diagnostic into a personalized study plan.")}
-              </p>
-            </div>
+        {/* Where the marks actually went. Only topics with a missed question
+            appear, and only ones the study-topic config can name - see
+            shared/diagnosticWeakness. No list rather than a padded one. */}
+        {weakAreas.length > 0 && (
+          <div className="rounded-xl border bg-muted/30 p-4 text-left" data-testid="card-weak-areas">
+            <p className="font-semibold">{isSpanish ? "Enfócate ahora en:" : "Focus next on:"}</p>
+            <ul className="mt-2 space-y-1.5">
+              {weakAreas.map((area) => (
+                <li key={area.id} className="flex items-start gap-2 text-sm" data-testid={`weak-area-${area.id}`}>
+                  <Target className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                  <span>
+                    {isSpanish ? area.nameEs : area.nameEn}
+                    <span className="text-muted-foreground">
+                      {isSpanish
+                        ? ` — ${area.missed} de ${area.asked} incorrectas`
+                        : ` — missed ${area.missed} of ${area.asked}`}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
+        )}
+
+        <div className="rounded-xl border bg-primary/5 p-4 text-left" data-testid="card-result-offer">
+          <p className="font-semibold">
+            {isSpanish
+              ? `Qué incluye la preparación de ${examLabel}`
+              : `What ${examLabel} prep includes`}
+          </p>
+          <ul className="mt-2 grid gap-1.5 text-sm text-muted-foreground sm:grid-cols-2">
+            <li>{isSpanish ? "Exámenes de práctica cronometrados" : "Timed practice exams"}</li>
+            <li>{isSpanish ? "Cientos de preguntas con explicaciones" : "Hundreds of questions with explanations"}</li>
+            <li>{isSpanish ? "Guía de estudio por tema" : "Topic-by-topic study guide"}</li>
+            <li>{isSpanish ? "Cuaderno de preguntas falladas" : "A notebook of what you missed"}</li>
+            {assistantEnabled && (
+              <li>{isSpanish ? `Estudio personalizado con ${assistantName}` : `Personalized study with ${assistantName}`}</li>
+            )}
+          </ul>
+          <p className="mt-3 text-sm">
+            {isSpanish
+              ? "Precio y planes actuales en la página de precios."
+              : "Current pricing and plans are on the pricing page."}
+          </p>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3 text-left">
@@ -265,9 +383,40 @@ export default function DiagnosticPage() {
             : "This is a 10-question diagnostic snapshot, not a pass prediction or an official exam. Your full EasyPass Score becomes more informative as you practice."}
         </p>
 
+        {/* CTA order is the change that matters on this card.
+
+            The dominant action used to be "create a free account", which asks
+            paid-search traffic to sign up before they have seen what is being
+            sold. The product is what they came for, so the product goes first
+            and the account is asked for at checkout, where it is unavoidable.
+            Alexi stays as a real second option rather than the only door. */}
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Button
             size="lg"
+            asChild
+            className="gap-2"
+            onClick={() => {
+              trackEvent("result_upgrade_click", {
+                category: activeCategory ?? undefined,
+                score,
+                authenticated: isAuthenticated,
+              });
+              trackEvent("diagnostic_cta_click", {
+                category: activeCategory ?? undefined,
+                step: "upgrade",
+                score,
+              });
+            }}
+            data-testid="button-diagnostic-upgrade"
+          >
+            <Link href={pricingHref}>
+              {isSpanish ? `Empezar mi preparación de ${examLabel}` : `Start my ${examLabel} prep`}
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
             asChild
             className="gap-2"
             onClick={() => trackEvent("diagnostic_cta_click", {
@@ -282,12 +431,15 @@ export default function DiagnosticPage() {
               {isAuthenticated
                 ? (isSpanish ? "Crear mi plan con Alexi" : "Build my Alexi study plan")
                 : (isSpanish ? "Crear cuenta gratis y mi plan" : "Create free account & build my plan")}
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </Button>
+        </div>
+
+        {/* Not everyone is ready to buy, and pretending otherwise loses the
+            ones who would have come back. Retaking stays available. */}
+        <div className="flex justify-center">
           <Button
-            size="lg"
-            variant="outline"
+            variant="ghost"
             onClick={savedMode ? () => setRetaking(true) : handleRestart}
             className="gap-2"
             // Named for which card it is on, like the card and the score two
@@ -302,13 +454,6 @@ export default function DiagnosticPage() {
           </Button>
         </div>
 
-        <div className="text-center">
-          <Button variant="link" asChild>
-            <Link href={activeCategory ? `/pricing?category=${activeCategory}` : "/pricing"}>
-              {isSpanish ? "Ver preparación completa" : "Explore full exam prep"}
-            </Link>
-          </Button>
-        </div>
       </CardContent>
     </Card>
   );

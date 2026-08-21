@@ -41,16 +41,6 @@ export const JOURNEY_CATEGORY = "real_estate";
  */
 export const JOURNEY_TOPIC = "re_contracts";
 
-/**
- * Enough questions to be a bank, few enough to seed in one statement.
- *
- * The exam asks for 50 and settles for what exists, so the count only needs
- * to be big enough that a paper has several distinct questions on it. Two
- * topics rather than one, because the notebook and Alexi both group by
- * topic and a single-topic bank would let a grouping bug pass unnoticed.
- */
-const SEED_COUNT = 12;
-
 export interface SeededQuestion {
   id: string;
   correctAnswer: number;
@@ -106,8 +96,49 @@ export async function closeJourneyDb(): Promise<void> {
  * these returns the existing rows rather than doubling the bank.
  */
 export async function seedJourneyQuestions(): Promise<SeededQuestion[]> {
+  return seedQuestionBank({
+    category: JOURNEY_CATEGORY,
+    topics: [JOURNEY_TOPIC, "re_financing"],
+    marker: "[journey-fixture]",
+  });
+}
+
+export interface SeedBankOptions {
+  /** An exam_category enum value. */
+  category: string;
+  /** Topic ids from shared/studyTopics.ts, cycled through the questions. */
+  topics: string[];
+  /**
+   * Text every seeded question starts with, which is also how they are found
+   * again. Two specs seeding different banks must use different markers, or
+   * each will believe the other's questions are its own.
+   */
+  marker: string;
+  /**
+   * Enough questions to be a bank, few enough to seed in one statement.
+   *
+   * The exam asks for 50 and settles for what exists, and the diagnostic asks
+   * for 10 and 404s if there are none, so this only needs to clear the larger
+   * of those. More than one topic, because the notebook, Alexi and the
+   * readiness result all group by topic and a single-topic bank would let a
+   * grouping bug pass unnoticed.
+   */
+  count?: number;
+}
+
+/**
+ * The general form: a known bank, in whichever exam a spec needs.
+ *
+ * CI starts from an empty `questions` table - the bank lives in seed scripts
+ * that are not run there - so a spec that assumes any exam has questions
+ * passes locally against whatever happens to be in the developer's database
+ * and fails on CI with a 404 from /api/diagnostic/start. Seeding what it
+ * needs is the only version that means the same thing in both places.
+ */
+export async function seedQuestionBank(options: SeedBankOptions): Promise<SeededQuestion[]> {
   const db = journeyDb();
-  const marker = "[journey-fixture]";
+  const { category, topics, marker } = options;
+  const SEED_COUNT = options.count ?? 12;
 
   const existing = await db.query<{
     id: string;
@@ -129,8 +160,9 @@ export async function seedJourneyQuestions(): Promise<SeededQuestion[]> {
   const values: string[] = [];
   const params: unknown[] = [];
   for (let i = 0; i < SEED_COUNT; i += 1) {
-    // Two topics, alternating, so topic grouping has something to group.
-    const topic = i % 2 === 0 ? JOURNEY_TOPIC : "re_financing";
+    // Cycled, so topic grouping has something to group and a weakness
+    // spread across areas has areas to spread across.
+    const topic = topics[i % topics.length];
     // The correct option moves around rather than sitting at 0, so a bug
     // that always reports index 0 as correct cannot pass.
     const correct = i % 4;
@@ -139,7 +171,7 @@ export async function seedJourneyQuestions(): Promise<SeededQuestion[]> {
       `($${base + 1}::exam_category, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}::jsonb, $${base + 6}::jsonb, $${base + 7}, $${base + 8}, $${base + 9}, true)`,
     );
     params.push(
-      JOURNEY_CATEGORY,
+      category,
       topic,
       `${marker} Question ${i + 1}: which option is number ${correct + 1}?`,
       // Both languages are NOT NULL on this table, and rightly so: half a

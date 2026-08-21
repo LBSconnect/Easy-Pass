@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -17,6 +17,7 @@ import { CheckCircle2, ChevronRight, ExternalLink, XCircle } from "lucide-react"
 import { useSEO, buildUrl } from "@/hooks/use-seo";
 import { trackEvent } from "@/lib/analytics";
 import { getTopicsByCategory } from "@shared/studyTopics";
+import { resolveLandingVariant } from "@shared/landingIntent";
 import { getLandingPageBySlug, examLandingPages, type ExamLandingPageContent } from "@/lib/examLandingContent";
 import {
   ReadinessPreview,
@@ -119,6 +120,7 @@ function landingPagePath(content: ExamLandingPageContent): string {
 function ExamLandingPageInner({ content }: { content: ExamLandingPageContent }) {
   const isSpanish = content.language === "es";
   const { i18n } = useTranslation();
+  const search = useSearch();
 
   useEffect(() => {
     if (isSpanish && i18n.language !== "es") {
@@ -168,11 +170,30 @@ function ExamLandingPageInner({ content }: { content: ExamLandingPageContent }) 
   // and drives readiness, exam facts and analytics for the page.
   const primaryCategory = content.categories[0] as ExamCategory;
 
+  // Headline matching for paid search, from an allowlist and nothing else.
+  //
+  // `intent` is read rather than utm_term because utm_term carries whatever
+  // the ad platform put in it. Either way the value is only ever a lookup key:
+  // an unrecognised one leaves the page's own H1 in place, and no inbound text
+  // is ever rendered. See shared/landingIntent.
+  const intentVariant = resolveLandingVariant(
+    primaryCategory,
+    new URLSearchParams(search).get("intent"),
+  );
+  const heading = intentVariant
+    ? (isSpanish ? intentVariant.headingEs : intentVariant.headingEn)
+    : content.h1;
+
   // One view event per page load, tagged with the exam so the four products
   // can be compared against each other in the funnel.
   useEffect(() => {
-    trackEvent("exam_landing_view", { slug: content.slug, exam_type: primaryCategory });
-  }, [content.slug, primaryCategory]);
+    trackEvent("exam_landing_view", {
+      slug: content.slug,
+      exam_type: primaryCategory,
+      // Which approved variant was shown, never the raw parameter.
+      intent_variant: intentVariant?.key ?? null,
+    });
+  }, [content.slug, primaryCategory, intentVariant?.key]);
 
   useSEO({
     title: content.pageTitle,
@@ -187,6 +208,15 @@ function ExamLandingPageInner({ content }: { content: ExamLandingPageContent }) 
   });
 
   const pricingHref = content.categories.length === 1 ? `/pricing?category=${content.categories[0]}` : "/pricing";
+  // Someone who clicked an ad for a specific exam has already told us which
+  // one. Asking them to pick it again from four options on the next screen is
+  // a step that can only lose people, so the page carries the answer forward.
+  // A page covering several exams has no single answer to carry, and
+  // /readiness-check on its own still asks - see client/src/pages/diagnostic.
+  const readinessHref =
+    content.categories.length === 1
+      ? `/readiness-check?category=${content.categories[0]}`
+      : "/readiness-check";
   // Confirmed by owner: LBS4 bootcamp services listing.
   const bootcampHref = "https://www.lbs4.com/services?filter=bootcamp";
 
@@ -227,13 +257,13 @@ function ExamLandingPageInner({ content }: { content: ExamLandingPageContent }) 
                   ))}
                 </div>
                 <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight" data-testid="heading-landing-h1">
-                  {content.h1}
+                  {heading}
                 </h1>
                 <p className="text-lg text-muted-foreground">{content.heroSubtitle}</p>
                 <div className="flex flex-wrap gap-3 pt-2">
                   {/* Primary CTA is the free diagnostic, not checkout: cold
                       traffic converts better after experiencing the product. */}
-                  <Link href="/readiness-check">
+                  <Link href={readinessHref}>
                     <Button
                       size="lg"
                       onClick={() =>

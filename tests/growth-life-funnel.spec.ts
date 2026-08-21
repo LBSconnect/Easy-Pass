@@ -19,6 +19,9 @@
 import { test, expect, type Page } from "@playwright/test";
 import { requireWritableTarget } from "./helpers/target";
 import { closeJourneyDb, seedQuestionBank } from "./helpers/journey";
+import { journeyDb } from "./helpers/journey";
+import type { Pool } from "pg";
+import { backfillQuestionTopics } from "../scripts/backfill-question-topics";
 
 const LIFE = "life_insurance";
 
@@ -262,4 +265,150 @@ test.describe("the funnel on a phone", () => {
       expect(box!.height).toBeGreaterThanOrEqual(40);
     });
   }
+});
+
+
+/* =========================================================================
+ * Weak areas on a production-shaped bank.
+ *
+ * Lives in this file rather than its own spec because several suites share
+ * the life_insurance question bank and Playwright runs files in parallel.
+ * The convention here is ADDITIVE seeding - nobody deletes the category -
+ * so this describe follows it: it inserts ten REAL rows from the committed
+ * production export (ids verbatim), resets only those ten to production's
+ * defining state (topic NULL), applies the backfill, and cleans up only
+ * what it inserted.
+ * ========================================================================= */
+
+/** The ten export rows this describe owns, by their real production ids. */
+let exportIds: string[] = [];
+
+async function insertProductionShapedRows(db: Pool): Promise<void> {
+  const { readFileSync } = await import("fs");
+  const sql = readFileSync("questions_export.sql", "utf8");
+  const lifeInserts = sql
+    .split("\n")
+    .filter((line) => line.includes("'life_insurance'") && line.startsWith("INSERT INTO questions"))
+    .slice(0, 10);
+  if (lifeInserts.length < 10) throw new Error("expected 10 life rows in the export");
+
+  exportIds = lifeInserts.map((line) => {
+    const m = line.match(/VALUES \('([0-9a-f-]{36})'/);
+    if (!m) throw new Error("could not read id from export row");
+    return m[1];
+  });
+
+  for (const statement of lifeInserts) {
+    await db.query(statement); // ON CONFLICT (id) DO NOTHING - re-runs are safe
+  }
+  // Production's defining state for these rows, whatever a previous run left.
+  await db.query(`UPDATE questions SET topic = NULL WHERE id = ANY($1)`, [exportIds]);
+}
+
+test.describe("weak areas on a production-shaped bank", () => {
+  test.beforeAll(async () => {
+    requireWritableTarget(process.env.TEST_BASE_URL);
+  });
+
+  test.afterAll(async () => {
+    if (exportIds.length > 0) {
+      await journeyDb().query(`DELETE FROM questions WHERE id = ANY($1)`, [exportIds]);
+    }
+    await closeJourneyDb();
+  });
+
+  test("the backfill gives the real export rows their topics, and the result card can finally name them", async ({ page }) => {
+    test.setTimeout(90_000);
+    const db = journeyDb();
+    await insertProductionShapedRows(db);
+
+    // BEFORE: the production defect, held at the layer that owns it. With
+    // topic NULL the mapper refuses to attribute a miss - correctly - so
+    // these rows can never surface as weak areas.
+    const before = await db.query<{ topic: string | null }>(
+      `SELECT topic FROM questions WHERE id = ANY($1)`,
+      [exportIds],
+    );
+    expect(before.rows).toHaveLength(10);
+    expect(before.rows.every((r) => r.topic === null)).toBe(true);
+
+    // THE FIX, exactly as `npm run questions:backfill-topics` applies it.
+    const summary = await backfillQuestionTopics(db);
+    expect(summary.updated).toBeGreaterThanOrEqual(10);
+
+    const after = await db.query<{ topic: string | null }>(
+      `SELECT topic FROM questions WHERE id = ANY($1)`,
+      [exportIds],
+    );
+    // Every one of the ten real rows now carries a canonical life topic.
+    expect(after.rows.every((r) => r.topic !== null && r.topic.startsWith("li_"))).toBe(true);
+
+    // AFTER, in the browser at phone width: a diagnostic over the (shared,
+    // additive) life bank now attributes misses to nameable topics.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/readiness-check?category=${LIFE}`);
+    await expect(page.getByTestId("radio-diagnostic-option-0")).toBeVisible({ timeout: 20_000 });
+
+    for (let i = 0; i < 10; i += 1) {
+      if (await page.getByTestId("card-diagnostic-result").isVisible().catch(() => false)) break;
+      // Same displayed option every time; options are shuffled per attempt,
+      // so this yields a mostly-wrong sheet - the production shape.
+      await page.getByTestId("radio-diagnostic-option-1").click();
+      await page.getByTestId("button-diagnostic-next").click();
+      await page.waitForTimeout(150);
+    }
+    await expect(page.getByTestId("card-diagnostic-result")).toBeVisible({ timeout: 20_000 });
+    const score = Number.parseInt(await page.getByTestId("text-diagnostic-score").innerText(), 10);
+
+    if (score === 100) {
+      // A perfect run must not invent weaknesses (odds ~1e-6 with shuffled
+      // options; if it happens this is still the right assertion).
+      await expect(page.getByTestId("card-weak-areas")).toHaveCount(0);
+      return;
+    }
+
+    const card = page.getByTestId("card-weak-areas");
+    await expect(card).toBeVisible();
+    // Human-readable life topics, honest counts, never a raw slug.
+    await expect(card).toContainText(
+      /Life Insurance Policies|Annuities|Health Insurance Basics|Texas Insurance Regulations/,
+    );
+    await expect(card).toContainText(/missed \d+ of \d+/);
+    expect(await card.innerText()).not.toMatch(/li_[a-z]+/);
+
+    // Scoring identity: the mapping names topics; the score is untouched
+    // arithmetic over the same answer sheet, as the server recorded it.
+    const attempt = await db.query(
+      `SELECT score, correct_answers, total_questions FROM diagnostic_attempts
+        WHERE category = $1 AND completed_at IS NOT NULL
+        ORDER BY completed_at DESC LIMIT 1`,
+      [LIFE],
+    );
+    expect(attempt.rows[0].score).toBe(score);
+    expect(attempt.rows[0].score).toBe(
+      Math.round((attempt.rows[0].correct_answers / attempt.rows[0].total_questions) * 100),
+    );
+
+    // Phone width introduced no sideways overflow.
+    const overflow = await page.evaluate(() => {
+      (globalThis as unknown as { __name?: unknown }).__name ??= (f: unknown) => f;
+      const w = document.documentElement.clientWidth;
+      const clipped = (el: HTMLElement) => {
+        let n: HTMLElement | null = el.parentElement;
+        while (n && n !== document.body) {
+          const o = getComputedStyle(n).overflowX;
+          if (o === "hidden" || o === "clip" || o === "auto" || o === "scroll") return true;
+          n = n.parentElement;
+        }
+        return false;
+      };
+      let count = 0;
+      document.querySelectorAll<HTMLElement>("body *").forEach((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.width > 0 && (r.right > w + 1 || r.left < -1) && !clipped(el)) count += 1;
+      });
+      return count;
+    });
+    expect(overflow).toBe(0);
+  });
 });

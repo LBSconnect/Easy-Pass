@@ -159,14 +159,16 @@ export default function LandingPage() {
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-1">
+                  {/* Cold traffic goes into the readiness check - value before
+                      any account form. The account is asked for at checkout. */}
                   <Button
                     size="lg"
                     asChild
                     className="w-full sm:w-auto min-h-[52px] text-lg px-8 gap-2 shadow-lg"
                     data-testid="cta-hero-start-practicing"
-                    data-analytics="hero-cta-start"
+                    onClick={() => trackEvent("diagnostic_cta_click", { source: "homepage_hero" })}
                   >
-                    <Link href="/signup">
+                    <Link href="/readiness-check">
                       {isSpanish ? "Comenzar a Practicar" : "Start Practicing"}
                       <ArrowRight className="h-5 w-5" />
                     </Link>
@@ -177,7 +179,7 @@ export default function LandingPage() {
                     asChild
                     className="w-full sm:w-auto min-h-[52px] text-lg px-8"
                     data-testid="cta-hero-view-pricing"
-                    data-analytics="hero-cta-pricing"
+                    onClick={() => trackEvent("pricing_cta_click", { source: "homepage_hero" })}
                   >
                     <Link href="/pricing">
                       {isSpanish ? "Ver Precios" : "View Pricing"}
@@ -254,10 +256,12 @@ export default function LandingPage() {
                 return (
                   <Link
                     key={category.id}
-                    href="/signup"
+                    href={`/readiness-check?category=${category.id}`}
                     className={`group block rounded-xl border-2 hover-elevate transition-all p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${examSurface(category.id)}`}
                     data-testid={`card-category-${category.id}`}
-                    data-analytics={`category-cta-${category.id}`}
+                    onClick={() =>
+                      trackEvent("diagnostic_cta_click", { source: "homepage_exams", exam_type: category.id })
+                    }
                   >
                     <div className="flex items-center gap-3 sm:gap-4">
                       <div className={`shrink-0 p-3 sm:p-4 rounded-xl ${examSurface(category.id)}`}>
@@ -337,8 +341,14 @@ export default function LandingPage() {
                     : `${STUDY_ASSISTANT.displayName} explains questions you have already answered, using each question's approved study material.`}
                 </p>
 
-                <Button asChild size="lg" className="mt-5" data-testid="button-alexi-signup">
-                  <Link href="/signup">
+                <Button
+                  asChild
+                  size="lg"
+                  className="mt-5"
+                  data-testid="button-alexi-signup"
+                  onClick={() => trackEvent("diagnostic_cta_click", { source: "homepage_alexi" })}
+                >
+                  <Link href="/readiness-check">
                     {isSpanish ? "Empezar gratis" : "Get started free"}
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
@@ -479,9 +489,9 @@ export default function LandingPage() {
                 asChild
                 className="min-h-[52px] text-lg px-8 gap-2"
                 data-testid="cta-included-start"
-                data-analytics="included-cta-start"
+                onClick={() => trackEvent("diagnostic_cta_click", { source: "homepage_included" })}
               >
-                <Link href="/signup">
+                <Link href="/readiness-check">
                   {isSpanish ? "Comenzar Ahora" : "Get Started Now"}
                   <ArrowRight className="h-5 w-5" />
                 </Link>
@@ -590,9 +600,9 @@ export default function LandingPage() {
                 asChild
                 className="min-h-[52px] text-lg px-8 gap-2 shadow-lg"
                 data-testid="cta-final-start"
-                data-analytics="final-cta-start"
+                onClick={() => trackEvent("diagnostic_cta_click", { source: "homepage_final" })}
               >
-                <Link href="/signup">
+                <Link href="/readiness-check">
                   {isSpanish ? "Comenzar a Practicar" : "Start Practicing Today"}
                   <ArrowRight className="h-5 w-5" />
                 </Link>

@@ -316,6 +316,61 @@ export default function DiagnosticPage() {
           )}
         </div>
 
+        {/* The decision, right after the verdict.
+
+            Value first is the rule on this card, and it survives: the score
+            and what it means still come before any ask. What moved is the ask
+            itself - it used to sit under every supporting section, which on a
+            phone put the next step two screens below the result it belongs
+            to. High-intent visitors were being made to hunt for the button.
+
+            The account stays deferred: the primary action goes to pricing,
+            and sign-up happens at checkout, where it is unavoidable. */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <Button
+            size="lg"
+            asChild
+            className="gap-2"
+            onClick={() => {
+              trackEvent("result_upgrade_click", {
+                category: activeCategory ?? undefined,
+                score,
+                authenticated: isAuthenticated,
+              });
+              trackEvent("diagnostic_cta_click", {
+                category: activeCategory ?? undefined,
+                step: "upgrade",
+                score,
+              });
+            }}
+            data-testid="button-diagnostic-upgrade"
+          >
+            <Link href={pricingHref}>
+              {isSpanish ? `Empezar mi preparación de ${examLabel}` : `Start my ${examLabel} prep`}
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            asChild
+            className="gap-2"
+            onClick={() => trackEvent("diagnostic_cta_click", {
+              category: activeCategory ?? undefined,
+              step: isAuthenticated ? "alexi_plan" : "alexi_plan_signup",
+              score,
+            })}
+            data-testid="button-diagnostic-alexi-plan"
+          >
+            <Link href={alexiHref}>
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+              {isAuthenticated
+                ? (isSpanish ? "Crear mi plan con Alexi" : "Build my Alexi study plan")
+                : (isSpanish ? "Crear cuenta gratis y mi plan" : "Create free account & build my plan")}
+            </Link>
+          </Button>
+        </div>
+
         {/* Where the marks actually went. Only topics with a missed question
             appear, and only ones the study-topic config can name - see
             shared/diagnosticWeakness. No list rather than a padded one. */}
@@ -383,57 +438,6 @@ export default function DiagnosticPage() {
             : "This is a 10-question diagnostic snapshot, not a pass prediction or an official exam. Your full EasyPass Score becomes more informative as you practice."}
         </p>
 
-        {/* CTA order is the change that matters on this card.
-
-            The dominant action used to be "create a free account", which asks
-            paid-search traffic to sign up before they have seen what is being
-            sold. The product is what they came for, so the product goes first
-            and the account is asked for at checkout, where it is unavoidable.
-            Alexi stays as a real second option rather than the only door. */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <Button
-            size="lg"
-            asChild
-            className="gap-2"
-            onClick={() => {
-              trackEvent("result_upgrade_click", {
-                category: activeCategory ?? undefined,
-                score,
-                authenticated: isAuthenticated,
-              });
-              trackEvent("diagnostic_cta_click", {
-                category: activeCategory ?? undefined,
-                step: "upgrade",
-                score,
-              });
-            }}
-            data-testid="button-diagnostic-upgrade"
-          >
-            <Link href={pricingHref}>
-              {isSpanish ? `Empezar mi preparación de ${examLabel}` : `Start my ${examLabel} prep`}
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
-          </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            asChild
-            className="gap-2"
-            onClick={() => trackEvent("diagnostic_cta_click", {
-              category: activeCategory ?? undefined,
-              step: isAuthenticated ? "alexi_plan" : "alexi_plan_signup",
-              score,
-            })}
-            data-testid="button-diagnostic-alexi-plan"
-          >
-            <Link href={alexiHref}>
-              <Sparkles className="h-4 w-4" aria-hidden="true" />
-              {isAuthenticated
-                ? (isSpanish ? "Crear mi plan con Alexi" : "Build my Alexi study plan")
-                : (isSpanish ? "Crear cuenta gratis y mi plan" : "Create free account & build my plan")}
-            </Link>
-          </Button>
-        </div>
 
         {/* Not everyone is ready to buy, and pretending otherwise loses the
             ones who would have come back. Retaking stays available. */}

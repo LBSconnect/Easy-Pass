@@ -288,7 +288,12 @@ export function DashboardOnboarding({
             <Button asChild size="lg" className="mt-4 w-full sm:w-auto" data-testid="button-onboarding-subscribe">
               <Link
                 href={`/pricing?category=${chosen}`}
-                onClick={() => trackEvent("checkout_start", { exam_type: chosen, step: "onboarding_step_4" })}
+                // upgrade_clicked, not checkout_start: this button opens the
+                // pricing page. checkout_start is reserved for the moment a
+                // Stripe session is actually requested, so the
+                // checkout_start -> checkout_session_created ratio stays a
+                // real number.
+                onClick={() => trackEvent("upgrade_clicked", { exam_type: chosen, source: "onboarding_step_4" })}
               >
                 {es ? "Ver planes" : "See plans"}
                 <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />

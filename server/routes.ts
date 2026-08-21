@@ -135,6 +135,14 @@ const submitExamSchema = z.object({
 
 const checkoutSchema = z.object({
   priceId: z.string().min(1),
+  /**
+   * The exam whose card the student pressed Subscribe on. Display context
+   * only - it decides which exam the pricing page re-selects if they cancel
+   * out of Stripe, never what is charged (the priceId does that, and it is
+   * validated against live Stripe data below). Constrained to the enum so a
+   * crafted value cannot ride into the cancel URL.
+   */
+  category: z.enum(examCategoryEnum.enumValues).optional(),
 });
 
 const glossaryTermSchema = z.object({
@@ -2751,7 +2759,7 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid price ID", errors: parsed.error.errors });
       }
       
-      const { priceId } = parsed.data;
+      const { priceId, category } = parsed.data;
 
       const stripe = await getCachedStripeClient();
 
@@ -2820,7 +2828,12 @@ export async function registerRoutes(
         line_items: [{ price: priceId, quantity: 1 }],
         mode: "subscription",
         success_url: `${protocol}://${host}/dashboard?success=true`,
-        cancel_url: `${protocol}://${host}/pricing?canceled=true`,
+        // Cancelling must not cost the student their exam choice: the pricing
+        // page re-selects from this parameter, so Subscribe works again
+        // without reconstructing anything.
+        cancel_url: category
+          ? `${protocol}://${host}/pricing?category=${category}&canceled=true`
+          : `${protocol}://${host}/pricing?canceled=true`,
         metadata: { userId },
         subscription_data: {
           metadata: { userId },

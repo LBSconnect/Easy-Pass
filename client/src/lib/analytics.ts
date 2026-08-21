@@ -22,6 +22,7 @@ export type AnalyticsEventName =
   | "pricing_cta_click"
   | "checkout_start"
   | "checkout_session_created"
+  | "checkout_canceled"
   | "signup_started"
   | "signup_completed"
   | "login_completed"

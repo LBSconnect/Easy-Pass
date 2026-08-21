@@ -22,6 +22,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -73,6 +75,21 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const searchString = useSearch();
   const [hasSynced, setHasSynced] = useState(false);
+
+  /**
+   * The window between "Stripe said paid" and "our server confirmed it".
+   *
+   * Reconciliation is quick but not instant, and during it the profile still
+   * reads as unsubscribed - so without this state a person who just paid saw
+   * a dashboard telling them to subscribe. The server stays authoritative:
+   * this only decides what to SHOW while it answers, never what the student
+   * has access to.
+   *
+   *   "pending" - back from a successful checkout, sync in flight
+   *   "failed"  - the sync errored or found nothing yet; offer a calm retry
+   *   "none"    - everything else
+   */
+  const [activation, setActivation] = useState<"none" | "pending" | "failed">("none");
   const es = i18n.language === "es";
 
   const { data: profile, isLoading: profileLoading } = useQuery<UserProfile>({
@@ -108,8 +125,25 @@ export default function DashboardPage() {
       return res.json();
     },
     onSuccess: (data) => {
+      if (cameFromCheckout.current) {
+        const live = data.synced && (data.status === "active" || data.status === "trialing");
+        // On success the screen is NOT dismissed here: the profile refetch is
+        // what flips the page into its subscribed state, and dropping the
+        // activation card a beat earlier would flash the unpaid upsell at
+        // someone who just paid - the exact thing this state exists to stop.
+        if (!live) setActivation("failed");
+      }
       if (data.synced) {
-        queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
+        // The activation screen is cleared only AFTER the profile refetch
+        // completes, so the page transitions straight from "activating" to
+        // the subscribed dashboard with no unpaid frame in between. Guarded
+        // on the live statuses: a synced-but-canceled subscription must not
+        // dismiss the retry state the block above just chose.
+        queryClient.invalidateQueries({ queryKey: ["/api/profile"] }).then(() => {
+          if (data.status === "active" || data.status === "trialing") {
+            setActivation("none");
+          }
+        });
         toast({
           title: es ? "¡Suscripción activada!" : "Subscription activated!",
           description: es
@@ -134,6 +168,12 @@ export default function DashboardPage() {
         }
       }
     },
+    onError: () => {
+      // The payment is not in question - Stripe redirected here because it
+      // succeeded. Only the confirmation call failed, so the student gets a
+      // retry, not an alarm.
+      if (cameFromCheckout.current) setActivation("failed");
+    },
   });
 
   useEffect(() => {
@@ -145,6 +185,7 @@ export default function DashboardPage() {
     if ((isFromCheckout || needsSync) && !syncMutation.isPending) {
       setHasSynced(true);
       cameFromCheckout.current = isFromCheckout;
+      if (isFromCheckout) setActivation("pending");
       syncMutation.mutate();
       if (isFromCheckout) window.history.replaceState({}, "", "/dashboard");
     }
@@ -168,6 +209,73 @@ export default function DashboardPage() {
   useEffect(() => {
     trackEvent("dashboard_view", { exam_type: category ?? null });
   }, [category]);
+
+  // Just paid, not yet confirmed. Shown INSTEAD of the dashboard - never
+  // alongside it - so no unpaid messaging can share the screen with someone
+  // whose card was just charged. Once the profile refetch reports the
+  // subscription active, this condition goes false and the normal page takes
+  // over; access itself was never decided here.
+  const profileSaysSubscribed =
+    profile?.subscriptionStatus === "active" || profile?.subscriptionStatus === "trialing";
+  if (activation !== "none" && !profileSaysSubscribed) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="container mx-auto max-w-lg px-4 py-8">
+            {activation === "pending" ? (
+              <div
+                className="rounded-xl border border-primary/25 bg-primary/[0.04] p-6 text-center"
+                data-testid="card-activation-pending"
+                role="status"
+                aria-live="polite"
+              >
+                <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" aria-hidden="true" />
+                <h1 className="mt-4 text-xl font-bold">
+                  {es
+                    ? "Pago recibido — activando tu acceso de estudio…"
+                    : "Payment received — activating your study access…"}
+                </h1>
+                <p className="mt-2 text-base leading-relaxed text-muted-foreground">
+                  {es
+                    ? "Esto normalmente toma unos segundos. Estamos confirmando tu suscripción y desbloqueando tu preparación."
+                    : "This usually takes a few seconds. We're confirming your subscription and unlocking your prep."}
+                </p>
+              </div>
+            ) : (
+              <div
+                className="rounded-xl border p-6 text-center"
+                data-testid="card-activation-retry"
+              >
+                <h1 className="text-xl font-bold">
+                  {es
+                    ? "Tu pago se realizó — aún estamos confirmando tu acceso"
+                    : "Your payment went through — we're still confirming your access"}
+                </h1>
+                <p className="mt-2 text-base leading-relaxed text-muted-foreground">
+                  {es
+                    ? "La confirmación con el procesador de pagos puede tardar un momento. Tu pago no se ha perdido."
+                    : "Confirmation with the payment provider can take a moment. Your payment is not lost."}
+                </p>
+                <Button
+                  className="mt-4"
+                  onClick={() => {
+                    setActivation("pending");
+                    syncMutation.mutate();
+                  }}
+                  disabled={syncMutation.isPending}
+                  data-testid="button-activation-retry"
+                >
+                  {es ? "Comprobar de nuevo" : "Check again"}
+                </Button>
+              </div>
+            )}
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   // Loading is not the same as empty: showing a zeroed dashboard while data is
   // still in flight is the exact thing this redesign removes.

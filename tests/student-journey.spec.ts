@@ -240,27 +240,41 @@ test.describe.serial("a subscribed student uses the product", () => {
 
     let actions = 0;
 
+    const summary = page.getByTestId("card-session-summary");
+
+    // An answered question keeps its options on screen, disabled, so that the
+    // student can see what they picked. Enabled - not merely visible - is
+    // what distinguishes a question waiting for an answer from one already
+    // answered, and clicking the latter forever is how this loop hung the
+    // first time it ran. Asking the selector for it, rather than testing
+    // visibility and enabledness separately, keeps the two from being read a
+    // moment apart.
+    const option = page.locator('[data-testid="button-session-option-0"]:not([disabled])');
+    const reveal = page.getByTestId("button-session-reveal");
+    const done = page.getByTestId("button-step-done");
+    const next = page.getByTestId("button-session-next");
+
+    // Between the click on an answer and the server's reply, every option is
+    // disabled and the continue button does not exist yet. Sampling all four
+    // controls during that gap finds nothing at all, and a loop that reads
+    // "nothing on screen" as "the session is over" stops one click in.
+    //
+    // That is precisely how this passed here - where the answer comes back in
+    // about a millisecond - and failed on a loaded CI runner, where it does
+    // not. So each turn waits for the page to offer something before deciding
+    // what to do with it, and "nothing to do" becomes a conclusion the loop
+    // reaches after waiting rather than a race it happens to lose.
+    const actionable = summary.or(option).or(reveal).or(done).or(next);
+
     // Work forward through whatever blocks the session was built from. Each
     // block type offers a different control, so this takes whichever is on
     // screen rather than assuming the shape of the plan.
     for (let guard = 0; guard < 40; guard += 1) {
-      if (await page.getByTestId("card-session-summary").isVisible().catch(() => false)) break;
+      await expect(actionable.first()).toBeVisible({ timeout: 20_000 });
 
-      const option = page.getByTestId("button-session-option-0");
-      const reveal = page.getByTestId("button-session-reveal");
-      const done = page.getByTestId("button-step-done");
-      const next = page.getByTestId("button-session-next");
+      if (await summary.isVisible().catch(() => false)) break;
 
-      // An answered question keeps its options on screen, disabled, so that
-      // the student can see what they picked. Enabled - not merely visible -
-      // is what distinguishes a question waiting for an answer from one
-      // already answered, and clicking the latter forever is how this loop
-      // hung the first time it ran.
-      const canAnswer =
-        (await option.isVisible().catch(() => false)) &&
-        (await option.isEnabled().catch(() => false));
-
-      if (canAnswer) {
+      if (await option.isVisible().catch(() => false)) {
         await option.click();
       } else if (await reveal.isVisible().catch(() => false)) {
         await reveal.click();

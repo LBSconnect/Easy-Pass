@@ -311,7 +311,7 @@ export default function DiagnosticPage() {
           {band && (
             <div className="mt-3">
               <p className="text-lg font-semibold" data-testid="text-readiness-band">{band.label}</p>
-              <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">{band.message}</p>
+              <p className="mx-auto mt-2 max-w-xl text-base leading-relaxed text-muted-foreground">{band.message}</p>
             </div>
           )}
         </div>
@@ -324,7 +324,7 @@ export default function DiagnosticPage() {
             <p className="font-semibold">{isSpanish ? "Enfócate ahora en:" : "Focus next on:"}</p>
             <ul className="mt-2 space-y-1.5">
               {weakAreas.map((area) => (
-                <li key={area.id} className="flex items-start gap-2 text-sm" data-testid={`weak-area-${area.id}`}>
+                <li key={area.id} className="flex items-start gap-2 text-base" data-testid={`weak-area-${area.id}`}>
                   <Target className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
                   <span>
                     {isSpanish ? area.nameEs : area.nameEn}
@@ -346,7 +346,7 @@ export default function DiagnosticPage() {
               ? `Qué incluye la preparación de ${examLabel}`
               : `What ${examLabel} prep includes`}
           </p>
-          <ul className="mt-2 grid gap-1.5 text-sm text-muted-foreground sm:grid-cols-2">
+          <ul className="mt-2 grid gap-1.5 text-base text-muted-foreground sm:grid-cols-2">
             <li>{isSpanish ? "Exámenes de práctica cronometrados" : "Timed practice exams"}</li>
             <li>{isSpanish ? "Cientos de preguntas con explicaciones" : "Hundreds of questions with explanations"}</li>
             <li>{isSpanish ? "Guía de estudio por tema" : "Topic-by-topic study guide"}</li>
@@ -355,7 +355,7 @@ export default function DiagnosticPage() {
               <li>{isSpanish ? `Estudio personalizado con ${assistantName}` : `Personalized study with ${assistantName}`}</li>
             )}
           </ul>
-          <p className="mt-3 text-sm">
+          <p className="mt-3 text-base">
             {isSpanish
               ? "Precio y planes actuales en la página de precios."
               : "Current pricing and plans are on the pricing page."}
@@ -510,7 +510,7 @@ export default function DiagnosticPage() {
                 })}
               </div>
               {startMutation.isError && (
-                <p className="text-center text-destructive text-sm mt-4">
+                <p className="text-center text-destructive text-base mt-4">
                   {isSpanish ? "No se pudo iniciar la evaluación. Intenta de nuevo." : "Couldn't start the assessment. Please try again."}
                 </p>
               )}

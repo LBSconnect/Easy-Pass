@@ -65,7 +65,7 @@ export default function ForgotPasswordPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center space-y-4">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-base leading-relaxed text-muted-foreground">
                 {isSpanish 
                   ? 'El enlace expirará en 1 hora. Revisa también tu carpeta de spam.'
                   : 'The link will expire in 1 hour. Please also check your spam folder.'}

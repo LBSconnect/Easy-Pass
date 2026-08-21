@@ -549,7 +549,7 @@ function QuizView({
                     ? t("study.correctAnswer", "Correct!")
                     : t("study.incorrectAnswer", "Not quite right")}
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-base leading-relaxed text-muted-foreground">
                   {language === "es" ? answerResult.explanationEs : answerResult.explanationEn}
                 </p>
               </div>

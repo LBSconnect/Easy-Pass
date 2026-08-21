@@ -113,7 +113,7 @@ export function PageHeader({
         )}
         <div className="min-w-0">
           <h1 className="text-2xl font-bold md:text-3xl">{title}</h1>
-          {subtitle && <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>}
+          {subtitle && <p className="mt-1 text-base text-muted-foreground">{subtitle}</p>}
         </div>
       </div>
       {action && <div className="shrink-0">{action}</div>}
@@ -134,5 +134,5 @@ export function SectionHeading({
   children: ReactNode;
   className?: string;
 }) {
-  return <h2 className={cn("text-base font-semibold", className)}>{children}</h2>;
+  return <h2 className={cn("text-lg font-semibold", className)}>{children}</h2>;
 }

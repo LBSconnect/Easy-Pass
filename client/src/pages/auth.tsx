@@ -180,7 +180,7 @@ function LoginForm({
           </form>
         </Form>
 
-        <p className="mt-4 text-xs text-muted-foreground text-center">
+        <p className="mt-4 text-sm leading-relaxed text-muted-foreground text-center">
           {t("auth.caseSensitiveNote", "Login and passwords are case sensitive. Please write down your password in a safe place.")}
         </p>
 

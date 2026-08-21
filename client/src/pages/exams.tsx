@@ -846,7 +846,7 @@ function ExamSession() {
                       />
                       <Label
                         htmlFor={`option-${index}`}
-                        className="flex-1 cursor-pointer text-sm"
+                        className="flex-1 cursor-pointer text-base"
                       >
                         {option}
                       </Label>
@@ -1316,7 +1316,7 @@ function GuestPracticePreview({ category }: { category: ExamCategory }) {
                         id={`guest-option-${index}`}
                         data-testid={`radio-guest-option-${index}`}
                       />
-                      <Label htmlFor={`guest-option-${index}`} className="flex-1 cursor-pointer text-sm">
+                      <Label htmlFor={`guest-option-${index}`} className="flex-1 cursor-pointer text-base">
                         {option}
                       </Label>
                     </div>

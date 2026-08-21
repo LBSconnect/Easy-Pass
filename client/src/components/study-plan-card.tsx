@@ -271,8 +271,8 @@ export function StudyPlanCard({ category }: { category: ExamCategory }) {
                   <Icon className="h-4 w-4 text-primary" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">{taskLabel(task, es)}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-base font-medium">{taskLabel(task, es)}</p>
+                  <p className="text-sm text-muted-foreground">
                     {task.topicAccuracy !== null && (
                       <span data-testid="text-task-accuracy">
                         {es ? "Actualmente" : "Currently"} {task.topicAccuracy}% ·{" "}
@@ -325,7 +325,7 @@ export function StudyPlanCard({ category }: { category: ExamCategory }) {
                   </div>
                   <span className="shrink-0 text-xs text-muted-foreground">~{item.minutes} min</span>
                 </div>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{item.detail}</p>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.detail}</p>
               </div>
             ))}
           </div>

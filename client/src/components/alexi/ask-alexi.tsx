@@ -118,7 +118,7 @@ export function AskAlexi({ questionId, answeredIncorrectly = false, topic }: Pro
           <p className="text-base font-bold text-primary">
             {es ? `Pregúntale a ${named}` : `Ask ${named}`}
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {es
               ? "Explicaciones sobre esta pregunta, al instante"
               : "Instant explanations about this question"}
@@ -146,7 +146,7 @@ export function AskAlexi({ questionId, answeredIncorrectly = false, topic }: Pro
       <div className="mt-3">
         <label
           htmlFor={`ask-msg-${questionId}`}
-          className="text-xs text-muted-foreground"
+          className="text-sm text-muted-foreground"
         >
           {es
             ? "¿Algo específico? (opcional)"
@@ -220,7 +220,7 @@ export function AskAlexi({ questionId, answeredIncorrectly = false, topic }: Pro
           aria-live="polite"
           data-testid="text-ask-answer"
         >
-          <p className="whitespace-pre-line text-sm leading-relaxed">{answer.answer}</p>
+          <p className="whitespace-pre-line text-base leading-relaxed">{answer.answer}</p>
 
           {/* Where the answer came from is stated, never implied. A student
               deciding how much to trust it deserves to know. */}

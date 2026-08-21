@@ -167,7 +167,7 @@ export default function FlashcardsPage() {
                     {es ? card.backEs : card.backEn}
                   </p>
                   {(es ? card.explanationEs : card.explanationEn) && (
-                    <p className="mt-2 text-sm text-muted-foreground">
+                    <p className="mt-2 text-base leading-relaxed text-muted-foreground">
                       {es ? card.explanationEs : card.explanationEn}
                     </p>
                   )}

@@ -79,7 +79,7 @@ export function AlexiRecommendationCard({ category }: Props) {
         </div>
 
         {insight && (
-          <p className="mt-3 text-sm text-muted-foreground" data-testid="text-alexi-insight">
+          <p className="mt-3 text-base leading-relaxed text-muted-foreground" data-testid="text-alexi-insight">
             {insight}
           </p>
         )}
@@ -87,7 +87,7 @@ export function AlexiRecommendationCard({ category }: Props) {
         <h3 className="mt-3 text-lg font-bold md:text-xl" data-testid="text-alexi-headline">
           {rec.headline}
         </h3>
-        <p className="mt-1.5 text-sm text-muted-foreground" data-testid="text-alexi-phrasing">
+        <p className="mt-1.5 text-base leading-relaxed text-muted-foreground" data-testid="text-alexi-phrasing">
           {phrasing}
         </p>
 
@@ -114,7 +114,7 @@ export function AlexiRecommendationCard({ category }: Props) {
             committing to before they press the button. */}
         <ul className="mt-4 space-y-1.5" data-testid="list-alexi-blocks">
           {rec.blocks.map((block, i) => (
-            <li key={i} className="flex items-baseline gap-2 text-sm">
+            <li key={i} className="flex items-baseline gap-2 text-base">
               <span
                 className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
                 aria-hidden="true"
@@ -153,7 +153,7 @@ export function AlexiRecommendationCard({ category }: Props) {
             className="mt-4 rounded-md border border-amber-500/30 bg-amber-500/10 p-3"
             data-testid="banner-alexi-human-help"
           >
-            <p className="flex items-start gap-2 text-sm">
+            <p className="flex items-start gap-2 text-base">
               <LifeBuoy
                 className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
                 aria-hidden="true"

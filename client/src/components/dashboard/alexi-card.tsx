@@ -65,7 +65,7 @@ export function AlexiCard({ category, hasHistory, hasDiagnostic = false }: Props
             </span>
             <span className="text-base font-bold">{named}</span>
           </div>
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-3 text-base leading-relaxed text-muted-foreground">
             {hasDiagnostic
               ? es
                 ? `Ya tenemos tu prueba de preparación. Responde algunas preguntas de práctica y ${named} te dirá exactamente qué estudiar.`
@@ -101,7 +101,7 @@ export function AlexiCard({ category, hasHistory, hasDiagnostic = false }: Props
     return (
       <Card className="h-full" data-testid="card-alexi-error">
         <CardContent className="flex h-full flex-col items-center justify-center gap-3 py-10 text-center">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-base text-muted-foreground">
             {es ? "No pudimos cargar tu recomendación." : "We couldn't load your recommendation."}
           </p>
           <Button variant="outline" size="sm" onClick={() => refetch()} data-testid="button-retry-alexi">
@@ -147,12 +147,12 @@ export function AlexiCard({ category, hasHistory, hasDiagnostic = false }: Props
               )}
             </div>
 
-            <p className="mt-2.5 text-[0.95rem] leading-relaxed text-muted-foreground" data-testid="text-alexi-headline">
+            <p className="mt-2.5 text-base leading-relaxed text-muted-foreground" data-testid="text-alexi-headline">
               {phrasing}
             </p>
 
             {blockSummary && (
-              <p className="mt-2 text-sm" data-testid="text-alexi-blocks">
+              <p className="mt-2 text-base" data-testid="text-alexi-blocks">
                 <span className="font-semibold">
                   {es
                     ? `Sesión de ${rec.estimatedMinutes} min`
@@ -187,7 +187,7 @@ export function AlexiCard({ category, hasHistory, hasDiagnostic = false }: Props
             className="mt-4 rounded-md border border-amber-500/30 bg-amber-500/10 p-3"
             data-testid="banner-human-help"
           >
-            <p className="flex items-start gap-2 text-sm">
+            <p className="flex items-start gap-2 text-base">
               <LifeBuoy
                 className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
                 aria-hidden="true"

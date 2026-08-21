@@ -393,7 +393,7 @@ export default function PricingPage() {
 
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
             {includedItems(isSpanish).map((item) => (
-              <li key={item} className="flex items-start gap-2 text-sm">
+              <li key={item} className="flex items-start gap-2 text-base">
                 <Check
                   className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400"
                   aria-hidden="true"
@@ -419,7 +419,7 @@ export default function PricingPage() {
                   </p>
                 </>
               ) : (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-base text-muted-foreground">
                   {isSpanish
                     ? "Elija un examen arriba para continuar."
                     : "Pick an exam above to continue."}

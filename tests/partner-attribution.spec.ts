@@ -349,6 +349,16 @@ test.describe("returning student follows a second partner", () => {
     const email = `attr-return-ui-${Date.now()}@example.com`;
     const password = "TestPassw0rd!";
 
+    const db = journeyDb();
+    // An event left behind by an earlier run would answer this test's question
+    // for it.
+    await db.query(
+      `DELETE FROM analytics_events
+        WHERE event = 'partner_landing_view'
+          AND metadata->>'referral_partner_code' = $1`,
+      [SECOND_CODE],
+    );
+
     const setup = await visitor(baseURL);
     await setup.get(`/api/partners/resolve/${FIRST_CODE}`);
     await setup.post("/api/register", { data: { email, password, firstName: "R", lastName: "T" } });
@@ -378,15 +388,28 @@ test.describe("returning student follows a second partner", () => {
     expect(envelope?.partner_code).toBe(FIRST_CODE);
 
     // And so does the event that visit produced.
-    const db = journeyDb();
-    const events = await db.query<{ metadata: Record<string, unknown> }>(
-      `SELECT metadata FROM analytics_events
-        WHERE event = 'partner_landing_view'
-        ORDER BY created_at DESC LIMIT 1`,
-    );
-    expect(events.rows[0].metadata.partner_code).toBe(FIRST_CODE);
+    //
+    // Found by the link that was followed rather than by "the most recent
+    // partner_landing_view", which belongs to whichever spec ran last, and
+    // polled for, because the page sends the event without awaiting it.
+    // Selecting on referral_partner_code does not presuppose the answer: the
+    // assertion is about the OTHER field on the same row.
+    let metadata: Record<string, unknown> | undefined;
+    for (let attempt = 0; attempt < 40 && !metadata; attempt++) {
+      const events = await db.query<{ metadata: Record<string, unknown> }>(
+        `SELECT metadata FROM analytics_events
+          WHERE event = 'partner_landing_view'
+            AND metadata->>'referral_partner_code' = $1
+          ORDER BY created_at DESC LIMIT 1`,
+        [SECOND_CODE],
+      );
+      metadata = events.rows[0]?.metadata;
+      if (!metadata) await page.waitForTimeout(250);
+    }
+
+    expect(metadata?.partner_code).toBe(FIRST_CODE);
     // The clicked link is still visible, under its own name.
-    expect(events.rows[0].metadata.referral_partner_code).toBe(SECOND_CODE);
+    expect(metadata?.referral_partner_code).toBe(SECOND_CODE);
   });
 
   test("revenue and acquisition agree for that student", async ({ baseURL }) => {

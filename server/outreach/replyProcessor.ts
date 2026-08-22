@@ -10,9 +10,9 @@
  *
  * Nothing in this file, and nothing downstream of its classifications, can
  * activate a partnership. A reply - however enthusiastic - moves a campaign
- * to `interested` and emails the owner. `partner_active` is written by
- * exactly one code path in this app (the admin PATCH route, with its
- * validation), and this module does not import it.
+ * to `interested`, sends the pre-approved pilot details once, and emails the
+ * owner. `partner_active` is written by exactly one code path in this app (the
+ * admin PATCH route, with its validation), and this module does not import it.
  */
 
 import { createHmac, timingSafeEqual } from "crypto";
@@ -21,12 +21,19 @@ import {
   CLASSIFICATION_STATE,
   type ReplyClassification,
 } from "@shared/outreachCampaign";
+import {
+  TEMPLATE_VERSION,
+  renderPilotDetailsEmail,
+  unsubscribeFooter,
+} from "@shared/partnerOutreachEmails";
 import { suggestPartnerCode, suggestedCategory, type PartnerSegment } from "@shared/partners";
 import { pool } from "../db";
 import {
   campaignByContactEmail,
+  markMessageSent,
   normalizeEmail,
   recordInboundReply,
+  releaseFailedSend,
   suppressEmail,
   transitionCampaign,
   type CampaignRow,
@@ -184,10 +191,99 @@ export async function processReply(
   }
 
   if (classification === "interested") {
+    // This is deliberately pre-approved, factual follow-through - not an AI
+    // generated reply. It is idempotent by (campaign, step), so a retried
+    // webhook cannot send the pilot details twice. It never activates a
+    // partner; the second-step activation decision remains explicit.
+    await sendPilotDetails(campaign, service);
     await sendInterestedAlert(campaign, excerpt, service);
   }
 
   return { handled: true, action: `reply_${classification}` };
+}
+
+// --- Interested reply: automatic pilot details ----------------------------
+
+function appOrigin(): string {
+  const host = process.env.APP_DOMAIN || "www.myeasypass.net";
+  return `https://${host}`;
+}
+
+/**
+ * Reserve the one automatic pilot-details response. The existing partial
+ * unique index on outbound (campaign_id, step) is the source of truth; direct
+ * insertion here is intentional because `pilot_details` is not a scheduled
+ * SequenceStep and must never enter the dispatch state machine.
+ */
+async function reservePilotDetails(
+  campaign: CampaignRow,
+  subject: string,
+): Promise<string | null> {
+  try {
+    const result = await pool.query<{ id: string }>(
+      `INSERT INTO partner_outreach_messages
+         (campaign_id, prospect_id, direction, step, recipient, subject, template_version, status)
+       VALUES ($1, $2, 'outbound', 'pilot_details', $3, $4, $5, 'pending')
+       RETURNING id`,
+      [campaign.id, campaign.prospectId, normalizeEmail(campaign.contactEmail), subject, TEMPLATE_VERSION],
+    );
+    return result.rows[0]?.id ?? null;
+  } catch (error: any) {
+    if (error?.code === "23505") return null;
+    throw error;
+  }
+}
+
+/**
+ * Send the fixed pilot explanation once after a clearly interested reply.
+ * Failure does not restart the cold sequence or alter the interested state;
+ * the CRM/owner alert remains the fallback if the provider has a transient
+ * problem.
+ */
+export async function sendPilotDetails(
+  campaign: CampaignRow,
+  service: OutreachEmailService,
+): Promise<void> {
+  const config = outreachConfig();
+  if (!service.isConfigured()) return;
+
+  const result = await pool.query(
+    `SELECT organization_name, segment, decision_maker_name
+       FROM partner_prospects WHERE id = $1`,
+    [campaign.prospectId],
+  );
+  const row = result.rows[0];
+  if (!row) return;
+
+  const rendered = renderPilotDetailsEmail({
+    organizationName: row.organization_name,
+    segment: row.segment as PartnerSegment,
+    decisionMakerName: row.decision_maker_name,
+    senderName: config.senderName,
+  });
+
+  const messageId = await reservePilotDetails(campaign, rendered.subject);
+  if (!messageId) return;
+
+  const unsubscribeUrl = `${appOrigin()}/api/outreach/unsubscribe?token=${campaign.unsubscribeToken}`;
+  const outcome = await service.send({
+    to: campaign.contactEmail,
+    subject: rendered.subject,
+    text: `${rendered.text}\n\n${unsubscribeFooter(unsubscribeUrl)}`,
+    replyTo: config.replyTo ?? undefined,
+    headers: {
+      "List-Unsubscribe": `<${unsubscribeUrl}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    },
+  });
+
+  if (!outcome.ok) {
+    await releaseFailedSend(messageId);
+    console.error(`[Outreach] pilot details send failed for campaign ${campaign.id}: ${outcome.error}`);
+    return;
+  }
+
+  await markMessageSent(messageId, outcome.providerMessageId, new Date());
 }
 
 // --- The warm handoff ------------------------------------------------------
@@ -230,15 +326,14 @@ export async function sendInterestedAlert(
     `Their reply:`,
     replyExcerpt,
     ``,
-    `Suggested next step: reply personally with the pilot details — a small`,
-    `group of their candidates take the free readiness check, you review the`,
-    `results together, and only then decide on a partner link.`,
+    `The pre-approved pilot details were automatically attempted and the cold`,
+    `follow-up sequence has stopped. If they reply yes again to request a`,
+    `tracked partner link, review the relationship and activate it deliberately`,
+    `in /admin/partners.`,
     ``,
-    `If it becomes a partnership: suggested partner code "${code ?? "(set manually)"}",` ,
+    `If it becomes a partnership: suggested partner code "${code ?? "(set manually)"}",`,
     `suggested exam category ${category ?? "(choose in admin — insurance segments vary)"}.`,
     `Activation stays manual in /admin/partners; nothing has been activated.`,
-    ``,
-    `Automated follow-ups to this prospect have stopped.`,
   ];
 
   await service.send({

@@ -9,10 +9,14 @@
  */
 
 import { Resend } from "resend";
-import {
-  DEFAULT_DAILY_NEW_PROSPECT_LIMIT,
-  MAX_DAILY_NEW_PROSPECT_LIMIT,
-} from "@shared/outreachCampaign";
+import { MAX_DAILY_NEW_PROSPECT_LIMIT } from "@shared/outreachCampaign";
+
+/**
+ * Deliberately conservative launch default. The operator may raise
+ * OUTREACH_DAILY_LIMIT after clean delivery/reply data, up to the existing
+ * hard cap, without changing code.
+ */
+export const LAUNCH_DAILY_NEW_PROSPECT_LIMIT = 5;
 
 export interface OutboundEmail {
   to: string;
@@ -35,38 +39,27 @@ export interface OutreachEmailService {
 export interface OutreachEmailConfig {
   /** Master switch. Everything refuses while this is off. */
   enabled: boolean;
-  /** e.g. "Sean at MyEasyPass <partners@myeasypass.net>". Required to send. */
+  /** Production outreach: "Sean at MyEasyPass <info@lbsconnect.net>". */
   fromEmail: string | null;
-  /** Where replies land. Defaults to the from address. */
+  /** Production outreach replies return to info@lbsconnect.net. */
   replyTo: string | null;
   /** Where interested-prospect alerts go. */
   alertEmail: string | null;
   senderName: string;
   dailyNewProspectLimit: number;
-  /**
-   * Circuit breakers: when tripped, the WHOLE campaign refuses to run, not
-   * just one address. Deliberate defaults: a single spam complaint in the
-   * window pauses everything until a person looks - complaints are how
-   * domains die, and continuing blindly after one is how they die faster.
-   */
   breakers: {
-    /** Spam complaints tolerated in the window before pausing. Default 0. */
     spamComplaintLimit: number;
-    /** Hard-bounce fraction of sends that pauses the campaign. */
     hardBounceRatioLimit: number;
-    /** Bounce ratio is only meaningful over at least this many sends. */
     bounceCheckMinSends: number;
-    /** The look-back window, in days. */
     windowDays: number;
   };
 }
 
-/** Read the engine's configuration from the environment, clamped to safety. */
 export function outreachConfig(env: NodeJS.ProcessEnv = process.env): OutreachEmailConfig {
   const rawLimit = Number(env.OUTREACH_DAILY_LIMIT);
   const dailyNewProspectLimit = Number.isFinite(rawLimit) && rawLimit >= 1
     ? Math.min(Math.floor(rawLimit), MAX_DAILY_NEW_PROSPECT_LIMIT)
-    : DEFAULT_DAILY_NEW_PROSPECT_LIMIT;
+    : LAUNCH_DAILY_NEW_PROSPECT_LIMIT;
 
   return {
     enabled: env.OUTREACH_ENABLED === "true",
@@ -77,14 +70,13 @@ export function outreachConfig(env: NodeJS.ProcessEnv = process.env): OutreachEm
     dailyNewProspectLimit,
     breakers: {
       spamComplaintLimit: 0,
-      hardBounceRatioLimit: 0.15,
+      hardBounceRatioLimit: 0.03,
       bounceCheckMinSends: 10,
       windowDays: 7,
     },
   };
 }
 
-/** Resend, behind the interface. The only file that imports the SDK for outreach. */
 export class ResendOutreachEmailService implements OutreachEmailService {
   constructor(private readonly fromEmail: string | null = outreachConfig().fromEmail) {}
 
@@ -109,8 +101,6 @@ export class ResendOutreachEmailService implements OutreachEmailService {
         ...(email.headers ? { headers: email.headers } : {}),
       });
 
-      // Resend reports rejection by returning an error, not throwing - the
-      // same trap resendClient.ts documents. Treat it as the failure it is.
       if (result?.error) {
         return { ok: false, error: String(result.error.message ?? result.error) };
       }
@@ -121,11 +111,6 @@ export class ResendOutreachEmailService implements OutreachEmailService {
   }
 }
 
-/**
- * The test double: records everything, sends nothing, and can be told to
- * fail. Lives here rather than in a test file so DB tests and any future
- * dry-run mode use the identical fake.
- */
 export class RecordingEmailService implements OutreachEmailService {
   public sent: OutboundEmail[] = [];
   public failNext = 0;

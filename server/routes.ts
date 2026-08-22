@@ -3482,6 +3482,8 @@ export async function registerRoutes(
         createdAt: u.createdAt,
         examCount: u.examCount,
         lastExamAt: u.lastExamAt,
+        // For the per-row online dot; same source as the "online now" stat.
+        lastSeenAt: u.profile?.lastSeenAt ?? null,
       }));
 
       res.json(formatted);

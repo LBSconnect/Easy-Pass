@@ -30,7 +30,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { scoreProspect, deriveComponents } from "@shared/partnerScore";
 import { OUTREACH_STATUSES, PARTNER_STATUSES, PARTNER_SEGMENTS } from "@shared/partners";
-import { Copy, ExternalLink, Search } from "lucide-react";
+import { ArrowLeft, Copy, ExternalLink, Search } from "lucide-react";
+import { Link } from "wouter";
 
 interface ProspectRow {
   id: string;
@@ -735,10 +736,20 @@ export default function AdminPartnersPage() {
       <Navbar />
       <main className="flex-1">
         <div className="container mx-auto max-w-[1320px] px-4 py-8">
-          <h1 className="text-2xl font-bold" data-testid="heading-admin-partners">Partners</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Prospects are organizations we have researched. They are not partners until someone here says so.
-          </p>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold" data-testid="heading-admin-partners">Partners</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Prospects are organizations we have researched. They are not partners until someone here says so.
+              </p>
+            </div>
+            <Button asChild variant="outline" size="sm" className="gap-2" data-testid="link-back-to-admin">
+              <Link href="/admin">
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                Admin panel
+              </Link>
+            </Button>
+          </div>
 
           <Tabs defaultValue="overview" className="mt-6">
             <TabsList>

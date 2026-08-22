@@ -188,7 +188,7 @@ export function renderPilotDetailsEmail(inputs: OutreachEmailInputs): RenderedOu
     `Thanks for the interest. Here's the simple MyEasyPass pilot for ${inputs.organizationName}:`,
     `1. You share MyEasyPass with a small group of ${audience}.\n2. They take a short Texas-specific readiness check that highlights areas that may need more review.\n3. They can continue with focused practice if they choose.`,
     "There is no setup fee, contract, or technical integration required for the pilot. MyEasyPass does not guarantee exam results.",
-    `If you'd like a tracked partner link prepared for ${inputs.organizationName}, reply "start" and I'll flag it for activation review. Nothing is activated automatically.`,
+    `If you'd like a tracked partner link prepared for ${inputs.organizationName}, reply "yes" again and I'll flag it for activation review. Nothing is activated automatically.`,
     signature(inputs.senderName),
   ];
   return {

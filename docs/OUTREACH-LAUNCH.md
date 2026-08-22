@@ -25,7 +25,7 @@ Do not assume reply automation works until the production test below confirms th
 
 ## Business identity in every message
 
-Every outreach-v2 message contains the operating identity and mailing address:
+Every outreach-v2 message contains:
 
 ```text
 MyEasyPass | Linton Business Solutions
@@ -37,15 +37,13 @@ The existing one-click unsubscribe footer and List-Unsubscribe headers remain in
 
 ## Launch volume
 
-The code default is now **5 new prospects per business day**. Due follow-ups still run on schedule.
+The code default is **5 new prospects per business day**. Due follow-ups still run on schedule.
 
 Recommended ramp:
 
 - First wave: 3-5 new prospects/day.
 - After clean delivery: 5-8/day by setting `OUTREACH_DAILY_LIMIT`.
 - After the message has produced real replies: up to 8-10/day if desired.
-
-Do not increase volume merely to finish the list faster. This is a small, high-value account list.
 
 ## Deliverability circuit breakers
 
@@ -54,21 +52,9 @@ The campaign pauses when:
 - any spam complaint is recorded in the seven-day window; or
 - at least 10 recent sends exist and the hard-bounce rate exceeds **3%**.
 
-Do not automatically override a pause. Investigate the affected addresses/source data first.
-
-## Email selection
-
-Only place a prospect in `ready_to_contact` when the address is a publicly listed or otherwise verified business contact appropriate for the organization.
-
-Do not guess private addresses. Do not generate likely first.last@domain addresses.
-
 ## Outreach-v2 positioning
 
-Subjects no longer lead with `Free`. The email leads with the business problem and positions the no-cost pilot as the low-friction way to evaluate MyEasyPass.
-
-The readiness check is described as highlighting areas that **may need more work**. It does not claim a ten-question snapshot can predict exactly what would make a candidate fail.
-
-The CTA is intentionally asynchronous:
+The readiness check is described as highlighting areas that **may need more work**. The CTA remains asynchronous:
 
 ```text
 If this could be useful, just reply "yes" and I'll send the pilot details.

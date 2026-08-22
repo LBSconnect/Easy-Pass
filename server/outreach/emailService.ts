@@ -47,25 +47,14 @@ export interface OutreachEmailConfig {
   alertEmail: string | null;
   senderName: string;
   dailyNewProspectLimit: number;
-  /**
-   * Circuit breakers: when tripped, the WHOLE campaign refuses to run, not
-   * just one address. Deliberate defaults: a single spam complaint in the
-   * window pauses everything until a person looks - complaints are how
-   * domains die, and continuing blindly after one is how they die faster.
-   */
   breakers: {
-    /** Spam complaints tolerated in the window before pausing. Default 0. */
     spamComplaintLimit: number;
-    /** Hard-bounce fraction of sends that pauses the campaign. */
     hardBounceRatioLimit: number;
-    /** Bounce ratio is only meaningful over at least this many sends. */
     bounceCheckMinSends: number;
-    /** The look-back window, in days. */
     windowDays: number;
   };
 }
 
-/** Read the engine's configuration from the environment, clamped to safety. */
 export function outreachConfig(env: NodeJS.ProcessEnv = process.env): OutreachEmailConfig {
   const rawLimit = Number(env.OUTREACH_DAILY_LIMIT);
   const dailyNewProspectLimit = Number.isFinite(rawLimit) && rawLimit >= 1
@@ -81,8 +70,6 @@ export function outreachConfig(env: NodeJS.ProcessEnv = process.env): OutreachEm
     dailyNewProspectLimit,
     breakers: {
       spamComplaintLimit: 0,
-      // A small, high-value list should stop well before a double-digit bounce
-      // rate. At 10+ recent sends, anything above 3% pauses the whole campaign.
       hardBounceRatioLimit: 0.03,
       bounceCheckMinSends: 10,
       windowDays: 7,
@@ -90,7 +77,6 @@ export function outreachConfig(env: NodeJS.ProcessEnv = process.env): OutreachEm
   };
 }
 
-/** Resend, behind the interface. The only file that imports the SDK for outreach. */
 export class ResendOutreachEmailService implements OutreachEmailService {
   constructor(private readonly fromEmail: string | null = outreachConfig().fromEmail) {}
 
@@ -115,8 +101,6 @@ export class ResendOutreachEmailService implements OutreachEmailService {
         ...(email.headers ? { headers: email.headers } : {}),
       });
 
-      // Resend reports rejection by returning an error, not throwing - the
-      // same trap resendClient.ts documents. Treat it as the failure it is.
       if (result?.error) {
         return { ok: false, error: String(result.error.message ?? result.error) };
       }
@@ -127,11 +111,6 @@ export class ResendOutreachEmailService implements OutreachEmailService {
   }
 }
 
-/**
- * The test double: records everything, sends nothing, and can be told to
- * fail. Lives here rather than in a test file so DB tests and any future
- * dry-run mode use the identical fake.
- */
 export class RecordingEmailService implements OutreachEmailService {
   public sent: OutboundEmail[] = [];
   public failNext = 0;

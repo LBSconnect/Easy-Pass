@@ -6,20 +6,20 @@ This runbook covers the deliberately small first production wave of automated pa
 
 The outreach engine stays on the existing Resend account and the already-verified `lbsconnect.net` sending domain. No additional sending-domain verification is required for launch.
 
-Use the real registered mailbox for the public sender identity:
+Use the same registered mailbox for every outreach send and reply path:
 
 ```text
-OUTREACH_FROM_EMAIL=Sean at MyEasyPass <sean.linton@lbsconnect.net>
-OUTREACH_REPLY_TO=sean.linton@lbsconnect.net
+OUTREACH_FROM_EMAIL=Sean at MyEasyPass <info@lbsconnect.net>
+OUTREACH_REPLY_TO=info@lbsconnect.net
 ```
 
-`info@lbsconnect.net` remains available for the site's other mail flows. Do not use `sean@lbsconnect.net`; it is not a registered mailbox.
+For partner outreach, the public sender identity is always `Sean at MyEasyPass <info@lbsconnect.net>`, and all recipient replies go to `info@lbsconnect.net`. Do not use `sean@lbsconnect.net` or `sean.linton@lbsconnect.net` for this campaign.
 
 ### Important: automated replies still need an inbound path
 
-The outreach state machine automatically stops follow-ups and sends pilot details when Resend delivers an `email.received` webhook. A normal reply arriving only in the hosted `sean.linton@lbsconnect.net` mailbox will not, by itself, create that Resend inbound event.
+The outreach state machine automatically stops follow-ups and sends pilot details when Resend delivers an `email.received` webhook. A normal reply arriving only in the hosted `info@lbsconnect.net` mailbox will not, by itself, create that Resend inbound event.
 
-Before autonomous outreach is enabled, route replies into Resend's inbound processing as well as the real mailbox. The lowest-friction option is to forward the `sean.linton@lbsconnect.net` mailbox to the Resend-provided inbound address and verify in an internal test that the webhook preserves the original prospect sender address. If mailbox forwarding does not preserve the sender reliably, use a Resend inbound subdomain/address instead and set `OUTREACH_REPLY_TO` to that inbound address.
+Before autonomous outreach is enabled, route replies into Resend's inbound processing as well as the real mailbox. The lowest-friction option is to forward `info@lbsconnect.net` to the Resend-provided inbound address and verify in an internal test that the webhook preserves the original prospect sender address. If mailbox forwarding does not preserve the sender reliably, use a Resend inbound subdomain/address instead and set `OUTREACH_REPLY_TO` to that inbound address.
 
 Do not assume reply automation works until the production test below confirms the `email.received` webhook reaches `/api/outreach/webhook`.
 
@@ -83,15 +83,15 @@ Do not optimize the campaign around open rates.
 Before the first real prospect:
 
 1. Confirm `lbsconnect.net` is still verified in Resend for sending.
-2. Set `OUTREACH_FROM_EMAIL=Sean at MyEasyPass <sean.linton@lbsconnect.net>`.
-3. Set `OUTREACH_REPLY_TO=sean.linton@lbsconnect.net`.
+2. Confirm Render has `OUTREACH_FROM_EMAIL=Sean at MyEasyPass <info@lbsconnect.net>`.
+3. Confirm Render has `OUTREACH_REPLY_TO=info@lbsconnect.net`.
 4. Configure/verify the inbound reply path so replies also reach Resend's `email.received` webhook.
 5. Send an internal test through the production outreach path.
-6. Confirm the visible From and Reply-To are the registered `sean.linton@lbsconnect.net` mailbox.
+6. Confirm the visible From is `Sean at MyEasyPass <info@lbsconnect.net>` and Reply-To is `info@lbsconnect.net`.
 7. Confirm the physical address is present.
 8. Confirm the unsubscribe link works.
 9. Reply `yes` from the test inbox.
-10. Confirm that reply reaches the normal mailbox **and** `/api/outreach/webhook`, the sequence stops, the prospect becomes `interested`, and exactly one automatic pilot-details email comes back.
+10. Confirm that reply reaches the normal `info@lbsconnect.net` mailbox **and** `/api/outreach/webhook`, the sequence stops, the prospect becomes `interested`, and exactly one automatic pilot-details email comes back.
 11. Replay/retry the same inbound webhook or repeat the test safely and confirm the original positive reply cannot create duplicate `pilot_details` sends.
 12. Reply `yes` again to the pilot-details email and confirm the CRM/owner workflow surfaces the account for activation review without activating it automatically.
 13. Only then mark the first real wave `ready_to_contact`.

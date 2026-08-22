@@ -39,7 +39,7 @@ export interface OutreachEmailService {
 export interface OutreachEmailConfig {
   /** Master switch. Everything refuses while this is off. */
   enabled: boolean;
-  /** Production outreach: "Sean at MyEasyPass <info@lbsconnect.net>" on the verified lbsconnect.net domain. */
+  /** Production outreach: "Sean at MyEasyPass.net <info@lbsconnect.net>" on the verified lbsconnect.net domain. */
   fromEmail: string | null;
   /** Production outreach replies return to info@lbsconnect.net. */
   replyTo: string | null;

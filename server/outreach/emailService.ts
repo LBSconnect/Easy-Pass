@@ -9,10 +9,14 @@
  */
 
 import { Resend } from "resend";
-import {
-  DEFAULT_DAILY_NEW_PROSPECT_LIMIT,
-  MAX_DAILY_NEW_PROSPECT_LIMIT,
-} from "@shared/outreachCampaign";
+import { MAX_DAILY_NEW_PROSPECT_LIMIT } from "@shared/outreachCampaign";
+
+/**
+ * Deliberately conservative launch default. The operator may raise
+ * OUTREACH_DAILY_LIMIT after clean delivery/reply data, up to the existing
+ * hard cap, without changing code.
+ */
+export const LAUNCH_DAILY_NEW_PROSPECT_LIMIT = 5;
 
 export interface OutboundEmail {
   to: string;
@@ -35,7 +39,7 @@ export interface OutreachEmailService {
 export interface OutreachEmailConfig {
   /** Master switch. Everything refuses while this is off. */
   enabled: boolean;
-  /** e.g. "Sean at MyEasyPass <partners@myeasypass.net>". Required to send. */
+  /** e.g. "Sean at MyEasyPass <sean@partners.myeasypass.net>". Required to send. */
   fromEmail: string | null;
   /** Where replies land. Defaults to the from address. */
   replyTo: string | null;
@@ -66,7 +70,7 @@ export function outreachConfig(env: NodeJS.ProcessEnv = process.env): OutreachEm
   const rawLimit = Number(env.OUTREACH_DAILY_LIMIT);
   const dailyNewProspectLimit = Number.isFinite(rawLimit) && rawLimit >= 1
     ? Math.min(Math.floor(rawLimit), MAX_DAILY_NEW_PROSPECT_LIMIT)
-    : DEFAULT_DAILY_NEW_PROSPECT_LIMIT;
+    : LAUNCH_DAILY_NEW_PROSPECT_LIMIT;
 
   return {
     enabled: env.OUTREACH_ENABLED === "true",
@@ -77,7 +81,9 @@ export function outreachConfig(env: NodeJS.ProcessEnv = process.env): OutreachEm
     dailyNewProspectLimit,
     breakers: {
       spamComplaintLimit: 0,
-      hardBounceRatioLimit: 0.15,
+      // A small, high-value list should stop well before a double-digit bounce
+      // rate. At 10+ recent sends, anything above 3% pauses the whole campaign.
+      hardBounceRatioLimit: 0.03,
       bounceCheckMinSends: 10,
       windowDays: 7,
     },

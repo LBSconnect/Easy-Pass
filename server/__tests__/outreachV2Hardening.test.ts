@@ -74,13 +74,13 @@ describe("outreach v2 hardening", () => {
     expect(config.breakers.bounceCheckMinSends).toBe(10);
   });
 
-  it("uses the registered lbsconnect.net outreach mailbox", () => {
+  it("uses info@lbsconnect.net for both From and Reply-To", () => {
     const config = outreachConfig({
-      OUTREACH_FROM_EMAIL: "Sean at MyEasyPass <sean.linton@lbsconnect.net>",
-      OUTREACH_REPLY_TO: "sean.linton@lbsconnect.net",
+      OUTREACH_FROM_EMAIL: "Sean at MyEasyPass <info@lbsconnect.net>",
+      OUTREACH_REPLY_TO: "info@lbsconnect.net",
     } as NodeJS.ProcessEnv);
 
-    expect(config.fromEmail).toBe("Sean at MyEasyPass <sean.linton@lbsconnect.net>");
-    expect(config.replyTo).toBe("sean.linton@lbsconnect.net");
+    expect(config.fromEmail).toBe("Sean at MyEasyPass <info@lbsconnect.net>");
+    expect(config.replyTo).toBe("info@lbsconnect.net");
   });
 });

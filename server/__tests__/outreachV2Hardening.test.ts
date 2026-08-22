@@ -15,16 +15,18 @@ import {
 } from "../outreach/emailService";
 
 const BUSINESS_ADDRESS = [
-  "MyEasyPass | Linton Business Solutions",
+  "MyEasyPass.net | Linton Business Solutions",
   "616 FM 1960 Road West, Suite 101",
   "Houston, Texas 77090-3048",
 ];
 
-describe("outreach v2 hardening", () => {
+const BRAND = "MyEasyPass.net";
+
+describe("outreach v3 hardening", () => {
   const base = { organizationName: "Example Licensing School", senderName: "Sean" };
 
-  it("uses the v2 template, outcome-led subjects, and a classifier-compatible asynchronous CTA", () => {
-    expect(TEMPLATE_VERSION).toBe("outreach-v2");
+  it("uses the v3 template, outcome-led subjects, and a classifier-compatible asynchronous CTA", () => {
+    expect(TEMPLATE_VERSION).toBe("outreach-v3");
     expect(REPLY_CTA.toLowerCase()).toContain('reply "yes"');
     expect(classifyReply("yes")).toBe("interested");
 
@@ -34,7 +36,24 @@ describe("outreach v2 hardening", () => {
       expect(email.text).toContain(REPLY_CTA);
       expect(email.text.toLowerCase()).not.toContain("would fail");
       expect(email.text.toLowerCase()).not.toContain("exactly which topics");
-      expect(email.text.toLowerCase()).toContain("may need more work");
+      expect(email.text.toLowerCase()).toContain("may need more review");
+      expect(email.text.toLowerCase()).toContain("without adding work for your staff");
+    }
+  });
+
+  it("brands every prospect-facing product reference as MyEasyPass.net and never uses an em dash", () => {
+    for (const segment of PARTNER_SEGMENTS) {
+      for (const email of [
+        renderInitialEmail({ ...base, segment }),
+        renderFollowUp1({ ...base, segment }),
+        renderFollowUp2({ ...base, segment }),
+        renderPilotDetailsEmail({ ...base, segment }),
+      ]) {
+        const rendered = `${email.subject}\n${email.text}`;
+        expect(rendered).toContain(BRAND);
+        expect(rendered).not.toMatch(/\bMyEasyPass(?!\.net)\b/);
+        expect(rendered).not.toContain("\u2014");
+      }
     }
   });
 
@@ -74,13 +93,13 @@ describe("outreach v2 hardening", () => {
     expect(config.breakers.bounceCheckMinSends).toBe(10);
   });
 
-  it("uses info@lbsconnect.net for both From and Reply-To", () => {
+  it("uses info@lbsconnect.net with the MyEasyPass.net display name", () => {
     const config = outreachConfig({
-      OUTREACH_FROM_EMAIL: "Sean at MyEasyPass <info@lbsconnect.net>",
+      OUTREACH_FROM_EMAIL: "Sean at MyEasyPass.net <info@lbsconnect.net>",
       OUTREACH_REPLY_TO: "info@lbsconnect.net",
     } as NodeJS.ProcessEnv);
 
-    expect(config.fromEmail).toBe("Sean at MyEasyPass <info@lbsconnect.net>");
+    expect(config.fromEmail).toBe("Sean at MyEasyPass.net <info@lbsconnect.net>");
     expect(config.replyTo).toBe("info@lbsconnect.net");
   });
 });

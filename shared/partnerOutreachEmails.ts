@@ -4,7 +4,7 @@
  * Templates, not a model - the same decision shared/partnerOutreach.ts made
  * and for the same reason: a generator would occasionally invent a fact about
  * the recipient's business, and no review step reliably catches a plausible
- * invention. Every sentence below is either about MyEasyPass or is a
+ * invention. Every sentence below is either about MyEasyPass.net or is a
  * segment-level fact visible from the organization's own public description.
  * The per-prospect fields (name, organization, hypothesis) are inserted
  * verbatim from the CRM, where a person wrote them.
@@ -16,7 +16,7 @@
 
 import type { PartnerSegment } from "./partners";
 
-export const TEMPLATE_VERSION = "outreach-v2";
+export const TEMPLATE_VERSION = "outreach-v3";
 
 export interface OutreachEmailInputs {
   organizationName: string;
@@ -66,7 +66,7 @@ const PROBLEMS: Record<PartnerSegment, string> = {
 };
 
 const WHAT_IT_IS =
-  "MyEasyPass is a Texas-specific, bilingual (English/Spanish) exam-practice platform. Candidates take a short readiness check that highlights areas that may need more work before exam day, then use focused practice to strengthen those areas.";
+  "MyEasyPass.net is a Texas-specific, bilingual (English/Spanish) exam-practice platform that gives candidates a quick way to see where they may need more review before exam day, then provides focused practice around those areas. For your organization, that means an additional pre-exam readiness resource without adding work for your staff.";
 
 const PILOT: Record<PartnerSegment, string> = {
   real_estate_school: "I'd like to offer your students a free readiness-check pilot - no cost, no commitment, and no technical integration required.",
@@ -109,7 +109,7 @@ function greeting(name?: string | null): string {
  * itself rather than relying on provider-specific footer behavior.
  */
 function signature(senderName: string): string {
-  return `${senderName}\nMyEasyPass | Linton Business Solutions\nwww.myeasypass.net\n616 FM 1960 Road West, Suite 101\nHouston, Texas 77090-3048`;
+  return `${senderName}\nMyEasyPass.net | Linton Business Solutions\nhttps://MyEasyPass.net\n616 FM 1960 Road West, Suite 101\nHouston, Texas 77090-3048`;
 }
 
 /** The word budget the initial email is held to (signature excluded). */
@@ -152,7 +152,7 @@ export function renderInitialEmail(inputs: OutreachEmailInputs): RenderedOutreac
 export function renderFollowUp1(inputs: OutreachEmailInputs): RenderedOutreachEmail {
   const paragraphs = [
     greeting(inputs.decisionMakerName),
-    `Following up on my note about a Texas exam-readiness pilot for ${inputs.organizationName}'s candidates.`,
+    `Following up on my note about a MyEasyPass.net Texas exam-readiness pilot for ${inputs.organizationName}'s candidates.`,
     "The short version: a candidate takes a brief readiness check, sees areas that may deserve more review before exam day, and can use focused practice to strengthen them. There is no cost or technical integration required for a small pilot.",
     REPLY_CTA,
     signature(inputs.senderName),
@@ -167,7 +167,7 @@ export function renderFollowUp1(inputs: OutreachEmailInputs): RenderedOutreachEm
 export function renderFollowUp2(inputs: OutreachEmailInputs): RenderedOutreachEmail {
   const paragraphs = [
     greeting(inputs.decisionMakerName),
-    `Last note from me on this. If an exam-readiness pilot for your candidates could ever be useful, just reply "yes" and I'll send the details - otherwise I won't email you about it again.`,
+    `Last note from me on this. If a MyEasyPass.net exam-readiness pilot for your candidates could ever be useful, just reply "yes" and I'll send the details - otherwise I won't email you about it again.`,
     signature(inputs.senderName),
   ];
   return {
@@ -185,14 +185,14 @@ export function renderPilotDetailsEmail(inputs: OutreachEmailInputs): RenderedOu
   const audience = PILOT_AUDIENCE[inputs.segment];
   const paragraphs = [
     greeting(inputs.decisionMakerName),
-    `Thanks for the interest. Here's the simple MyEasyPass pilot for ${inputs.organizationName}:`,
-    `1. You share MyEasyPass with a small group of ${audience}.\n2. They take a short Texas-specific readiness check that highlights areas that may need more review.\n3. They can continue with focused practice if they choose.`,
-    "There is no setup fee, contract, or technical integration required for the pilot. MyEasyPass does not guarantee exam results.",
+    `Thanks for the interest. Here's the simple MyEasyPass.net pilot for ${inputs.organizationName}:`,
+    `1. You share MyEasyPass.net with a small group of ${audience}.\n2. They take a short Texas-specific readiness check that highlights areas that may need more review.\n3. They can continue with focused practice if they choose.`,
+    "There is no setup fee, contract, or technical integration required for the pilot. MyEasyPass.net does not guarantee exam results.",
     `If you'd like a tracked partner link prepared for ${inputs.organizationName}, reply "yes" again and I'll flag it for activation review. Nothing is activated automatically.`,
     signature(inputs.senderName),
   ];
   return {
-    subject: `MyEasyPass pilot details for ${inputs.organizationName}`,
+    subject: `MyEasyPass.net pilot details for ${inputs.organizationName}`,
     text: paragraphs.join("\n\n"),
   };
 }

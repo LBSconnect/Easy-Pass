@@ -1,5 +1,5 @@
 /**
- * The three emails the outreach engine is allowed to send, verbatim.
+ * The outbound partner email copy the outreach engine is allowed to send.
  *
  * Templates, not a model - the same decision shared/partnerOutreach.ts made
  * and for the same reason: a generator would occasionally invent a fact about
@@ -75,6 +75,15 @@ const PILOT: Record<PartnerSegment, string> = {
   insurance_agency: "I'd like to offer your candidates a free readiness-check pilot - no cost, no commitment, and no technical integration required.",
   association: "I'd like to offer a small group of your members' candidates a free readiness-check pilot - no cost, no commitment, and no technical integration required.",
   other: "I'd like to offer a small group of your candidates a free readiness-check pilot - no cost, no commitment, and no technical integration required.",
+};
+
+const PILOT_AUDIENCE: Record<PartnerSegment, string> = {
+  real_estate_school: "students",
+  real_estate_brokerage: "pre-license recruits",
+  insurance_school: "students",
+  insurance_agency: "licensing candidates",
+  association: "members' licensing candidates",
+  other: "licensing candidates",
 };
 
 // The existing conservative classifier already treats a bare "yes" as
@@ -163,6 +172,27 @@ export function renderFollowUp2(inputs: OutreachEmailInputs): RenderedOutreachEm
   ];
   return {
     subject: `Re: ${SUBJECTS[inputs.segment]}`,
+    text: paragraphs.join("\n\n"),
+  };
+}
+
+/**
+ * Sent automatically only after a reply has already been conservatively
+ * classified as interested. It explains the pilot without activating a
+ * partnership or claiming any outcome the readiness check cannot prove.
+ */
+export function renderPilotDetailsEmail(inputs: OutreachEmailInputs): RenderedOutreachEmail {
+  const audience = PILOT_AUDIENCE[inputs.segment];
+  const paragraphs = [
+    greeting(inputs.decisionMakerName),
+    `Thanks for the interest. Here's the simple MyEasyPass pilot for ${inputs.organizationName}:`,
+    `1. You share MyEasyPass with a small group of ${audience}.\n2. They take a short Texas-specific readiness check that highlights areas that may need more review.\n3. They can continue with focused practice if they choose.`,
+    "There is no setup fee, contract, or technical integration required for the pilot. MyEasyPass does not guarantee exam results.",
+    `If you'd like a tracked partner link prepared for ${inputs.organizationName}, reply "start" and I'll flag it for activation review. Nothing is activated automatically.`,
+    signature(inputs.senderName),
+  ];
+  return {
+    subject: `MyEasyPass pilot details for ${inputs.organizationName}`,
     text: paragraphs.join("\n\n"),
   };
 }

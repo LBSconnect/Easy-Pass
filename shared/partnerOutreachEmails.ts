@@ -16,7 +16,7 @@
 
 import type { PartnerSegment } from "./partners";
 
-export const TEMPLATE_VERSION = "outreach-v1";
+export const TEMPLATE_VERSION = "outreach-v2";
 
 export interface OutreachEmailInputs {
   organizationName: string;
@@ -49,43 +49,43 @@ const OPENERS: Record<PartnerSegment, (org: string) => string> = {
     `I'm reaching out because ${org} works with people preparing for Texas licensing exams.`,
 };
 
-/** The recurring problem, in the recipient's terms. */
+/** The recurring problem, stated without pretending a short diagnostic predicts failure. */
 const PROBLEMS: Record<PartnerSegment, string> = {
   real_estate_school:
-    "A familiar pattern after any course: students finish the material, but many walk into the TREC exam without knowing which topics would fail them, and a failed attempt costs them money and momentum.",
+    "Students often finish their coursework still unsure which areas deserve more review before exam day, and a failed attempt can cost them time, money, and momentum.",
   real_estate_brokerage:
-    "A familiar pattern with pre-license recruits: they finish their coursework, but many sit the TREC exam without knowing which topics would fail them - and every failed attempt delays a recruit you have already invested in.",
+    "Pre-license recruits often finish coursework still unsure where they need more review before the licensing exam, and every delayed pass can slow down a recruit you have already invested in.",
   insurance_school:
-    "A familiar pattern after any class: students leave with the material fresh, but many sit the state exam without knowing which topics would fail them, and a failed attempt costs them money and momentum.",
+    "Students often finish pre-licensing still unsure which areas deserve more review before exam day, and a failed attempt can cost them time, money, and momentum.",
   insurance_agency:
-    "A familiar pattern with new producers: they finish pre-licensing, but many sit the state exam without knowing which topics would fail them - and every failed attempt delays a producer you are waiting on.",
+    "New producers often finish pre-licensing still unsure where they need more review before the state exam, and every delayed pass can slow down the path from recruiting to production.",
   association:
-    "A familiar pattern across the industry: candidates finish their pre-licensing, but many sit the state exam without knowing which topics would fail them, and failed attempts cost them money and momentum.",
+    "Licensing candidates often finish pre-licensing still unsure which areas deserve more review before exam day, and a failed attempt can cost them time, money, and momentum.",
   other:
-    "A familiar pattern: candidates finish their preparation, but many sit their licensing exam without knowing which topics would fail them, and a failed attempt costs them money and momentum.",
+    "Licensing candidates often finish their preparation still unsure which areas deserve more review before exam day, and a failed attempt can cost them time, money, and momentum.",
 };
 
 const WHAT_IT_IS =
-  "MyEasyPass is a Texas-specific, bilingual (English/Spanish) exam practice platform. Candidates take a free readiness check that shows exactly which topics need work, then drill timed practice questions until they are ready.";
+  "MyEasyPass is a Texas-specific, bilingual (English/Spanish) exam-practice platform. Candidates take a short readiness check that highlights areas that may need more work before exam day, then use focused practice to strengthen those areas.";
 
 const PILOT: Record<PartnerSegment, string> = {
-  real_estate_school: "I'd like to offer your students free readiness checks as a small pilot - no cost, no commitment, and you see whether it helps them.",
-  real_estate_brokerage: "I'd like to offer your pre-license recruits free readiness checks as a small pilot - no cost, no commitment, and you see whether it helps them.",
-  insurance_school: "I'd like to offer your students free readiness checks as a small pilot - no cost, no commitment, and you see whether it helps them.",
-  insurance_agency: "I'd like to offer your candidates free readiness checks as a small pilot - no cost, no commitment, and you see whether it helps them.",
-  association: "I'd like to offer your members' candidates free readiness checks as a small pilot - no cost, no commitment, and you see whether it helps them.",
-  other: "I'd like to offer your candidates free readiness checks as a small pilot - no cost, no commitment, and you see whether it helps them.",
+  real_estate_school: "I'd like to offer your students a free readiness-check pilot - no cost, no commitment, and no technical integration required.",
+  real_estate_brokerage: "I'd like to offer your pre-license recruits a free readiness-check pilot - no cost, no commitment, and no technical integration required.",
+  insurance_school: "I'd like to offer your students a free readiness-check pilot - no cost, no commitment, and no technical integration required.",
+  insurance_agency: "I'd like to offer your candidates a free readiness-check pilot - no cost, no commitment, and no technical integration required.",
+  association: "I'd like to offer a small group of your members' candidates a free readiness-check pilot - no cost, no commitment, and no technical integration required.",
+  other: "I'd like to offer a small group of your candidates a free readiness-check pilot - no cost, no commitment, and no technical integration required.",
 };
 
-export const REPLY_CTA = "Would you be open to testing this with a small group of candidates?";
+export const REPLY_CTA = `If this could be useful, just reply "pilot" and I'll send the details.`;
 
 const SUBJECTS: Record<PartnerSegment, string> = {
-  real_estate_school: "Free Texas exam readiness check for your students",
-  real_estate_brokerage: "Free exam readiness check for your pre-license recruits",
-  insurance_school: "Free Texas insurance exam readiness check for your students",
-  insurance_agency: "Free licensing exam readiness check for your candidates",
-  association: "Free licensing exam readiness resource for your members",
-  other: "Free Texas licensing exam readiness check",
+  real_estate_school: "A readiness tool for your Texas real estate students",
+  real_estate_brokerage: "Licensing readiness for your pre-license recruits",
+  insurance_school: "A readiness tool for your Texas insurance students",
+  insurance_agency: "Licensing readiness for your new producers",
+  association: "Texas licensing readiness for your members",
+  other: "Texas licensing readiness for your candidates",
 };
 
 function greeting(name?: string | null): string {
@@ -93,8 +93,12 @@ function greeting(name?: string | null): string {
   return trimmed ? `Hi ${trimmed},` : "Hello,";
 }
 
+/**
+ * Commercial-mail identity. Keep the real operating address in the message
+ * itself rather than relying on provider-specific footer behavior.
+ */
 function signature(senderName: string): string {
-  return `${senderName}\nMyEasyPass\nwww.myeasypass.net`;
+  return `${senderName}\nMyEasyPass | Linton Business Solutions\nwww.myeasypass.net\n616 FM 1960 Road West, Suite 101\nHouston, Texas 77090-3048`;
 }
 
 /** The word budget the initial email is held to (signature excluded). */
@@ -137,8 +141,8 @@ export function renderInitialEmail(inputs: OutreachEmailInputs): RenderedOutreac
 export function renderFollowUp1(inputs: OutreachEmailInputs): RenderedOutreachEmail {
   const paragraphs = [
     greeting(inputs.decisionMakerName),
-    `Following up on my note about a free Texas exam readiness check for ${inputs.organizationName}'s candidates.`,
-    "The short version: a candidate takes a free diagnostic, sees exactly which topics need work before exam day, and can practice until they are ready. There is no cost to try it with a small group.",
+    `Following up on my note about a Texas exam-readiness pilot for ${inputs.organizationName}'s candidates.`,
+    "The short version: a candidate takes a brief readiness check, sees areas that may deserve more review before exam day, and can use focused practice to strengthen them. There is no cost or technical integration required for a small pilot.",
     REPLY_CTA,
     signature(inputs.senderName),
   ];
@@ -152,7 +156,7 @@ export function renderFollowUp1(inputs: OutreachEmailInputs): RenderedOutreachEm
 export function renderFollowUp2(inputs: OutreachEmailInputs): RenderedOutreachEmail {
   const paragraphs = [
     greeting(inputs.decisionMakerName),
-    `Last note from me on this. If a free exam readiness check for your candidates could ever be useful, just reply and I'll send the pilot details - otherwise I won't email you about it again.`,
+    `Last note from me on this. If an exam-readiness pilot for your candidates could ever be useful, just reply "pilot" and I'll send the details - otherwise I won't email you about it again.`,
     signature(inputs.senderName),
   ];
   return {

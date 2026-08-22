@@ -1,4 +1,4 @@
-# MyEasyPass partner outreach launch
+# MyEasyPass.net partner outreach launch
 
 This runbook covers the deliberately small first production wave of automated partner outreach.
 
@@ -9,11 +9,17 @@ The outreach engine stays on the existing Resend account and the already-verifie
 Use the same registered mailbox for every outreach send and reply path:
 
 ```text
-OUTREACH_FROM_EMAIL=Sean at MyEasyPass <info@lbsconnect.net>
+OUTREACH_FROM_EMAIL=Sean at MyEasyPass.net <info@lbsconnect.net>
 OUTREACH_REPLY_TO=info@lbsconnect.net
 ```
 
-For partner outreach, the public sender identity is always `Sean at MyEasyPass <info@lbsconnect.net>`, and all recipient replies go to `info@lbsconnect.net`. Do not use `sean@lbsconnect.net` or `sean.linton@lbsconnect.net` for this campaign.
+For partner outreach, the public sender identity is always `Sean at MyEasyPass.net <info@lbsconnect.net>`, and all recipient replies go to `info@lbsconnect.net`. Do not use `sean@lbsconnect.net` or `sean.linton@lbsconnect.net` for this campaign.
+
+## Brand and punctuation rules
+
+Every prospect-facing product reference must say `MyEasyPass.net`. Do not use `MyEasyPass` by itself in the subject, body, pilot details, follow-ups, or signature.
+
+Prospect-facing subject lines and message bodies must never contain the em dash character. Use commas, periods, colons, parentheses, or a normal hyphen instead.
 
 ### Important: automated replies still need an inbound path
 
@@ -25,10 +31,10 @@ Do not assume reply automation works until the production test below confirms th
 
 ## Business identity in every message
 
-Every outreach-v2 message contains:
+Every outreach-v3 message contains:
 
 ```text
-MyEasyPass | Linton Business Solutions
+MyEasyPass.net | Linton Business Solutions
 616 FM 1960 Road West, Suite 101
 Houston, Texas 77090-3048
 ```
@@ -52,9 +58,11 @@ The campaign pauses when:
 - any spam complaint is recorded in the seven-day window; or
 - at least 10 recent sends exist and the hard-bounce rate exceeds **3%**.
 
-## Outreach-v2 positioning
+## Outreach-v3 positioning
 
-The readiness check is described as highlighting areas that **may need more work**. The CTA remains asynchronous:
+The first email now leads with the candidate problem, then explains that `MyEasyPass.net` gives candidates a quick way to identify areas that may need more review before exam day and provides focused practice around those areas. The organization-level benefit is stated directly: an additional pre-exam readiness resource without adding work for staff.
+
+The CTA remains asynchronous:
 
 ```text
 If this could be useful, just reply "yes" and I'll send the pilot details.
@@ -83,11 +91,11 @@ Do not optimize the campaign around open rates.
 Before the first real prospect:
 
 1. Confirm `lbsconnect.net` is still verified in Resend for sending.
-2. Confirm Render has `OUTREACH_FROM_EMAIL=Sean at MyEasyPass <info@lbsconnect.net>`.
+2. Confirm Render has `OUTREACH_FROM_EMAIL=Sean at MyEasyPass.net <info@lbsconnect.net>`.
 3. Confirm Render has `OUTREACH_REPLY_TO=info@lbsconnect.net`.
 4. Configure/verify the inbound reply path so replies also reach Resend's `email.received` webhook.
 5. Send an internal test through the production outreach path.
-6. Confirm the visible From is `Sean at MyEasyPass <info@lbsconnect.net>` and Reply-To is `info@lbsconnect.net`.
+6. Confirm the visible From is `Sean at MyEasyPass.net <info@lbsconnect.net>` and Reply-To is `info@lbsconnect.net`.
 7. Confirm the physical address is present.
 8. Confirm the unsubscribe link works.
 9. Reply `yes` from the test inbox.

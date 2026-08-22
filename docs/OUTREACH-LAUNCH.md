@@ -70,7 +70,9 @@ The CTA is intentionally asynchronous:
 If this could be useful, just reply "yes" and I'll send the pilot details.
 ```
 
-A bare `yes` is already classified by the outreach state machine as `interested`, which immediately stops the remaining automated sequence and surfaces the prospect for the warm-partner workflow.
+A bare `yes` is classified by the outreach state machine as `interested`, which immediately stops the remaining cold sequence. The webhook then automatically sends one pre-approved `pilot_details` response with the simple pilot structure, business identity, and unsubscribe controls. The database's existing unique outbound-step constraint prevents a webhook retry from sending that pilot response twice.
+
+The automatic pilot-details email still does **not** activate a partnership. It asks the recipient to reply `yes` again if they want a tracked partner link prepared. That second positive reply is surfaced for activation review; the existing admin partner-activation guard remains the only way a partner becomes active.
 
 ## Recommended first-wave strategy
 
@@ -95,6 +97,8 @@ Before the first real prospect:
 3. Confirm visible From and Reply-To identities.
 4. Confirm the physical address is present.
 5. Confirm the unsubscribe link works.
-6. Reply `yes` from the test inbox and confirm the sequence stops and the prospect becomes `interested`.
-7. Confirm the webhook processes the reply and the admin CRM surfaces it.
-8. Only then mark the first real wave `ready_to_contact`.
+6. Reply `yes` from the test inbox.
+7. Confirm the sequence stops, the prospect becomes `interested`, and exactly one automatic pilot-details email comes back.
+8. Replay/retry the same inbound webhook or repeat the test safely and confirm the original positive reply cannot create duplicate `pilot_details` sends.
+9. Reply `yes` again to the pilot-details email and confirm the CRM/owner workflow surfaces the account for activation review without activating it automatically.
+10. Only then mark the first real wave `ready_to_contact`.

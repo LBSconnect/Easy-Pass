@@ -61,5 +61,5 @@ npm run db:push
 ## Notes
 
 - The app binds to port **5000** for both frontend and backend
-- Stripe webhook handling requires the Replit connector in production; for local testing you'd need to set up Stripe CLI
+- Stripe webhooks arrive at `/api/stripe/webhook` as ordinary signed requests; for local testing use the Stripe CLI (`stripe listen --forward-to localhost:5000/api/stripe/webhook`)
 - Database migrations use Drizzle Kit's `push` command (not traditional migration files)

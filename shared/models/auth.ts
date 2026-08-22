@@ -2,7 +2,8 @@ import { sql } from "drizzle-orm";
 import { index, jsonb, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
 
 // Session storage table.
-// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+// (IMPORTANT) express-session stores every login session here via
+// connect-pg-simple - dropping it signs out every user.
 export const sessions = pgTable(
   "sessions",
   {

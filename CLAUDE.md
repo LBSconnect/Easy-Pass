@@ -202,6 +202,7 @@ app.post("/api/endpoint", isAuthenticated, async (req: any, res) => {
 | `RESEND_API_KEY` | Email | Password reset and study reminder emails |
 | `REMINDER_DISPATCH_SECRET` | Reminders | Guards `POST /api/reminders/dispatch`. Unset = the route refuses everything and no reminder emails are sent. See [`docs/CI.md`](docs/CI.md). |
 | `ALEXI_MOCK_EXAM_ENABLED` | Targeted practice | `true` enables targeted practice papers. Resolved on its own, without AI credentials — the papers are assembled from the approved bank and call no model. |
+| `OUTREACH_ENABLED` + `OUTREACH_DISPATCH_SECRET` + `OUTREACH_FROM_EMAIL` + `OUTREACH_WEBHOOK_SECRET` | Partner outreach | Automated partner outreach engine. All unset = nothing ever sends (the default). Full list and setup: [`docs/CI.md`](docs/CI.md). |
 
 ## Key Files to Know
 

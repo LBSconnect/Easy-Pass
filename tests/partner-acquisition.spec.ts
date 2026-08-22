@@ -510,3 +510,70 @@ test.describe("partner code and active state stay coherent", () => {
     expect((await partnerRow(fixture.draftId)).partner_code).toBe("e2e-integrity-second-try");
   });
 });
+
+/**
+ * The outreach engine's public surface, added with the automation PR.
+ *
+ * Three new unauthenticated endpoints exist so a scheduler, a webhook and an
+ * unsubscribe click can reach the engine. Each must reveal nothing about who
+ * is in the CRM: the same refusals whoever asks, and the unsubscribe page the
+ * same whether the token was real or garbage.
+ */
+test.describe("outreach engine public surface", () => {
+  test.beforeAll(async () => {
+    requireWritableTarget(process.env.TEST_BASE_URL);
+    await seedPartners();
+  });
+
+  test.afterAll(async () => {
+    await closeJourneyDb();
+  });
+
+  test("dispatch refuses without its secret", async ({ request }) => {
+    // 503 when the secret is unset (this environment), 401 when set and wrong.
+    // Either way: no run, no detail.
+    const res = await request.post("/api/outreach/dispatch", {
+      headers: { "x-outreach-secret": "wrong" },
+    });
+    expect([401, 503]).toContain(res.status());
+    expect(await res.text()).not.toContain(SECRET_ORG);
+  });
+
+  test("the webhook refuses an unsigned request", async ({ request }) => {
+    const res = await request.post("/api/outreach/webhook", {
+      data: { type: "email.received", data: { from: "private@example.com", text: "yes" } },
+    });
+    expect([401, 503]).toContain(res.status());
+  });
+
+  test("the unsubscribe page confirms without identifying anyone", async ({ request }) => {
+    for (const token of ["", "not-a-real-token", "0".repeat(48)]) {
+      const res = await request.get(`/api/outreach/unsubscribe?token=${token}`);
+      expect(res.status()).toBe(200);
+      const body = await res.text();
+      expect(body).toContain("unsubscribed");
+      expect(body).not.toContain(SECRET_ORG);
+      expect(body).not.toContain("private@example.com");
+    }
+  });
+
+  test("campaign state is admin-only", async ({ request, baseURL }) => {
+    expect((await request.get("/api/admin/partners/campaigns")).status()).toBe(401);
+
+    const context = await playwrightRequest.newContext({ baseURL });
+    const email = `outreach-guard-${Date.now()}@example.com`;
+    await context.post("/api/register", {
+      data: { email, password: "TestPassw0rd!", firstName: "Guard", lastName: "Test" },
+    });
+    const asStudent = await context.get("/api/admin/partners/campaigns");
+    expect(asStudent.status()).toBe(403);
+    expect(await asStudent.text()).not.toContain(SECRET_ORG);
+
+    const action = await context.post(
+      "/api/admin/partners/campaigns/00000000-0000-0000-0000-000000000000/action",
+      { data: { action: "pause" } },
+    );
+    expect(action.status()).toBe(403);
+    await context.dispose();
+  });
+});

@@ -164,6 +164,42 @@ line is written to the server log.
 Students are opted out unless they turn reminders on in their profile, and
 every message carries an unsubscribe link that works without signing in.
 
+## Automated partner outreach — off by default, gated four ways
+
+`POST /api/outreach/dispatch` runs one pass of the partner outreach engine:
+due follow-ups first, then new prospects up to the daily limit. It follows
+the same pattern as reminders — **no scheduler in the app**, a secret-guarded
+route an external cron calls — plus a master switch, because this route
+emails organizations who have not asked to hear from us and must never start
+by accident.
+
+Everything below must be true before a single outreach email leaves:
+
+1. **`OUTREACH_ENABLED=true`.** Absent or anything else, every dispatch run
+   answers `{"ran": false}` and sends nothing.
+2. **`OUTREACH_DISPATCH_SECRET`** set, and the caller sends it in an
+   `x-outreach-secret` header (503 unset, 401 wrong — same as reminders).
+3. **`OUTREACH_FROM_EMAIL`** set (e.g. `Sean at MyEasyPass
+   <partners@myeasypass.net>`), plus the existing `RESEND_API_KEY`.
+4. **The clock agrees**: business days, 9am–5pm Central, enforced inside the
+   run. A cron firing overnight or on a weekend finds nothing to do.
+
+Optional: `OUTREACH_REPLY_TO` (defaults to the from address),
+`OUTREACH_ALERT_EMAIL` (where interested-prospect alerts go),
+`OUTREACH_SENDER_NAME` (signature name, default "Sean"),
+`OUTREACH_DAILY_LIMIT` (new prospects per business day, default 15, hard cap
+20). A sensible cron is hourly on business days — the run itself decides what
+is actually due, and running it twice sends nothing twice (enforced by a
+unique index, not by the caller's discipline).
+
+Replies, bounces and complaints arrive via `POST /api/outreach/webhook` — a
+Resend webhook endpoint verified with **`OUTREACH_WEBHOOK_SECRET`** (the
+endpoint's `whsec_…` value from the Resend dashboard; 503 unset, 401 on any
+unverifiable request). Configure the Resend webhook to send bounce, complaint
+and inbound-email events there. Every outreach email carries a one-click
+unsubscribe link (`/api/outreach/unsubscribe`) that works without any login
+and suppresses the address permanently.
+
 ## Deployment
 
 Render auto-deploys from `main` (its standard behavior for this project).

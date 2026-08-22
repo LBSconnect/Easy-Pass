@@ -431,6 +431,110 @@ const STEPS: Step[] = [
           CREATE INDEX IF NOT EXISTS idx_partner_conversions_created
             ON partner_conversions (created_at);`,
   },
+
+  // --- Automated partner outreach ------------------------------------------
+  //
+  // Three tables, three concerns. The campaign row is the machine's state for
+  // one prospect (shared/outreachCampaign.ts holds the rules); the message
+  // rows are the audit trail of what actually left and arrived; suppressions
+  // are the addresses nothing may ever be sent to again. Suppression is its
+  // own table rather than a campaign flag because it outlives the campaign,
+  // the prospect, and any re-import - it is keyed on the address itself.
+  {
+    name: "table partner_outreach_campaigns",
+    sql: `CREATE TABLE IF NOT EXISTS partner_outreach_campaigns (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      prospect_id varchar NOT NULL,
+
+      state varchar(40) NOT NULL DEFAULT 'queued',
+      -- A person's hold. Checked before every send, independent of state.
+      paused boolean NOT NULL DEFAULT false,
+
+      -- The address this campaign writes to, frozen at enrollment so a CRM
+      -- edit mid-sequence cannot silently retarget follow-ups.
+      contact_email varchar(320) NOT NULL,
+      campaign_source varchar(60) NOT NULL DEFAULT 'partner-outreach-v1',
+
+      initial_sent_at timestamp,
+      last_sent_at timestamp,
+      next_action_at timestamp,
+
+      reply_received_at timestamp,
+      reply_classification varchar(40),
+      -- Enough of the reply for a person to act on the alert. Never public.
+      reply_excerpt text,
+      stop_reason varchar(60),
+
+      -- One-click unsubscribe, no login. Random per campaign.
+      unsubscribe_token varchar(64) NOT NULL,
+
+      created_at timestamp NOT NULL DEFAULT now(),
+      updated_at timestamp NOT NULL DEFAULT now()
+    );`,
+  },
+  {
+    name: "indexes partner_outreach_campaigns",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS uq_outreach_campaign_prospect
+            ON partner_outreach_campaigns (prospect_id);
+          CREATE UNIQUE INDEX IF NOT EXISTS uq_outreach_campaign_unsub
+            ON partner_outreach_campaigns (unsubscribe_token);
+          CREATE INDEX IF NOT EXISTS idx_outreach_campaign_state
+            ON partner_outreach_campaigns (state);
+          CREATE INDEX IF NOT EXISTS idx_outreach_campaign_next_action
+            ON partner_outreach_campaigns (next_action_at)
+            WHERE next_action_at IS NOT NULL;`,
+  },
+  {
+    name: "table partner_outreach_messages",
+    sql: `CREATE TABLE IF NOT EXISTS partner_outreach_messages (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      campaign_id varchar NOT NULL,
+      prospect_id varchar NOT NULL,
+
+      direction varchar(10) NOT NULL,          -- outbound | inbound
+      step varchar(20) NOT NULL,               -- initial | follow_up_1 | follow_up_2 | reply
+      recipient varchar(320) NOT NULL,
+      subject varchar(500),
+      template_version varchar(40),
+      provider_message_id varchar(200),
+      -- pending | sent | failed | bounced | complained | received
+      status varchar(20) NOT NULL,
+      -- Inbound only, truncated: what the person actually wrote.
+      body_excerpt text,
+
+      sent_at timestamp,
+      created_at timestamp NOT NULL DEFAULT now()
+    );`,
+  },
+  {
+    name: "indexes partner_outreach_messages",
+    sql: `-- One outbound send per step per campaign, enforced by the database
+          -- rather than by the engine's discipline. A duplicate job, a retry
+          -- after a timeout, two dispatchers racing: all hit this index.
+          CREATE UNIQUE INDEX IF NOT EXISTS uq_outreach_message_step
+            ON partner_outreach_messages (campaign_id, step)
+            WHERE direction = 'outbound';
+          CREATE INDEX IF NOT EXISTS idx_outreach_messages_campaign
+            ON partner_outreach_messages (campaign_id);
+          CREATE INDEX IF NOT EXISTS idx_outreach_messages_sent
+            ON partner_outreach_messages (sent_at)
+            WHERE sent_at IS NOT NULL;
+          CREATE INDEX IF NOT EXISTS idx_outreach_messages_provider_id
+            ON partner_outreach_messages (provider_message_id)
+            WHERE provider_message_id IS NOT NULL;`,
+  },
+  {
+    name: "table partner_email_suppressions",
+    sql: `CREATE TABLE IF NOT EXISTS partner_email_suppressions (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      email varchar(320) NOT NULL,
+      reason varchar(30) NOT NULL,             -- unsubscribed | hard_bounce | spam_complaint | manual
+      source varchar(60),
+      created_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_partner_suppression_email
+      ON partner_email_suppressions (email);`,
+  },
 ];
 
 export interface MigrationResult {
@@ -493,6 +597,9 @@ export async function checkSchemaHealth(): Promise<{
     "tutor_turns",
     "partner_prospects",
     "partner_conversions",
+    "partner_outreach_campaigns",
+    "partner_outreach_messages",
+    "partner_email_suppressions",
   ];
   const expectedColumns: Array<[string, string]> = [
     ["user_profiles", "exam_date"],

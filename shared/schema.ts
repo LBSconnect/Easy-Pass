@@ -829,7 +829,86 @@ export const partnerConversions = pgTable("partner_conversions", {
   index("idx_partner_conversions_created").on(table.createdAt),
 ]);
 
+/**
+ * One prospect's automated outreach campaign. The state machine's rules live
+ * in shared/outreachCampaign.ts; this row is where that machine stands for
+ * one organization. Unique per prospect: an organization has one sequence,
+ * ever, unless a person deliberately restarts it.
+ */
+export const partnerOutreachCampaigns = pgTable("partner_outreach_campaigns", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  prospectId: varchar("prospect_id").notNull(),
+
+  state: varchar("state", { length: 40 }).notNull().default("queued"),
+  /** A person's hold. Blocks every send, independent of state. */
+  paused: boolean("paused").notNull().default(false),
+
+  /** Frozen at enrollment so a CRM edit mid-sequence cannot retarget follow-ups. */
+  contactEmail: varchar("contact_email", { length: 320 }).notNull(),
+  campaignSource: varchar("campaign_source", { length: 60 }).notNull().default("partner-outreach-v1"),
+
+  initialSentAt: timestamp("initial_sent_at"),
+  lastSentAt: timestamp("last_sent_at"),
+  nextActionAt: timestamp("next_action_at"),
+
+  replyReceivedAt: timestamp("reply_received_at"),
+  replyClassification: varchar("reply_classification", { length: 40 }),
+  /** Enough of the reply for a person to act on the alert. Never public. */
+  replyExcerpt: text("reply_excerpt"),
+  stopReason: varchar("stop_reason", { length: 60 }),
+
+  unsubscribeToken: varchar("unsubscribe_token", { length: 64 }).notNull(),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_outreach_campaign_state").on(table.state),
+]);
+
+/**
+ * Every email the engine sent or received, one row each. The outbound rows
+ * store subject and template version rather than the full body - the body is
+ * reproducible from the version, and unnecessary copies of outreach text are
+ * a liability, not a record. Inbound rows keep an excerpt because the reply
+ * is the one thing that cannot be reproduced.
+ */
+export const partnerOutreachMessages = pgTable("partner_outreach_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  campaignId: varchar("campaign_id").notNull(),
+  prospectId: varchar("prospect_id").notNull(),
+
+  direction: varchar("direction", { length: 10 }).notNull(),
+  step: varchar("step", { length: 20 }).notNull(),
+  recipient: varchar("recipient", { length: 320 }).notNull(),
+  subject: varchar("subject", { length: 500 }),
+  templateVersion: varchar("template_version", { length: 40 }),
+  providerMessageId: varchar("provider_message_id", { length: 200 }),
+  status: varchar("status", { length: 20 }).notNull(),
+  bodyExcerpt: text("body_excerpt"),
+
+  sentAt: timestamp("sent_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_outreach_messages_campaign").on(table.campaignId),
+]);
+
+/**
+ * Addresses nothing may ever be campaign-emailed again. Keyed on the address
+ * itself so the promise survives re-imports, campaign restarts, and prospect
+ * edits. Automation only ever inserts here; deletion is a person's decision.
+ */
+export const partnerEmailSuppressions = pgTable("partner_email_suppressions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email", { length: 320 }).notNull(),
+  reason: varchar("reason", { length: 30 }).notNull(),
+  source: varchar("source", { length: 60 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export type PartnerProspect = typeof partnerProspects.$inferSelect;
 export type InsertPartnerProspect = typeof partnerProspects.$inferInsert;
 export type PartnerConversion = typeof partnerConversions.$inferSelect;
 export type InsertPartnerConversion = typeof partnerConversions.$inferInsert;
+export type PartnerOutreachCampaign = typeof partnerOutreachCampaigns.$inferSelect;
+export type PartnerOutreachMessage = typeof partnerOutreachMessages.$inferSelect;
+export type PartnerEmailSuppression = typeof partnerEmailSuppressions.$inferSelect;

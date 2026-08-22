@@ -16,7 +16,14 @@
 
 import type { ExamCategory } from "./schema";
 
-/** Where a prospect sits in outreach. Ordered as the work actually flows. */
+/**
+ * Where a prospect sits in outreach. Ordered as the work actually flows.
+ *
+ * The trailing five were added with the automated outreach engine
+ * (shared/outreachCampaign.ts) for outcomes only automation can observe -
+ * a declined reply, an unsubscribe, a bounce. Additive on purpose: nothing
+ * existing was renamed, so every stored status still means what it meant.
+ */
 export const OUTREACH_STATUSES = [
   "not_contacted",
   "researching",
@@ -27,6 +34,11 @@ export const OUTREACH_STATUSES = [
   "pilot",
   "partner",
   "not_a_fit",
+  "maybe_later",
+  "not_interested",
+  "unsubscribed",
+  "bounced",
+  "needs_review",
 ] as const;
 export type OutreachStatus = (typeof OUTREACH_STATUSES)[number];
 

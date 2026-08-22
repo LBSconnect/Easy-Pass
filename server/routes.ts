@@ -36,6 +36,19 @@ import {
   partnerPerformance,
 } from "./partners/partnerStore";
 import { buildOutreachDraft } from "@shared/partnerOutreach";
+import { runOutreachDispatch } from "./outreach/engine";
+import { ResendOutreachEmailService } from "./outreach/emailService";
+import {
+  processUnsubscribeToken,
+  processWebhookEvent,
+  verifyWebhookSignature,
+} from "./outreach/replyProcessor";
+import {
+  campaignByProspect,
+  listCampaignSummaries,
+  setPaused,
+  transitionCampaign,
+} from "./outreach/campaignStore";
 import type { PartnerSegment } from "@shared/partners";
 import { validatePartnerState, partnerCodeChangeProblem } from "@shared/partners";
 import { examDatePatch } from "@shared/examDatePatch";
@@ -1675,6 +1688,143 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error building outreach draft:", error);
       res.status(500).json({ message: "Failed to build draft" });
+    }
+  });
+
+  // ---------------------------------------------------------------------
+  // Automated partner outreach engine.
+  //
+  // Same operational pattern as study reminders: no scheduler in the app, a
+  // secret-guarded dispatch route an external cron calls, and the run itself
+  // decides whether anything may leave (business hours, daily limit, stop
+  // conditions - see server/outreach/engine.ts). With OUTREACH_ENABLED unset
+  // or the secret unset, nothing sends, ever.
+  // ---------------------------------------------------------------------
+
+  app.post("/api/outreach/dispatch", async (req, res) => {
+    try {
+      const secret = process.env.OUTREACH_DISPATCH_SECRET;
+      if (!secret) {
+        return res.status(503).json({ message: "Outreach dispatch is not configured" });
+      }
+      if ((req.get("x-outreach-secret") ?? "") !== secret) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const result = await runOutreachDispatch(new ResendOutreachEmailService());
+      console.log("[Outreach] dispatch:", JSON.stringify(result));
+      res.json(result);
+    } catch (error) {
+      console.error("Error dispatching outreach:", error);
+      res.status(500).json({ message: "Failed to dispatch outreach" });
+    }
+  });
+
+  /**
+   * Resend webhooks: bounces, spam complaints, and inbound replies.
+   *
+   * Signature-verified against the endpoint secret (Svix scheme) using the
+   * raw body captured by the JSON middleware. An unverifiable request learns
+   * nothing: the same 401 whether the secret is wrong or the event unknown.
+   */
+  app.post("/api/outreach/webhook", async (req: any, res) => {
+    try {
+      const secret = process.env.OUTREACH_WEBHOOK_SECRET;
+      if (!secret) {
+        return res.status(503).json({ message: "Not configured" });
+      }
+      const rawBody = req.rawBody ? req.rawBody.toString("utf8") : JSON.stringify(req.body ?? {});
+      const verified = verifyWebhookSignature(rawBody, {
+        id: req.get("svix-id"),
+        timestamp: req.get("svix-timestamp"),
+        signature: req.get("svix-signature"),
+      }, secret);
+      if (!verified) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const outcome = await processWebhookEvent(req.body ?? {}, new ResendOutreachEmailService());
+      res.json(outcome);
+    } catch (error) {
+      console.error("Error processing outreach webhook:", error);
+      res.status(500).json({ message: "Webhook processing failed" });
+    }
+  });
+
+  /**
+   * One-click unsubscribe from any outreach email. Token-based, no login,
+   * and deliberately uninformative: the response never confirms who the
+   * token belonged to, and an invalid token gets the same page.
+   */
+  const outreachUnsubscribe = async (req: any, res: any) => {
+    try {
+      const limit = rateLimit(`outreach-unsub:${getClientIp(req)}`, 20, 15 * 60 * 1000);
+      if (!limit.allowed) {
+        return res.status(429).send("Too many requests. Please try again later.");
+      }
+      const token = String(req.query.token ?? "");
+      if (token) await processUnsubscribeToken(token);
+      res
+        .status(200)
+        .type("html")
+        .send("<html><body style=\"font-family: sans-serif; padding: 40px;\"><h2>You're unsubscribed.</h2><p>You won't receive any more of these emails from MyEasyPass.</p></body></html>");
+    } catch (error) {
+      console.error("Error processing outreach unsubscribe:", error);
+      res.status(200).type("html").send("<html><body style=\"font-family: sans-serif; padding: 40px;\"><h2>You're unsubscribed.</h2></body></html>");
+    }
+  };
+  app.get("/api/outreach/unsubscribe", outreachUnsubscribe);
+  app.post("/api/outreach/unsubscribe", outreachUnsubscribe);
+
+  /** Campaign state for the admin table, keyed by prospect id. */
+  app.get("/api/admin/partners/campaigns", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+      res.json(await listCampaignSummaries());
+    } catch (error) {
+      console.error("Error listing campaigns:", error);
+      res.status(500).json({ message: "Failed to list campaigns" });
+    }
+  });
+
+  /**
+   * The admin's controls over one prospect's automation. Pause and resume
+   * hold or release the sequence; stop, mark-interested and
+   * mark-not-interested end it. None of these touch partner activation -
+   * that stays with the existing PATCH route and its validation.
+   */
+  app.post("/api/admin/partners/campaigns/:prospectId/action", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!(await requireAdmin(req, res))) return;
+
+      const action = String(req.body?.action ?? "");
+      const campaign = await campaignByProspect(req.params.prospectId);
+      if (!campaign) return res.status(404).json({ message: "No campaign for this prospect" });
+
+      switch (action) {
+        case "pause":
+          await setPaused(campaign.id, true);
+          break;
+        case "resume":
+          await setPaused(campaign.id, false);
+          break;
+        case "stop":
+          await transitionCampaign(campaign.id, "stopped", { stopReason: "manual_stop" });
+          break;
+        case "mark_interested":
+          await transitionCampaign(campaign.id, "interested", { stopReason: "manual_classification" });
+          break;
+        case "mark_not_interested":
+          await transitionCampaign(campaign.id, "not_interested", { stopReason: "manual_classification" });
+          break;
+        default:
+          return res.status(400).json({ message: "Unknown action" });
+      }
+
+      res.json({ updated: true });
+    } catch (error) {
+      console.error("Error applying campaign action:", error);
+      res.status(500).json({ message: "Failed to update campaign" });
     }
   });
 

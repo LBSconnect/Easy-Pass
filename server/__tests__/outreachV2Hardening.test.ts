@@ -82,13 +82,13 @@ describe("outreach v2 hardening", () => {
     expect(config.breakers.bounceCheckMinSends).toBe(10);
   });
 
-  it("documents the intended verified outreach identity in config examples", () => {
+  it("uses the already-verified lbsconnect.net domain for the outreach identity", () => {
     const config = outreachConfig({
-      OUTREACH_FROM_EMAIL: "Sean at MyEasyPass <sean@partners.myeasypass.net>",
-      OUTREACH_REPLY_TO: "info@lbsconect.net",
+      OUTREACH_FROM_EMAIL: "Sean at MyEasyPass <sean@lbsconnect.net>",
+      OUTREACH_REPLY_TO: "info@lbsconnect.net",
     } as NodeJS.ProcessEnv);
 
-    expect(config.fromEmail).toBe("Sean at MyEasyPass <sean@partners.myeasypass.net>");
-    expect(config.replyTo).toBe("info@lbsconect.net");
+    expect(config.fromEmail).toBe("Sean at MyEasyPass <sean@lbsconnect.net>");
+    expect(config.replyTo).toBe("info@lbsconnect.net");
   });
 });

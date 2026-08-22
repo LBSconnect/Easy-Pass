@@ -50,6 +50,7 @@ import {
   isSuppressed,
   markMessageSent,
   projectSendToProspect,
+  recentDeliverabilityFacts,
   releaseFailedSend,
   reserveSend,
   transitionCampaign,
@@ -213,6 +214,27 @@ export async function runOutreachDispatch(
     result.reason = "outside business-hours sending window";
     return result;
   }
+
+  // Circuit breakers: campaign-wide, judged before anything is attempted.
+  // A tripped breaker stays tripped until the underlying facts age out of the
+  // window or a person raises the configured limit - there is no automated
+  // reset, because continuing blindly after a systemic failure is the one
+  // thing this engine must never do.
+  const facts = await recentDeliverabilityFacts(config.breakers.windowDays);
+  if (facts.spamComplaints > config.breakers.spamComplaintLimit) {
+    result.reason = `circuit breaker: ${facts.spamComplaints} spam complaint(s) in the last ${config.breakers.windowDays} days`;
+    console.error(`[Outreach] PAUSED - ${result.reason}`);
+    return result;
+  }
+  if (
+    facts.sends >= config.breakers.bounceCheckMinSends &&
+    facts.hardBounces / facts.sends > config.breakers.hardBounceRatioLimit
+  ) {
+    result.reason = `circuit breaker: hard-bounce rate ${facts.hardBounces}/${facts.sends} over the last ${config.breakers.windowDays} days`;
+    console.error(`[Outreach] PAUSED - ${result.reason}`);
+    return result;
+  }
+
   result.ran = true;
 
   // The day's budget for NEW prospects. "Today" is the recipient's calendar

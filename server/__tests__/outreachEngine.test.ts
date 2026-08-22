@@ -244,6 +244,10 @@ describeIfDb("the engine against a real database", () => {
     alertEmail: `owner@${FX_DOMAIN}`,
     senderName: "Sean",
     dailyNewProspectLimit: 15,
+    // Breakers held open for the ordinary tests - this file deliberately
+    // creates complaints and bounces, and each test isolates what it proves.
+    // The breaker tests below use the strict production defaults.
+    breakers: { spamComplaintLimit: 1000, hardBounceRatioLimit: 1.01, bounceCheckMinSends: 999999, windowDays: 7 },
     ...overrides,
   });
 
@@ -674,6 +678,37 @@ describeIfDb("the engine against a real database", () => {
     await replies.processReply(campaign!, campaign!.contactEmail, "yes, interested", service);
     const after = await pool.query(`SELECT count(*) AS n FROM analytics_events`);
     expect(after.rows[0].n).toEqual(before.rows[0].n);
+  });
+
+  it("circuit breaker: any recent spam complaint pauses the whole campaign", async () => {
+    // T8 above recorded a real spam-complaint suppression inside the window.
+    // At the production default (zero tolerated), the entire run refuses -
+    // not one address, everything.
+    await makeProspect({ name: "Blocked By Breaker" });
+    const service = new emailService.RecordingEmailService();
+    const run = await engine.runOutreachDispatch(
+      service,
+      new Date("2026-10-13T15:00:00Z"),
+      config({ breakers: { spamComplaintLimit: 0, hardBounceRatioLimit: 1.01, bounceCheckMinSends: 999999, windowDays: 90 } }),
+    );
+    expect(run.ran).toBe(false);
+    expect(run.reason).toContain("circuit breaker");
+    expect(run.reason).toContain("spam complaint");
+    expect(service.sent).toHaveLength(0);
+  });
+
+  it("circuit breaker: a material hard-bounce rate pauses the campaign", async () => {
+    const service = new emailService.RecordingEmailService();
+    const run = await engine.runOutreachDispatch(
+      service,
+      new Date("2026-10-13T15:00:00Z"),
+      config({ breakers: { spamComplaintLimit: 1000, hardBounceRatioLimit: 0.0001, bounceCheckMinSends: 1, windowDays: 90 } }),
+    );
+    expect(run.ran).toBe(false);
+    expect(run.reason).toContain("hard-bounce rate");
+    expect(service.sent).toHaveLength(0);
+    // Clean up the enrollment fixture from the previous breaker test.
+    await pool.query(`DELETE FROM partner_prospects WHERE dedupe_key = $1`, [`${FX}-blocked-by-breaker`]);
   });
 
   it("the webhook signature check accepts only a fresh, correctly signed payload", async () => {

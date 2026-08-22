@@ -43,6 +43,22 @@ export interface OutreachEmailConfig {
   alertEmail: string | null;
   senderName: string;
   dailyNewProspectLimit: number;
+  /**
+   * Circuit breakers: when tripped, the WHOLE campaign refuses to run, not
+   * just one address. Deliberate defaults: a single spam complaint in the
+   * window pauses everything until a person looks - complaints are how
+   * domains die, and continuing blindly after one is how they die faster.
+   */
+  breakers: {
+    /** Spam complaints tolerated in the window before pausing. Default 0. */
+    spamComplaintLimit: number;
+    /** Hard-bounce fraction of sends that pauses the campaign. */
+    hardBounceRatioLimit: number;
+    /** Bounce ratio is only meaningful over at least this many sends. */
+    bounceCheckMinSends: number;
+    /** The look-back window, in days. */
+    windowDays: number;
+  };
 }
 
 /** Read the engine's configuration from the environment, clamped to safety. */
@@ -59,6 +75,12 @@ export function outreachConfig(env: NodeJS.ProcessEnv = process.env): OutreachEm
     alertEmail: env.OUTREACH_ALERT_EMAIL || null,
     senderName: env.OUTREACH_SENDER_NAME || "Sean",
     dailyNewProspectLimit,
+    breakers: {
+      spamComplaintLimit: 0,
+      hardBounceRatioLimit: 0.15,
+      bounceCheckMinSends: 10,
+      windowDays: 7,
+    },
   };
 }
 

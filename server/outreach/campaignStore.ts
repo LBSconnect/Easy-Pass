@@ -357,6 +357,44 @@ export async function projectSendToProspect(prospectId: string, state: CampaignS
   );
 }
 
+// --- Circuit breakers ------------------------------------------------------
+
+/**
+ * The campaign-level health facts the circuit breakers judge: recent spam
+ * complaints, recent hard bounces, and recent sends. Suppression rows carry
+ * both breaker inputs, because they are written at the moment the provider
+ * reported the event and are never deleted by automation.
+ */
+export async function recentDeliverabilityFacts(windowDays: number): Promise<{
+  spamComplaints: number;
+  hardBounces: number;
+  sends: number;
+}> {
+  const since = `now() - interval '1 day' * $1`;
+  const [complaints, bounces, sends] = await Promise.all([
+    pool.query<{ n: string }>(
+      `SELECT count(*) AS n FROM partner_email_suppressions
+        WHERE reason = 'spam_complaint' AND created_at >= ${since}`,
+      [windowDays],
+    ),
+    pool.query<{ n: string }>(
+      `SELECT count(*) AS n FROM partner_email_suppressions
+        WHERE reason = 'hard_bounce' AND created_at >= ${since}`,
+      [windowDays],
+    ),
+    pool.query<{ n: string }>(
+      `SELECT count(*) AS n FROM partner_outreach_messages
+        WHERE direction = 'outbound' AND status = 'sent' AND sent_at >= ${since}`,
+      [windowDays],
+    ),
+  ]);
+  return {
+    spamComplaints: Number(complaints.rows[0]?.n ?? 0),
+    hardBounces: Number(bounces.rows[0]?.n ?? 0),
+    sends: Number(sends.rows[0]?.n ?? 0),
+  };
+}
+
 // --- Admin summaries -------------------------------------------------------
 
 export interface CampaignSummary {

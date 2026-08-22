@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PARTNER_SEGMENTS } from "@shared/partners";
+import { classifyReply } from "@shared/outreachCampaign";
 import {
   REPLY_CTA,
   TEMPLATE_VERSION,
@@ -24,9 +25,10 @@ describe("outreach v2 hardening", () => {
     senderName: "Sean",
   };
 
-  it("uses the v2 template, outcome-led subjects, and an asynchronous pilot CTA", () => {
+  it("uses the v2 template, outcome-led subjects, and a classifier-compatible asynchronous CTA", () => {
     expect(TEMPLATE_VERSION).toBe("outreach-v2");
-    expect(REPLY_CTA.toLowerCase()).toContain('reply "pilot"');
+    expect(REPLY_CTA.toLowerCase()).toContain('reply "yes"');
+    expect(classifyReply("yes")).toBe("interested");
 
     for (const segment of PARTNER_SEGMENTS) {
       const email = renderInitialEmail({ ...base, segment });

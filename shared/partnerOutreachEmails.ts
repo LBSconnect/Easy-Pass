@@ -77,7 +77,9 @@ const PILOT: Record<PartnerSegment, string> = {
   other: "I'd like to offer a small group of your candidates a free readiness-check pilot - no cost, no commitment, and no technical integration required.",
 };
 
-export const REPLY_CTA = `If this could be useful, just reply "pilot" and I'll send the details.`;
+// The existing conservative classifier already treats a bare "yes" as
+// interested, so the lowest-friction CTA and the automation agree exactly.
+export const REPLY_CTA = `If this could be useful, just reply "yes" and I'll send the pilot details.`;
 
 const SUBJECTS: Record<PartnerSegment, string> = {
   real_estate_school: "A readiness tool for your Texas real estate students",
@@ -156,7 +158,7 @@ export function renderFollowUp1(inputs: OutreachEmailInputs): RenderedOutreachEm
 export function renderFollowUp2(inputs: OutreachEmailInputs): RenderedOutreachEmail {
   const paragraphs = [
     greeting(inputs.decisionMakerName),
-    `Last note from me on this. If an exam-readiness pilot for your candidates could ever be useful, just reply "pilot" and I'll send the details - otherwise I won't email you about it again.`,
+    `Last note from me on this. If an exam-readiness pilot for your candidates could ever be useful, just reply "yes" and I'll send the details - otherwise I won't email you about it again.`,
     signature(inputs.senderName),
   ];
   return {

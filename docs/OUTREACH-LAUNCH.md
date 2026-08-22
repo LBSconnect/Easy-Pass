@@ -6,20 +6,20 @@ This runbook covers the deliberately small first production wave of automated pa
 
 The outreach engine stays on the existing Resend account and the already-verified `lbsconnect.net` sending domain.
 
-Use the real registered outreach mailbox:
+Use the same registered mailbox for every outreach send and reply path:
 
 ```text
-OUTREACH_FROM_EMAIL=Sean at MyEasyPass <sean.linton@lbsconnect.net>
-OUTREACH_REPLY_TO=sean.linton@lbsconnect.net
+OUTREACH_FROM_EMAIL=Sean at MyEasyPass <info@lbsconnect.net>
+OUTREACH_REPLY_TO=info@lbsconnect.net
 ```
 
-`info@lbsconnect.net` remains available for the site's other mail flows. Do not use `sean@lbsconnect.net`; it is not a registered mailbox.
+For partner outreach, do not use `sean@lbsconnect.net` or `sean.linton@lbsconnect.net`. The public outreach identity is always `Sean at MyEasyPass <info@lbsconnect.net>`, and all recipient replies go to `info@lbsconnect.net`.
 
 ## Automated reply handling
 
 The automated `reply yes -> stop sequence -> send pilot details` flow depends on Resend delivering an `email.received` webhook.
 
-A reply that lands only in the hosted `sean.linton@lbsconnect.net` mailbox does not automatically create that Resend inbound event. Before autonomous outreach is enabled, make sure replies also reach Resend inbound processing. The simplest path is to forward `sean.linton@lbsconnect.net` to the Resend-provided inbound address and verify with an internal test that the original prospect sender is preserved. If forwarding does not preserve the sender reliably, use a Resend inbound subdomain/address instead.
+A reply that lands only in the hosted `info@lbsconnect.net` mailbox does not automatically create that Resend inbound event. Before autonomous outreach is enabled, make sure replies also reach Resend inbound processing. The simplest path is to forward `info@lbsconnect.net` to the Resend-provided inbound address and verify with an internal test that the original prospect sender is preserved. If forwarding does not preserve the sender reliably, use a Resend inbound subdomain/address instead.
 
 Do not assume reply automation works until a production test confirms the reply reaches `/api/outreach/webhook` as an `email.received` event.
 
@@ -67,13 +67,13 @@ When that reply reaches the Resend inbound webhook, the system stops the cold se
 Before the first real prospect:
 
 1. Confirm `lbsconnect.net` is verified in Resend for sending.
-2. Set `OUTREACH_FROM_EMAIL=Sean at MyEasyPass <sean.linton@lbsconnect.net>`.
-3. Set `OUTREACH_REPLY_TO=sean.linton@lbsconnect.net`.
+2. Set `OUTREACH_FROM_EMAIL=Sean at MyEasyPass <info@lbsconnect.net>`.
+3. Set `OUTREACH_REPLY_TO=info@lbsconnect.net`.
 4. Configure and verify the inbound reply path into Resend.
 5. Send an internal test through the production outreach path.
-6. Confirm the visible From and Reply-To use `sean.linton@lbsconnect.net`.
+6. Confirm the visible From is `Sean at MyEasyPass <info@lbsconnect.net>` and Reply-To is `info@lbsconnect.net`.
 7. Confirm the physical mailing address and unsubscribe link are present.
 8. Reply `yes` from the test inbox.
-9. Confirm the reply reaches the normal mailbox and `/api/outreach/webhook`, the prospect becomes `interested`, and exactly one pilot-details email is sent.
+9. Confirm the reply reaches the normal `info@lbsconnect.net` mailbox and `/api/outreach/webhook`, the prospect becomes `interested`, and exactly one pilot-details email is sent.
 10. Confirm a webhook retry cannot duplicate the pilot-details email.
 11. Only then mark the first real wave `ready_to_contact`.

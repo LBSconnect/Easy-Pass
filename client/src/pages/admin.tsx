@@ -32,6 +32,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sparkles,
   BookA,
+  Handshake,
 } from "lucide-react";
 import { GeneratedQuestionReview } from "@/components/admin/generated-question-review";
 import { GenerationConsole } from "@/components/admin/generation-console";
@@ -72,6 +73,7 @@ import {
 } from "@/components/ui/select";
 import { PageShell } from "@/components/page-shell";
 import { Link } from "wouter";
+import { isOnline } from "@shared/onlinePresence";
 import { AiUsagePanel } from "@/components/admin/ai-usage-panel";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -190,6 +192,7 @@ interface AdminUser {
   createdAt: string;
   examCount: number;
   lastExamAt: string | null;
+  lastSeenAt: string | null;
 }
 
 const ALL_CATEGORIES: ExamCategory[] = ["real_estate", "property_casualty", "life_insurance", "general_lines"];
@@ -800,11 +803,21 @@ export default function AdminPage() {
 
   return (
     <PageShell width="wide">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold">{t("admin.title")}</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage users, questions, and view analytics
-            </p>
+          <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold">{t("admin.title")}</h1>
+              <p className="text-muted-foreground mt-1">
+                Manage users, questions, and view analytics
+              </p>
+            </div>
+            {/* The partner CRM lives on its own page; without this link the
+                only way there is typing the URL. */}
+            <Button asChild variant="outline" className="gap-2" data-testid="link-admin-partners">
+              <Link href="/admin/partners">
+                <Handshake className="h-4 w-4" aria-hidden="true" />
+                Partners
+              </Link>
+            </Button>
           </div>
 
           <div className="grid gap-6 md:grid-cols-3 xl:grid-cols-5 mb-8">
@@ -1413,7 +1426,19 @@ export default function AdminPage() {
                         {filteredUsers.map((user) => (
                           <TableRow key={user.id}>
                             <TableCell>
-                              {user.firstName} {user.lastName}
+                              <div className="flex items-center gap-2">
+                                {/* Same definition and colour as the "online
+                                    now" card: a request within the window. */}
+                                {isOnline(user.lastSeenAt, new Date()) && (
+                                  <span
+                                    className="h-2 w-2 shrink-0 rounded-full bg-emerald-500"
+                                    title="Online now"
+                                    aria-label="Online now"
+                                    data-testid={`dot-online-${user.id}`}
+                                  />
+                                )}
+                                <span>{user.firstName} {user.lastName}</span>
+                              </div>
                             </TableCell>
                             <TableCell>{user.email}</TableCell>
                             <TableCell>

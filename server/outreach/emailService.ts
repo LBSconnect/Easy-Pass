@@ -39,9 +39,9 @@ export interface OutreachEmailService {
 export interface OutreachEmailConfig {
   /** Master switch. Everything refuses while this is off. */
   enabled: boolean;
-  /** e.g. "Sean at MyEasyPass <sean@partners.myeasypass.net>". Required to send. */
+  /** e.g. "Sean at MyEasyPass <sean@lbsconnect.net>" on the verified lbsconnect.net domain. */
   fromEmail: string | null;
-  /** Where replies land. Defaults to the from address. */
+  /** Where replies land. Defaults to the from address; production uses info@lbsconnect.net. */
   replyTo: string | null;
   /** Where interested-prospect alerts go. */
   alertEmail: string | null;

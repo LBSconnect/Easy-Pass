@@ -66,6 +66,21 @@ interface ProspectRow {
   attributedSubscriptions: number;
 }
 
+/** One prospect's automation state, from /api/admin/partners/campaigns. */
+interface CampaignSummary {
+  prospectId: string;
+  state: string;
+  paused: boolean;
+  step: number;
+  lastSentAt: string | null;
+  nextActionAt: string | null;
+  replyClassification: string | null;
+  replyReceivedAt: string | null;
+  replyExcerpt: string | null;
+  suppressed: boolean;
+  stopReason: string | null;
+}
+
 interface PerformanceRow {
   id: string;
   organizationName: string;
@@ -274,6 +289,14 @@ function ProspectList() {
   const { data: prospects, isLoading } = useQuery<ProspectRow[]>({
     queryKey: ["/api/admin/partners/prospects"],
   });
+  const { data: campaigns } = useQuery<CampaignSummary[]>({
+    queryKey: ["/api/admin/partners/campaigns"],
+  });
+  const campaignByProspect = useMemo(() => {
+    const map = new Map<string, CampaignSummary>();
+    for (const c of campaigns ?? []) map.set(c.prospectId, c);
+    return map;
+  }, [campaigns]);
 
   const [search, setSearch] = useState("");
   const [segment, setSegment] = useState("all");
@@ -347,6 +370,38 @@ function ProspectList() {
         {rows.length} of {prospects?.length ?? 0} organizations
       </p>
 
+      {(() => {
+        // The warm handoff, made unmissable: any prospect whose automated
+        // sequence ended in interest or in a reply nobody has classified.
+        const warm = (prospects ?? []).filter((p) => {
+          const c = campaignByProspect.get(p.id);
+          return c && (c.state === "interested" || c.state === "needs_human_review");
+        });
+        if (warm.length === 0) return null;
+        return (
+          <Card className="border-primary/40 bg-primary/[0.04]" data-testid="card-warm-prospects">
+            <CardContent className="p-4">
+              <p className="font-semibold">Needs your attention</p>
+              <ul className="mt-2 space-y-1 text-sm">
+                {warm.map((p) => {
+                  const c = campaignByProspect.get(p.id)!;
+                  return (
+                    <li key={p.id}>
+                      <button type="button" className="underline" onClick={() => setOpenId(p.id)}
+                              data-testid={`link-warm-${p.id}`}>
+                        {p.organizationName}
+                      </button>
+                      {" — "}
+                      {c.state === "interested" ? "replied and looks interested" : "replied; needs a human read"}
+                    </li>
+                  );
+                })}
+              </ul>
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       <div className="space-y-2">
         {rows.map((row) => {
           const open = openId === row.id;
@@ -373,6 +428,19 @@ function ProspectList() {
                     {row.partnerStatus !== "prospect" && (
                       <Badge variant="secondary">{label(row.partnerStatus)}</Badge>
                     )}
+                    {(() => {
+                      const c = campaignByProspect.get(row.id);
+                      if (!c) return null;
+                      const attention = c.state === "interested" || c.state === "needs_human_review";
+                      return (
+                        <Badge
+                          variant={attention ? "default" : "outline"}
+                          data-testid={`badge-campaign-${row.id}`}
+                        >
+                          {c.paused ? "Paused" : label(c.state)}
+                        </Badge>
+                      );
+                    })()}
                     <span className="text-lg font-bold tabular-nums" data-testid={`score-${row.id}`}>
                       {displayScore(row)}
                     </span>
@@ -393,6 +461,8 @@ function ProspectList() {
                         Website <ExternalLink className="h-3 w-3" aria-hidden="true" />
                       </a>
                     )}
+
+                    <CampaignPanel campaign={campaignByProspect.get(row.id) ?? null} prospectId={row.id} />
 
                     <ProspectEditor row={row} onSave={(patch) => save.mutate({ id: row.id, patch })} saving={save.isPending} />
 
@@ -434,6 +504,83 @@ function ProspectList() {
             </Card>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * What the outreach engine is doing to this prospect, and the levers a person
+ * has over it. Deliberately small: status facts and five buttons. Nothing
+ * here can activate a partnership - that stays with the referral-link
+ * controls and their validation below.
+ */
+function CampaignPanel({ campaign, prospectId }: { campaign: CampaignSummary | null; prospectId: string }) {
+  const { toast } = useToast();
+
+  const act = useMutation({
+    mutationFn: async (action: string) => {
+      const res = await apiRequest("POST", `/api/admin/partners/campaigns/${prospectId}/action`, { action });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/partners/campaigns"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/partners/prospects"] });
+      toast({ title: "Campaign updated" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Could not update campaign", description: error.message, variant: "destructive" });
+    },
+  });
+
+  if (!campaign) {
+    return (
+      <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground" data-testid={`campaign-none-${prospectId}`}>
+        No automated outreach yet. Set the status to Ready To Contact (with an email on file) and the
+        next dispatch run will enroll them.
+      </div>
+    );
+  }
+
+  const when = (value: string | null) => (value ? new Date(value).toLocaleString() : "—");
+  const done = ["completed", "interested", "maybe_later", "not_interested", "wrong_contact",
+    "needs_human_review", "unsubscribed", "bounced", "stopped"].includes(campaign.state);
+
+  return (
+    <div className="rounded-lg border p-3" data-testid={`campaign-${prospectId}`}>
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-sm font-semibold">Automated outreach</p>
+        <Badge variant="outline" data-testid={`campaign-state-${prospectId}`}>{label(campaign.state)}</Badge>
+        {campaign.paused && <Badge variant="secondary">Paused</Badge>}
+        {campaign.suppressed && <Badge variant="destructive">Suppressed</Badge>}
+      </div>
+      <dl className="mt-2 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
+        <div className="flex gap-2"><dt className="text-muted-foreground">Emails sent:</dt><dd>{campaign.step} of 3</dd></div>
+        <div className="flex gap-2"><dt className="text-muted-foreground">Last outreach:</dt><dd>{when(campaign.lastSentAt)}</dd></div>
+        <div className="flex gap-2"><dt className="text-muted-foreground">Next outreach:</dt>
+          <dd>{done || campaign.paused ? "—" : when(campaign.nextActionAt)}</dd></div>
+        <div className="flex gap-2"><dt className="text-muted-foreground">Reply:</dt>
+          <dd>{campaign.replyReceivedAt ? `${label(campaign.replyClassification ?? "received")} · ${when(campaign.replyReceivedAt)}` : "None yet"}</dd></div>
+      </dl>
+      {campaign.replyExcerpt && (
+        <blockquote className="mt-2 border-l-2 pl-3 text-sm text-muted-foreground" data-testid={`campaign-reply-${prospectId}`}>
+          {campaign.replyExcerpt.slice(0, 400)}
+        </blockquote>
+      )}
+      <div className="mt-3 flex flex-wrap gap-2">
+        {campaign.paused ? (
+          <Button size="sm" variant="outline" disabled={act.isPending} onClick={() => act.mutate("resume")}
+                  data-testid={`button-campaign-resume-${prospectId}`}>Resume</Button>
+        ) : (
+          <Button size="sm" variant="outline" disabled={act.isPending || done} onClick={() => act.mutate("pause")}
+                  data-testid={`button-campaign-pause-${prospectId}`}>Pause</Button>
+        )}
+        <Button size="sm" variant="outline" disabled={act.isPending || done} onClick={() => act.mutate("stop")}
+                data-testid={`button-campaign-stop-${prospectId}`}>Stop</Button>
+        <Button size="sm" variant="outline" disabled={act.isPending} onClick={() => act.mutate("mark_interested")}
+                data-testid={`button-campaign-interested-${prospectId}`}>Mark interested</Button>
+        <Button size="sm" variant="outline" disabled={act.isPending} onClick={() => act.mutate("mark_not_interested")}
+                data-testid={`button-campaign-not-interested-${prospectId}`}>Mark not interested</Button>
       </div>
     </div>
   );

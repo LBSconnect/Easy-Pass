@@ -3,16 +3,16 @@ import { useSEO, buildUrl } from "@/hooks/use-seo";
 
 export default function ExamDisclaimerPage() {
   useSEO({
-    title: "Exam-Preparation Disclaimer | MyEasyPass",
-    description: "Disclaimer clarifying that MyEasyPass provides independent exam-preparation materials and is not affiliated with any licensing board or testing agency.",
+    title: "Exam-Preparation Disclaimer | MyEasyPass.net",
+    description: "Disclaimer clarifying that MyEasyPass.net provides independent exam-preparation materials and is not affiliated with any licensing board or testing agency.",
     canonicalUrl: buildUrl("/exam-disclaimer"),
   });
 
   return (
-    <LegalPage title="MyEasyPass Exam-Preparation Disclaimer" testId="exam-disclaimer">
+    <LegalPage title="MyEasyPass.net Exam-Preparation Disclaimer" testId="exam-disclaimer">
       <section className="space-y-4">
         <p className="text-muted-foreground">
-          MyEasyPass is an independent educational service.
+          MyEasyPass.net is an independent educational service.
         </p>
         <ul className="list-disc pl-6 text-muted-foreground space-y-2">
           <li>It is not an official examination.</li>

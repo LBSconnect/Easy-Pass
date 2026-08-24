@@ -4,10 +4,11 @@ import { pool } from "../db";
  * Automatically promote researched prospects into the dispatch queue.
  *
  * This is deliberately conservative. Automation may only promote a prospect
- * when the CRM already contains an explicit contact_email and the record is a
- * normal prospect with a meaningful priority. We never invent or derive an
- * address here, never revive a suppressed address, and never touch any record
- * that has already entered a campaign or partner relationship.
+ * when there is a real business email already present in the CRM OR published
+ * in the imported public-contact research. We may extract a literal public
+ * email address from that research, but we never guess or generate an address.
+ * We never revive a suppressed address and never touch any record that has
+ * already entered a campaign or partner relationship.
  *
  * The dispatcher calls this only inside the normal business-hours and
  * deliverability gates, and only for the number of new sends still available
@@ -18,13 +19,22 @@ export async function autoQualifyProspects(limit: number): Promise<number> {
   if (!Number.isFinite(limit) || limit <= 0) return 0;
 
   const result = await pool.query<{ id: string }>(
-    `WITH candidates AS (
-       SELECT p.id
+    `WITH sourced AS (
+       SELECT p.*,
+              CASE
+                WHEN lower(trim(coalesce(p.contact_email, ''))) ~
+                     '^[a-z0-9._%+\\-]+@[a-z0-9.\\-]+\\.[a-z]{2,}$'
+                  THEN lower(trim(p.contact_email))
+                ELSE lower(substring(coalesce(p.public_contact, '') from
+                     '([A-Za-z0-9._%+\\-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z]{2,})'))
+              END AS send_email
          FROM partner_prospects p
+     ), candidates AS (
+       SELECT p.id, p.send_email
+         FROM sourced p
         WHERE p.outreach_status IN ('not_contacted', 'researching')
-          AND p.contact_email IS NOT NULL
-          AND trim(p.contact_email) <> ''
-          AND position('@' in p.contact_email) > 1
+          AND p.send_email IS NOT NULL
+          AND p.send_email <> ''
           AND p.priority IN ('Very High', 'High', 'Medium')
           AND p.segment <> 'other'
           AND p.partner_active = false
@@ -36,7 +46,7 @@ export async function autoQualifyProspects(limit: number): Promise<number> {
               )
           AND NOT EXISTS (
                 SELECT 1 FROM partner_email_suppressions s
-                 WHERE s.email = lower(trim(p.contact_email))
+                 WHERE s.email = p.send_email
               )
         ORDER BY CASE p.priority
                    WHEN 'Very High' THEN 0
@@ -50,6 +60,11 @@ export async function autoQualifyProspects(limit: number): Promise<number> {
      )
      UPDATE partner_prospects p
         SET outreach_status = 'ready_to_contact',
+            contact_email = CASE
+              WHEN p.contact_email IS NULL OR trim(p.contact_email) = ''
+                THEN c.send_email
+              ELSE p.contact_email
+            END,
             updated_at = now()
        FROM candidates c
       WHERE p.id = c.id

@@ -26,6 +26,7 @@ describeIfDb("automated outreach qualification", () => {
 
   async function prospect(name: string, opts: {
     email?: string | null;
+    publicContact?: string | null;
     status?: string;
     priority?: string;
     segment?: string;
@@ -34,8 +35,8 @@ describeIfDb("automated outreach qualification", () => {
     const result = await pool.query<{ id: string }>(
       `INSERT INTO partner_prospects
          (organization_name, dedupe_key, segment, outreach_status, contact_email,
-          priority, partner_status, partner_active)
-       VALUES ($1, $2, $3, $4, $5, $6, 'prospect', false)
+          public_contact, priority, partner_status, partner_active)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'prospect', false)
        RETURNING id`,
       [
         `[${FX}] ${name}`,
@@ -43,6 +44,7 @@ describeIfDb("automated outreach qualification", () => {
         opts.segment ?? "insurance_agency",
         opts.status ?? "researching",
         email,
+        opts.publicContact ?? null,
         opts.priority ?? "High",
       ],
     );
@@ -89,6 +91,56 @@ describeIfDb("automated outreach qualification", () => {
     expect(status.get(missingEmail.id)).toBe("researching");
     expect(status.get(other.id)).toBe("researching");
     expect(status.get(suppressed.id)).toBe("researching");
+  });
+
+  it("extracts a literal published email from public_contact and persists it", async () => {
+    const published = await prospect("published", {
+      email: null,
+      publicContact: `Public.Team@${DOMAIN} | 713-555-0100`,
+      priority: "Very High",
+    });
+    const phoneOnly = await prospect("phone-only", {
+      email: null,
+      publicContact: "713-555-0101",
+      priority: "Very High",
+    });
+
+    expect(await autoQualifyProspects(10)).toBe(1);
+
+    const rows = await pool.query<{ id: string; outreach_status: string; contact_email: string | null }>(
+      `SELECT id, outreach_status, contact_email
+         FROM partner_prospects
+        WHERE id = ANY($1::uuid[])`,
+      [[published.id, phoneOnly.id]],
+    );
+    const byId = new Map(rows.rows.map((r) => [r.id, r]));
+
+    expect(byId.get(published.id)?.outreach_status).toBe("ready_to_contact");
+    expect(byId.get(published.id)?.contact_email).toBe(`public.team@${DOMAIN}`);
+    expect(byId.get(phoneOnly.id)?.outreach_status).toBe("researching");
+    expect(byId.get(phoneOnly.id)?.contact_email).toBeNull();
+  });
+
+  it("does not revive a suppressed published email", async () => {
+    const email = `blocked@${DOMAIN}`;
+    const blocked = await prospect("public-suppressed", {
+      email: null,
+      publicContact: `${email} | 713-555-0102`,
+      priority: "Very High",
+    });
+    await pool.query(
+      `INSERT INTO partner_email_suppressions (email, reason, source)
+       VALUES ($1, 'unsubscribe', 'test')`,
+      [email],
+    );
+
+    expect(await autoQualifyProspects(10)).toBe(0);
+    const row = await pool.query<{ outreach_status: string; contact_email: string | null }>(
+      `SELECT outreach_status, contact_email FROM partner_prospects WHERE id = $1`,
+      [blocked.id],
+    );
+    expect(row.rows[0].outreach_status).toBe("researching");
+    expect(row.rows[0].contact_email).toBeNull();
   });
 
   it("respects the remaining daily budget", async () => {

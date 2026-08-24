@@ -10,7 +10,8 @@
  * ORDER OF A RUN
  *
  *   1. Follow-ups and completions that have come due.
- *   2. New enrollments, up to the daily limit, highest-confidence first.
+ *   2. Automatically qualify safe researched prospects for today's remaining budget.
+ *   3. New enrollments, up to the daily limit, highest-confidence first.
  *
  * Follow-ups first because a promise already half-made ("I'll follow up")
  * outranks starting a new conversation, and because the daily limit applies
@@ -55,11 +56,13 @@ import {
   reserveSend,
   transitionCampaign,
 } from "./campaignStore";
+import { autoQualifyProspects } from "./autoQualification";
 import { outreachConfig, type OutreachEmailService, type OutreachEmailConfig } from "./emailService";
 
 export interface DispatchRunResult {
   ran: boolean;
   reason?: string;
+  autoQualified: number;
   enrolled: number;
   initialSent: number;
   followUpsSent: number;
@@ -113,12 +116,8 @@ async function sendStep(
   config: OutreachEmailConfig,
   now: Date,
 ): Promise<"sent" | "skipped" | "failed"> {
-  // Gate 1: still sendable, still unpaused. (Re-read state is the caller's
-  // snapshot; paused was checked by dueAction, state here.)
   if (!SENDABLE_STATES.includes(campaign.state) || campaign.paused) return "skipped";
 
-  // Gate 2: an activated partner never receives acquisition email. Checked
-  // against the live row, not the enrollment-time snapshot.
   const facts = await prospectFacts(campaign.prospectId);
   if (!facts) return "skipped";
   if (facts.partnerActive || facts.partnerStatus === "active_partner") {
@@ -126,8 +125,6 @@ async function sendStep(
     return "skipped";
   }
 
-  // Gate 3: suppression, checked at send time so an unsubscribe recorded a
-  // minute ago beats a follow-up queued a week ago.
   if (await isSuppressed(campaign.contactEmail)) {
     await transitionCampaign(campaign.id, "stopped", { stopReason: "suppressed" });
     return "skipped";
@@ -144,8 +141,6 @@ async function sendStep(
   const unsubscribeUrl = `${appOrigin()}/api/outreach/unsubscribe?token=${campaign.unsubscribeToken}`;
   const text = `${rendered.text}\n\n${unsubscribeFooter(unsubscribeUrl)}`;
 
-  // Gate 4: reserve (campaign, step) BEFORE calling the provider. If the row
-  // exists - a previous run sent it, or is sending it right now - stop here.
   const messageId = await reserveSend(
     campaign.id,
     campaign.prospectId,
@@ -168,8 +163,6 @@ async function sendStep(
   });
 
   if (!outcome.ok) {
-    // Nothing left the building. Release the reservation so the next run
-    // retries; do not advance the campaign.
     await releaseFailedSend(messageId);
     console.error(`[Outreach] send failed for campaign ${campaign.id} step ${step}: ${outcome.error}`);
     return "failed";
@@ -194,6 +187,7 @@ export async function runOutreachDispatch(
 ): Promise<DispatchRunResult> {
   const result: DispatchRunResult = {
     ran: false,
+    autoQualified: 0,
     enrolled: 0,
     initialSent: 0,
     followUpsSent: 0,
@@ -215,11 +209,6 @@ export async function runOutreachDispatch(
     return result;
   }
 
-  // Circuit breakers: campaign-wide, judged before anything is attempted.
-  // A tripped breaker stays tripped until the underlying facts age out of the
-  // window or a person raises the configured limit - there is no automated
-  // reset, because continuing blindly after a systemic failure is the one
-  // thing this engine must never do.
   const facts = await recentDeliverabilityFacts(config.breakers.windowDays);
   if (facts.spamComplaints > config.breakers.spamComplaintLimit) {
     result.reason = `circuit breaker: ${facts.spamComplaints} spam complaint(s) in the last ${config.breakers.windowDays} days`;
@@ -237,17 +226,11 @@ export async function runOutreachDispatch(
 
   result.ran = true;
 
-  // The day's budget for NEW prospects. "Today" is the recipient's calendar
-  // day, so the count and the limit agree about when a day starts. Follow-ups
-  // are deliberately outside the budget: they are promises already half-made.
   const dayStart = startOfLocalDay(now, window.timeZone);
-  const dayEnd = new Date(dayStart.getTime() + 36 * 60 * 60 * 1000); // past any DST edge
+  const dayEnd = new Date(dayStart.getTime() + 36 * 60 * 60 * 1000);
   const sentToday = await initialSendsOn(dayStart, dayEnd);
   let budget = Math.max(0, config.dailyNewProspectLimit - sentToday);
 
-  // 1. What existing campaigns are owed - due follow-ups, completions, and
-  // initials whose earlier send attempt failed (a `queued` campaign already
-  // exists for them, so enrollment below will never see them again).
   for (const campaign of await activeCampaigns()) {
     const action = dueAction(campaign, now);
     if (action.type === "complete") {
@@ -258,7 +241,7 @@ export async function runOutreachDispatch(
     if (action.type !== "send") continue;
 
     if (action.step === "initial") {
-      if (budget <= 0) continue; // still counts against the daily limit
+      if (budget <= 0) continue;
       const outcome = await sendStep(campaign, "initial", service, config, now);
       if (outcome === "sent") {
         result.initialSent += 1;
@@ -274,12 +257,20 @@ export async function runOutreachDispatch(
     else result.skipped += 1;
   }
 
-  // 2. New prospects, inside what remains of the budget.
+  // Populate the queue automatically for the remaining new-send budget.
+  // Existing ready_to_contact rows remain eligible and are ranked together
+  // with newly qualified rows by eligibleProspectsForEnrollment below.
+  if (budget > 0) {
+    result.autoQualified = await autoQualifyProspects(budget);
+    if (result.autoQualified > 0) {
+      console.info(`[Outreach] auto-qualified ${result.autoQualified} prospect(s) for dispatch`);
+    }
+  }
+
   if (budget > 0) {
     const eligible = await eligibleProspectsForEnrollment(budget);
     for (const prospect of eligible) {
-      const campaign = (await enrollProspect(prospect.id, prospect.contactEmail))
-        ?? null;
+      const campaign = (await enrollProspect(prospect.id, prospect.contactEmail)) ?? null;
       if (!campaign) continue;
       result.enrolled += 1;
 

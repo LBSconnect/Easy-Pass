@@ -18,6 +18,7 @@ export interface SEOOptions {
 }
 
 const BASE_URL = "https://www.myeasypass.net";
+const BRAND_NAME = "MyEasyPass.net";
 const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.png`;
 const DEFAULT_ROBOTS = "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1";
 const MANAGED_ATTR = "data-seo-managed";
@@ -121,7 +122,7 @@ export function useSEO(options: SEOOptions) {
     restore.push(setMetaByProperty("og:description", options.description));
     restore.push(setMetaByProperty("og:url", options.canonicalUrl));
     restore.push(setMetaByProperty("og:type", options.ogType ?? "website"));
-    restore.push(setMetaByProperty("og:site_name", "MyEasyPass"));
+    restore.push(setMetaByProperty("og:site_name", BRAND_NAME));
     restore.push(setMetaByProperty("og:locale", options.ogLocale ?? "en_US"));
     restore.push(setMetaByProperty("og:image", ogImage));
     restore.push(setMetaByName("twitter:card", "summary_large_image"));

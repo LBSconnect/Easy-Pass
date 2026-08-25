@@ -45,6 +45,7 @@ import {
   type CampaignRow,
   activeCampaigns,
   applySendResult,
+  campaignByContactEmail,
   eligibleProspectsForEnrollment,
   enrollProspect,
   initialSendsOn,
@@ -102,6 +103,10 @@ async function prospectFacts(prospectId: string): Promise<ProspectFacts | null> 
 function appOrigin(): string {
   const host = process.env.APP_DOMAIN || "www.myeasypass.net";
   return `https://${host}`;
+}
+
+function recipientKey(email: string): string {
+  return email.trim().toLowerCase();
 }
 
 /**
@@ -231,7 +236,20 @@ export async function runOutreachDispatch(
   const sentToday = await initialSendsOn(dayStart, dayEnd);
   let budget = Math.max(0, config.dailyNewProspectLimit - sentToday);
 
+  // A public mailbox is one recipient even when several researched rows point
+  // to it. activeCampaigns is oldest-first, so the earliest campaign remains
+  // authoritative and any later duplicate is stopped before it can follow up.
+  const activeRecipients = new Set<string>();
   for (const campaign of await activeCampaigns()) {
+    const recipient = recipientKey(campaign.contactEmail);
+    if (activeRecipients.has(recipient)) {
+      await transitionCampaign(campaign.id, "stopped", { stopReason: "duplicate_recipient" });
+      result.skipped += 1;
+      console.warn(`[Outreach] stopped duplicate recipient campaign ${campaign.id} for ${recipient}`);
+      continue;
+    }
+    activeRecipients.add(recipient);
+
     const action = dueAction(campaign, now);
     if (action.type === "complete") {
       await transitionCampaign(campaign.id, "completed", { stopReason: "sequence_finished" });
@@ -270,6 +288,15 @@ export async function runOutreachDispatch(
   if (budget > 0) {
     const eligible = await eligibleProspectsForEnrollment(budget);
     for (const prospect of eligible) {
+      // Protect against duplicate CRM rows that share one public mailbox. The
+      // lookup covers active, stopped and completed campaigns, so a recipient
+      // cannot quietly re-enter the cold sequence under another prospect row.
+      if (await campaignByContactEmail(prospect.contactEmail)) {
+        result.skipped += 1;
+        console.warn(`[Outreach] skipped duplicate recipient enrollment for ${recipientKey(prospect.contactEmail)}`);
+        continue;
+      }
+
       const campaign = (await enrollProspect(prospect.id, prospect.contactEmail)) ?? null;
       if (!campaign) continue;
       result.enrolled += 1;

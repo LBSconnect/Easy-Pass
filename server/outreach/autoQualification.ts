@@ -10,6 +10,12 @@ import { pool } from "../db";
  * We never revive a suppressed address and never touch any record that has
  * already entered a campaign or partner relationship.
  *
+ * A mailbox is also treated as one outreach recipient even when the research
+ * contains multiple organization/location rows pointing at the same public
+ * address. Only the highest-ranked prospect for that normalized email may be
+ * promoted, and an address that already has any campaign is never promoted
+ * again for a different prospect.
+ *
  * The dispatcher calls this only inside the normal business-hours and
  * deliverability gates, and only for the number of new sends still available
  * in today's budget. That keeps queue population aligned with the existing
@@ -29,8 +35,23 @@ export async function autoQualifyProspects(limit: number): Promise<number> {
                      '([A-Za-z0-9._%+\\-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z]{2,})'))
               END AS send_email
          FROM partner_prospects p
-     ), candidates AS (
-       SELECT p.id, p.send_email
+     ), ranked AS (
+       SELECT p.id,
+              p.send_email,
+              p.priority,
+              p.known_exam_volume,
+              p.organization_name,
+              row_number() OVER (
+                PARTITION BY p.send_email
+                ORDER BY CASE p.priority
+                           WHEN 'Very High' THEN 0
+                           WHEN 'High' THEN 1
+                           WHEN 'Medium' THEN 2
+                           ELSE 3
+                         END,
+                         coalesce(p.known_exam_volume, 0) DESC,
+                         p.organization_name
+              ) AS recipient_rank
          FROM sourced p
         WHERE p.outreach_status IN ('not_contacted', 'researching')
           AND p.send_email IS NOT NULL
@@ -45,9 +66,17 @@ export async function autoQualifyProspects(limit: number): Promise<number> {
                  WHERE c.prospect_id = p.id
               )
           AND NOT EXISTS (
+                SELECT 1 FROM partner_outreach_campaigns c
+                 WHERE lower(trim(c.contact_email)) = p.send_email
+              )
+          AND NOT EXISTS (
                 SELECT 1 FROM partner_email_suppressions s
                  WHERE s.email = p.send_email
               )
+     ), candidates AS (
+       SELECT p.id, p.send_email
+         FROM ranked p
+        WHERE p.recipient_rank = 1
         ORDER BY CASE p.priority
                    WHEN 'Very High' THEN 0
                    WHEN 'High' THEN 1

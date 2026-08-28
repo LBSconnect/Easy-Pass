@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import { ReadinessShareNudge } from "@/components/readiness-share-nudge";
 import "./index.css";
 
 declare global {
@@ -32,4 +33,9 @@ document.head.appendChild(googleTag);
 // reconciled the subscription with Stripe and said it is active. See the
 // checkout return in client/src/pages/dashboard.tsx.
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <>
+    <App />
+    <ReadinessShareNudge />
+  </>,
+);

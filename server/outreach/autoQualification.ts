@@ -12,7 +12,7 @@ function manualContactExclusions(): string[] {
       .split(/\r?\n/)
       .map((line) => line.trim().toLowerCase())
       .filter((line) => line.length > 0 && !line.startsWith("#") && EMAIL_PATTERN.test(line));
-    return [...new Set(emails)];
+    return Array.from(new Set(emails));
   } catch {
     return [];
   }

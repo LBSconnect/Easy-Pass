@@ -52,6 +52,7 @@ import LongTailComparisonPage from "@/pages/long-tail-comparisons";
 import SpanishTermWholeLifePage from "@/pages/spanish-term-whole-life";
 import EmployerInquiryPage from "@/pages/employer-inquiry";
 import DiagnosticPage from "@/pages/diagnostic";
+import UrgentExamPrepPage from "@/pages/urgent-exam-prep";
 import CookiePolicyPage from "@/pages/cookie-policy";
 import NoticeAtCollectionPage from "@/pages/notice-at-collection";
 import PrivacyRequestPage from "@/pages/privacy-request";
@@ -176,6 +177,8 @@ function Router() {
       <Route path="/texas-property-casualty-exam-prep" component={TexasPropertyCasualtyExamPrepPage} />
       <Route path="/texas-life-insurance-exam-prep" component={TexasLifeInsuranceExamPrepPage} />
       <Route path="/texas-general-lines-exam-prep" component={TexasGeneralLinesExamPrepPage} />
+      <Route path="/texas-real-estate-exam-last-minute-prep" component={() => <UrgentExamPrepPage kind="real_estate" />} />
+      <Route path="/texas-insurance-exam-last-minute-prep" component={() => <UrgentExamPrepPage kind="insurance" />} />
       <Route path="/es/preparacion-examen-bienes-raices-texas" component={TexasRealEstateExamPrepEsPage} />
       <Route path="/es/comparacion-ho-2-vs-ho-3-texas" component={LongTailComparisonPage} />
       <Route path="/es/comparacion-peril-vs-hazard-texas" component={LongTailComparisonPage} />

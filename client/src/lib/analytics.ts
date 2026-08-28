@@ -1,3 +1,5 @@
+import { sendGoogleAdsAudienceSignal } from "@/lib/googleAdsAudiences";
+
 /**
  * Lightweight, self-hosted event tracking.
  *
@@ -194,6 +196,17 @@ function getFirstTouch(): FirstTouchAttribution {
 export function trackEvent(event: AnalyticsEventName, metadata?: Record<string, unknown>) {
   try {
     const attribution = getFirstTouch();
+
+    // Feed only high-intent, allowlisted funnel actions to the existing Google
+    // Ads tag. This powers audience segments for remarketing without sending
+    // student identity, quiz answers, or other sensitive content to Google.
+    sendGoogleAdsAudienceSignal({
+      event,
+      path: window.location.pathname,
+      attribution,
+      metadata,
+    });
+
     const body = JSON.stringify({
       event,
       path: window.location.pathname,

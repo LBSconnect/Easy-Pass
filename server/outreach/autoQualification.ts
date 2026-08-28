@@ -1,5 +1,59 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { pool } from "../db";
 import { importProspects } from "../partners/prospectImport";
+
+const EMAIL_PATTERN = /^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$/i;
+
+function manualContactExclusions(): string[] {
+  try {
+    const file = join(process.cwd(), "data", "prospects", "manual-contacted-emails.txt");
+    const emails = readFileSync(file, "utf8")
+      .split(/\r?\n/)
+      .map((line) => line.trim().toLowerCase())
+      .filter((line) => line.length > 0 && !line.startsWith("#") && EMAIL_PATTERN.test(line));
+    return [...new Set(emails)];
+  } catch {
+    return [];
+  }
+}
+
+async function markManualContactsAsContacted(): Promise<number> {
+  const emails = manualContactExclusions();
+  if (emails.length === 0) return 0;
+
+  const result = await pool.query<{ id: string }>(
+    `WITH sourced AS (
+       SELECT p.id,
+              CASE
+                WHEN lower(trim(coalesce(p.contact_email, ''))) ~
+                     '^[a-z0-9._%+\\-]+@[a-z0-9.\\-]+\\.[a-z]{2,}$'
+                  THEN lower(trim(p.contact_email))
+                ELSE lower(substring(coalesce(p.public_contact, '') from
+                     '([A-Za-z0-9._%+\\-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z]{2,})'))
+              END AS send_email
+         FROM partner_prospects p
+     )
+     UPDATE partner_prospects p
+        SET outreach_status = 'contacted',
+            updated_at = now()
+       FROM sourced s
+      WHERE p.id = s.id
+        AND s.send_email = ANY($1::text[])
+        AND p.outreach_status IN ('not_contacted', 'researching', 'ready_to_contact')
+        AND p.partner_active = false
+        AND p.partner_created_at IS NULL
+        AND p.partner_status = 'prospect'
+        AND NOT EXISTS (
+              SELECT 1 FROM partner_outreach_campaigns c
+               WHERE c.prospect_id = p.id
+            )
+      RETURNING p.id`,
+    [emails],
+  );
+
+  return result.rowCount ?? result.rows.length;
+}
 
 /**
  * Keep the CRM's pre-contact population ready for automated outreach.
@@ -44,6 +98,15 @@ export async function autoQualifyProspects(limit: number): Promise<number> {
       }
     } catch (error) {
       console.error("[Outreach] prospect research sync failed; continuing with existing CRM data", error);
+    }
+
+    try {
+      const manuallyMarked = await markManualContactsAsContacted();
+      if (manuallyMarked > 0) {
+        console.info(`[Outreach] preserved ${manuallyMarked} manual first-touch contact(s)`);
+      }
+    } catch (error) {
+      console.error("[Outreach] manual-contact exclusion sync failed; continuing with existing CRM data", error);
     }
   }
 

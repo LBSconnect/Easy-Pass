@@ -81,6 +81,45 @@ function invoicePaidEvent(overrides: {
   }));
 }
 
+/**
+ * The invoice shape production actually receives on current Stripe API
+ * versions - modeled on the real event that surfaced the bug: NO top-level
+ * `subscription`, NO top-level `payment_intent`; the subscription id and the
+ * checkout-stamped userId live under `parent.subscription_details`, with a
+ * per-line copy under `lines.data[].parent.subscription_item_details`.
+ */
+function newShapeInvoicePaidEvent(overrides: { customer?: string } = {}) {
+  return Buffer.from(JSON.stringify({
+    type: 'invoice.paid',
+    data: {
+      object: {
+        id: 'in_newshape_1',
+        customer: overrides.customer ?? 'cus_new',
+        amount_paid: 3500,
+        currency: 'usd',
+        billing_reason: 'subscription_create',
+        status: 'paid',
+        parent: {
+          type: 'subscription_details',
+          subscription_details: {
+            metadata: { userId: 'user-1' },
+            subscription: 'sub_1',
+          },
+        },
+        lines: {
+          data: [{
+            metadata: { userId: 'user-1' },
+            parent: {
+              type: 'subscription_item_details',
+              subscription_item_details: { subscription: 'sub_1' },
+            },
+          }],
+        },
+      },
+    },
+  }));
+}
+
 function stripeMock(customerEmail: string | null = null, subscriptionMeta: Record<string, string> = {}) {
   return {
     subscriptions: {
@@ -228,6 +267,60 @@ describe('subscription revenue recording and owner notice', () => {
     await WebhookHandlers.processWebhook(invoicePaidEvent(), 'sig');
 
     expect(mockStorage.createPaymentHistory).toHaveBeenCalledTimes(1);
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('records revenue from the new invoice shape (subscription under parent.subscription_details)', async () => {
+    // The production bug: this invoice has no top-level `subscription`, so the
+    // old extraction saw "not a subscription" and dropped the revenue before
+    // any user matching ran. It must record and notify like the old shape.
+    mockStorage.getAllUsers.mockResolvedValue([{ ...USER, profile: { stripeCustomerId: 'cus_new' } }] as any);
+    mockGetStripeClient.mockResolvedValue(stripeMock(null, { userId: 'user-1' }));
+    const send = emailMock();
+
+    await WebhookHandlers.processWebhook(newShapeInvoicePaidEvent(), 'sig');
+
+    expect(mockStorage.createPaymentHistory).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        amount: 3500,
+        stripeSubscriptionId: 'sub_1',
+        // No top-level payment_intent on this shape: keyed on the invoice id.
+        stripePaymentId: 'in_newshape_1',
+      }),
+    );
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(send.mock.calls[0][0].subject).toContain('$35.00');
+  });
+
+  it('new shape still resolves via the stamped userId when no profile is linked', async () => {
+    mockStorage.getAllUsers.mockResolvedValue([{ ...USER, profile: { stripeCustomerId: null } }] as any);
+    mockGetStripeClient.mockResolvedValue(stripeMock(null, { userId: 'user-1' }));
+    emailMock();
+
+    await WebhookHandlers.processWebhook(newShapeInvoicePaidEvent(), 'sig');
+
+    expect(mockStorage.createPaymentHistory).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'user-1' }),
+    );
+    expect(mockStorage.updateProfile).toHaveBeenCalledWith(
+      'user-1', expect.objectContaining({ stripeCustomerId: 'cus_new' }),
+    );
+  });
+
+  it('an invoice with no subscription in either shape is still not counted', async () => {
+    mockStorage.getAllUsers.mockResolvedValue([{ ...USER, profile: { stripeCustomerId: 'cus_new' } }] as any);
+    mockGetStripeClient.mockResolvedValue(stripeMock());
+    const send = emailMock();
+
+    await WebhookHandlers.processWebhook(Buffer.from(JSON.stringify({
+      type: 'invoice.paid',
+      data: {
+        object: { id: 'in_oneoff', customer: 'cus_new', amount_paid: 1000, currency: 'usd' },
+      },
+    })), 'sig');
+
+    expect(mockStorage.createPaymentHistory).not.toHaveBeenCalled();
     expect(send).not.toHaveBeenCalled();
   });
 

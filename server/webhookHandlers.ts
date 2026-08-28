@@ -104,11 +104,40 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
   });
 }
 
+/**
+ * The subscription an invoice bills, across Stripe API shapes.
+ *
+ * Older API versions put it at `invoice.subscription`. Newer versions (the
+ * shape production actually receives today) removed that field and nest it at
+ * `invoice.parent.subscription_details.subscription`, with a per-line copy at
+ * `line.parent.subscription_item_details.subscription`. Reading only the old
+ * location made every new-shape subscription invoice look like a one-off
+ * payment, which recordPaymentHistory rightly refuses to count - so real
+ * revenue was dropped before any user matching ran.
+ */
+function subscriptionIdFromInvoice(invoice: Stripe.Invoice): string | null {
+  const candidates: unknown[] = [
+    (invoice as any).subscription,
+    (invoice as any).parent?.subscription_details?.subscription,
+    ...(((invoice as any).lines?.data ?? []) as any[]).map(
+      (line) => line?.parent?.subscription_item_details?.subscription ?? line?.subscription,
+    ),
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate) return candidate;
+    // Expanded form: the whole subscription object instead of its id.
+    if (candidate && typeof candidate === "object" && typeof (candidate as any).id === "string") {
+      return (candidate as any).id;
+    }
+  }
+  return null;
+}
+
 async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
   console.log("Invoice paid:", invoice.id);
 
   const customerId = invoice.customer as string;
-  const subscriptionId = (invoice as any).subscription as string;
+  const subscriptionId = subscriptionIdFromInvoice(invoice);
 
   let subscription: Stripe.Subscription | null = null;
   if (subscriptionId) {

@@ -15,8 +15,9 @@ import { importProspects } from "../partners/prospectImport";
  * public contact details reach production without a separate manual database
  * import. The importer only refreshes public-research columns on existing rows;
  * it does not overwrite campaign state, notes, partner state, or other CRM work.
- * A sync failure is logged but does not disable outreach from data already in
- * the database.
+ * Test runs skip this repository sync so fixture databases stay isolated. A
+ * production sync failure is logged but does not disable outreach from data
+ * already in the database.
  *
  * Public research may contain a literal business email inside public_contact.
  * We may copy that literal address into contact_email, but never guess or
@@ -28,20 +29,22 @@ import { importProspects } from "../partners/prospectImport";
 export async function autoQualifyProspects(limit: number): Promise<number> {
   if (!Number.isFinite(limit) || limit <= 0) return 0;
 
-  try {
-    const sync = await importProspects();
-    if (sync.created > 0 || sync.updated > 0) {
-      console.info(
-        `[Outreach] prospect research sync: ${JSON.stringify({
-          created: sync.created,
-          updated: sync.updated,
-          unchanged: sync.unchanged,
-          skipped: sync.skipped,
-        })}`,
-      );
+  if (process.env.NODE_ENV !== "test") {
+    try {
+      const sync = await importProspects();
+      if (sync.created > 0 || sync.updated > 0) {
+        console.info(
+          `[Outreach] prospect research sync: ${JSON.stringify({
+            created: sync.created,
+            updated: sync.updated,
+            unchanged: sync.unchanged,
+            skipped: sync.skipped,
+          })}`,
+        );
+      }
+    } catch (error) {
+      console.error("[Outreach] prospect research sync failed; continuing with existing CRM data", error);
     }
-  } catch (error) {
-    console.error("[Outreach] prospect research sync failed; continuing with existing CRM data", error);
   }
 
   // First make every untouched, safe prospect visibly ready. This is not a

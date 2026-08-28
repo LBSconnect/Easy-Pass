@@ -1,29 +1,64 @@
 import { pool } from "../db";
 
 /**
- * Automatically promote researched prospects into the dispatch queue.
+ * Keep the CRM's pre-contact population ready for automated outreach.
  *
- * This is deliberately conservative. Automation may only promote a prospect
- * when there is a real business email already present in the CRM OR published
- * in the imported public-contact research. We may extract a literal public
- * email address from that research, but we never guess or generate an address.
- * We never revive a suppressed address and never touch any record that has
- * already entered a campaign or partner relationship.
+ * The user-facing state is now simple: a normal prospect that has not entered a
+ * campaign defaults to ready_to_contact. Delivery safety remains independent
+ * of that label. A prospect still cannot be enrolled without a literal email,
+ * suppressed addresses stay blocked, existing campaign recipients stay
+ * deduplicated, activated partners stay excluded, and the dispatcher still
+ * enforces the daily send limit.
  *
- * A mailbox is also treated as one outreach recipient even when the research
- * contains multiple organization/location rows pointing at the same public
- * address. Only the highest-ranked prospect for that normalized email may be
- * promoted, and an address that already has any campaign is never promoted
- * again for a different prospect.
- *
- * The dispatcher calls this only inside the normal business-hours and
- * deliverability gates, and only for the number of new sends still available
- * in today's budget. That keeps queue population aligned with the existing
- * first-wave safety limits instead of bulk-promoting the entire database.
+ * Public research may contain a literal business email inside public_contact.
+ * We may copy that literal address into contact_email, but never guess or
+ * generate one. When several prospect rows share one mailbox, only the
+ * highest-ranked row gets that public address promoted into the canonical
+ * contact_email field; the cross-campaign recipient guard remains the final
+ * duplicate-send protection.
  */
 export async function autoQualifyProspects(limit: number): Promise<number> {
   if (!Number.isFinite(limit) || limit <= 0) return 0;
 
+  // First make every untouched, safe prospect visibly ready. This is not a
+  // send operation and is intentionally not limited by today's email budget.
+  // Phone-only/no-email prospects can be ready while remaining unsendable.
+  await pool.query(
+    `WITH sourced AS (
+       SELECT p.id,
+              CASE
+                WHEN lower(trim(coalesce(p.contact_email, ''))) ~
+                     '^[a-z0-9._%+\\-]+@[a-z0-9.\\-]+\\.[a-z]{2,}$'
+                  THEN lower(trim(p.contact_email))
+                ELSE lower(substring(coalesce(p.public_contact, '') from
+                     '([A-Za-z0-9._%+\\-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z]{2,})'))
+              END AS send_email
+         FROM partner_prospects p
+     )
+     UPDATE partner_prospects p
+        SET outreach_status = 'ready_to_contact',
+            updated_at = now()
+       FROM sourced s
+      WHERE p.id = s.id
+        AND p.outreach_status IN ('not_contacted', 'researching')
+        AND p.partner_active = false
+        AND p.partner_created_at IS NULL
+        AND p.partner_status = 'prospect'
+        AND NOT EXISTS (
+              SELECT 1 FROM partner_outreach_campaigns c
+               WHERE c.prospect_id = p.id
+            )
+        AND (
+              s.send_email IS NULL OR NOT EXISTS (
+                SELECT 1 FROM partner_email_suppressions x
+                 WHERE lower(trim(x.email)) = s.send_email
+              )
+            )`,
+  );
+
+  // Then prepare at most today's remaining new-send budget with canonical
+  // literal email addresses. Ranking and mailbox dedupe decide which row wins
+  // when the same public mailbox appears on multiple prospect records.
   const result = await pool.query<{ id: string }>(
     `WITH sourced AS (
        SELECT p.*,
@@ -47,17 +82,16 @@ export async function autoQualifyProspects(limit: number): Promise<number> {
                            WHEN 'Very High' THEN 0
                            WHEN 'High' THEN 1
                            WHEN 'Medium' THEN 2
-                           ELSE 3
+                           WHEN 'Low' THEN 3
+                           ELSE 4
                          END,
                          coalesce(p.known_exam_volume, 0) DESC,
                          p.organization_name
               ) AS recipient_rank
          FROM sourced p
-        WHERE p.outreach_status IN ('not_contacted', 'researching')
+        WHERE p.outreach_status = 'ready_to_contact'
           AND p.send_email IS NOT NULL
           AND p.send_email <> ''
-          AND p.priority IN ('Very High', 'High', 'Medium')
-          AND p.segment <> 'other'
           AND p.partner_active = false
           AND p.partner_created_at IS NULL
           AND p.partner_status = 'prospect'
@@ -71,7 +105,7 @@ export async function autoQualifyProspects(limit: number): Promise<number> {
               )
           AND NOT EXISTS (
                 SELECT 1 FROM partner_email_suppressions s
-                 WHERE s.email = p.send_email
+                 WHERE lower(trim(s.email)) = p.send_email
               )
      ), candidates AS (
        SELECT p.id, p.send_email
@@ -81,19 +115,15 @@ export async function autoQualifyProspects(limit: number): Promise<number> {
                    WHEN 'Very High' THEN 0
                    WHEN 'High' THEN 1
                    WHEN 'Medium' THEN 2
-                   ELSE 3
+                   WHEN 'Low' THEN 3
+                   ELSE 4
                  END,
                  coalesce(p.known_exam_volume, 0) DESC,
                  p.organization_name
         LIMIT $1
      )
      UPDATE partner_prospects p
-        SET outreach_status = 'ready_to_contact',
-            contact_email = CASE
-              WHEN p.contact_email IS NULL OR trim(p.contact_email) = ''
-                THEN c.send_email
-              ELSE p.contact_email
-            END,
+        SET contact_email = c.send_email,
             updated_at = now()
        FROM candidates c
       WHERE p.id = c.id

@@ -13,9 +13,9 @@
  * destroy it permanently, and the only symptom would be a colleague's notes
  * quietly emptying.
  *
- * So the update statement below names the source columns explicitly. It is
- * deliberately not a wholesale row replacement, and the CRM columns are absent
- * from it by design rather than by oversight.
+ * New imported prospects begin ready_to_contact. Re-importing an existing row
+ * never rewrites its CRM status, so contacted, replied, suppressed and partner
+ * history cannot be reset by refreshing public research.
  *
  * WHY THIS IS NOT WIRED INTO STARTUP
  *
@@ -113,14 +113,15 @@ export async function importProspects(dir: string = PROSPECT_DATA_DIR): Promise<
     // ON CONFLICT rather than SELECT-then-INSERT: two imports running at once
     // would otherwise both find nothing and both insert.
     //
-    // The DO UPDATE list is the public research and nothing else. Adding a CRM
-    // column to it would erase whatever a person had written there.
+    // ready_to_contact is supplied only for INSERT. The DO UPDATE list remains
+    // public research only, which means refreshing a row can never reopen a
+    // campaign or overwrite a human/automation outcome.
     const result = await pool.query<{ id: string; was_insert: boolean }>(
       `INSERT INTO partner_prospects (
          organization_name, dedupe_key, segment, segment_raw, market, state,
          website, public_contact, candidate_signal, known_exam_volume,
-         priority, why_it_matters, source_url
-       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+         priority, why_it_matters, source_url, outreach_status
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'ready_to_contact')
        ON CONFLICT (dedupe_key) DO UPDATE SET
          organization_name = EXCLUDED.organization_name,
          segment           = EXCLUDED.segment,

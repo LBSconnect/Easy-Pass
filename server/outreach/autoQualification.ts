@@ -1,4 +1,5 @@
 import { pool } from "../db";
+import { importProspects } from "../partners/prospectImport";
 
 /**
  * Keep the CRM's pre-contact population ready for automated outreach.
@@ -10,6 +11,14 @@ import { pool } from "../db";
  * deduplicated, activated partners stay excluded, and the dispatcher still
  * enforces the daily send limit.
  *
+ * Repository prospect files are synced before qualification so newly researched
+ * public contact details reach production without a separate manual database
+ * import. The importer only refreshes public-research columns on existing rows;
+ * it does not overwrite campaign state, notes, partner state, or other CRM work.
+ * Test runs skip this repository sync so fixture databases stay isolated. A
+ * production sync failure is logged but does not disable outreach from data
+ * already in the database.
+ *
  * Public research may contain a literal business email inside public_contact.
  * We may copy that literal address into contact_email, but never guess or
  * generate one. When several prospect rows share one mailbox, only the
@@ -19,6 +28,24 @@ import { pool } from "../db";
  */
 export async function autoQualifyProspects(limit: number): Promise<number> {
   if (!Number.isFinite(limit) || limit <= 0) return 0;
+
+  if (process.env.NODE_ENV !== "test") {
+    try {
+      const sync = await importProspects();
+      if (sync.created > 0 || sync.updated > 0) {
+        console.info(
+          `[Outreach] prospect research sync: ${JSON.stringify({
+            created: sync.created,
+            updated: sync.updated,
+            unchanged: sync.unchanged,
+            skipped: sync.skipped,
+          })}`,
+        );
+      }
+    } catch (error) {
+      console.error("[Outreach] prospect research sync failed; continuing with existing CRM data", error);
+    }
+  }
 
   // First make every untouched, safe prospect visibly ready. This is not a
   // send operation and is intentionally not limited by today's email budget.

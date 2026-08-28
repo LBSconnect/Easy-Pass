@@ -4,8 +4,8 @@
  * Triggered exactly like study reminders - an external cron calls a
  * secret-guarded route (see routes.ts), because this app deliberately has no
  * internal scheduler. The run itself decides whether anything may actually
- * leave: outside business hours or on a weekend it processes nothing, so the
- * cron's own schedule never reaches an inbox.
+ * leave: outside the Central-time sending window or on Sunday it processes
+ * nothing, so the caller's broader UTC schedule never leaks into inboxes.
  *
  * ORDER OF A RUN
  *
@@ -27,8 +27,6 @@ import {
   SENDABLE_STATES,
   afterSend,
   dueAction,
-  isWithinSendingWindow,
-  DEFAULT_SENDING_WINDOW,
   OUTREACH_TIME_ZONE,
   type SequenceStep,
   type SendingWindowConfig,
@@ -59,6 +57,7 @@ import {
 } from "./campaignStore";
 import { autoQualifyProspects } from "./autoQualification";
 import { outreachConfig, type OutreachEmailService, type OutreachEmailConfig } from "./emailService";
+import { isOutreachSendingWindow, OUTREACH_SENDING_WINDOW } from "./sendingWindow";
 
 export interface DispatchRunResult {
   ran: boolean;
@@ -188,7 +187,7 @@ export async function runOutreachDispatch(
   service: OutreachEmailService,
   now: Date = new Date(),
   config: OutreachEmailConfig = outreachConfig(),
-  window: SendingWindowConfig = DEFAULT_SENDING_WINDOW,
+  window: SendingWindowConfig = OUTREACH_SENDING_WINDOW,
 ): Promise<DispatchRunResult> {
   const result: DispatchRunResult = {
     ran: false,
@@ -209,8 +208,8 @@ export async function runOutreachDispatch(
     result.reason = "email service not configured";
     return result;
   }
-  if (!isWithinSendingWindow(now, window)) {
-    result.reason = "outside business-hours sending window";
+  if (!isOutreachSendingWindow(now, window)) {
+    result.reason = "outside Monday-Saturday 8am-6pm Central sending window";
     return result;
   }
 

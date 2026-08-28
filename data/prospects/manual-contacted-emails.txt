@@ -1,0 +1,44 @@
+# Public business addresses already contacted manually through Outlook on 2026-08-28.
+# The automated outreach qualifier reads this file before enrollment so it does
+# not send a second first-touch message to the same mailbox. One address per line.
+
+info@houstoncitybeat.com
+pitches@texastribune.org
+businessnews@dallasnews.com
+edlab@dallasnews.com
+tips@chron.com
+kdfw@fox.com
+press.release@industrytitansmagazine.com
+ceinfo@collin.edu
+continuinged@dallascollege.edu
+dst-alamoicd@alamo.edu
+aleca.alejandro@hccs.edu
+info@hellocypress.com
+punch@punchyouragent.com
+mflores@vantagerec.com
+contactus@marketplaceinsure.com
+continuinged@utrgv.edu
+ce@delmar.edu
+timothy.murphy@tccd.edu
+justin.nobles@blinn.edu
+raelyn@iiat.org
+info@daiptx.com
+education@har.com
+info@realtoracademy.com
+info@wfsdallas.com
+tla@txla.org
+info@wfscapitalarea.com
+jobs@wrksolutions.com
+join@realtytexas.com
+klrw93@kw.com
+careers@jpar.com
+info@txcrebroker.com
+teamwork@tsibt.com
+lgoodnight@orrandassociates.com
+info@sogoinsurance.com
+dwuthrich@iiah.org
+john@iiadallas.org
+support@championsschool.com
+sales@aceable.com
+marketing@theceshop.com
+sales@360training.com

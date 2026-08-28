@@ -84,7 +84,7 @@ describeIfDb("outreach recipient deduplication", () => {
     await cleanup();
   });
 
-  it("auto-qualifies only one prospect when multiple rows share one published mailbox", async () => {
+  it("prepares only one canonical recipient when multiple ready rows share one published mailbox", async () => {
     await cleanup();
     const shared = `shared@${DOMAIN}`;
     const high = await makeProspect({
@@ -108,7 +108,7 @@ describeIfDb("outreach recipient deduplication", () => {
     const byId = new Map(rows.rows.map((row) => [row.id, row]));
     expect(byId.get(high)?.outreach_status).toBe("ready_to_contact");
     expect(byId.get(high)?.contact_email).toBe(shared);
-    expect(byId.get(lower)?.outreach_status).toBe("researching");
+    expect(byId.get(lower)?.outreach_status).toBe("ready_to_contact");
     expect(byId.get(lower)?.contact_email).toBeNull();
   });
 

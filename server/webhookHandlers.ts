@@ -2,6 +2,7 @@ import { getCachedStripeClient } from './stripeClient';
 import { storage } from './storage';
 import Stripe from 'stripe';
 import { mapStripeStatus, getPlanFromSubscription } from './stripeHelpers';
+import { sendNewSubscriberNotice } from './ownerNotifications';
 
 function getWebhookSecret(): string | null {
   return process.env.STRIPE_WEBHOOK_SECRET || null;
@@ -170,13 +171,20 @@ async function recordPaymentHistory(
     return;
   }
 
-  const allUsers = await storage.getAllUsers();
-  const user = allUsers.find((u) => u.profile?.stripeCustomerId === customerId);
-  if (!user) {
-    console.error("No user found with customerId for payment history:", customerId);
+  const resolved = await resolveUserForPayment(customerId, subscription);
+  if (!resolved) {
+    console.error(
+      `No user found for payment history (customer ${customerId}, ` +
+      `subscription ${subscriptionId}); tried customer id, subscription ` +
+      `metadata, and customer email`,
+    );
     return;
   }
+  const user = resolved.user;
 
+  // The foreign-product guard, unchanged in meaning: a subscription stamped
+  // for a DIFFERENT user than the one the customer resolves to is not this
+  // site's income. (A metadata match IS the stamp, so it passes trivially.)
   const stampedUserId = subscription?.metadata?.userId;
   if (stampedUserId && stampedUserId !== user.id) {
     console.error(
@@ -203,6 +211,102 @@ async function recordPaymentHistory(
   });
 
   console.log(`Recorded payment history for user ${user.id}: ${invoice.amount_paid} ${invoice.currency}`);
+
+  // The owner's notice rides on the NEW-row path only, so webhook redelivery
+  // (which returns above at the duplicate check) can never repeat it. And it
+  // is strictly best-effort: a failed courtesy email must not fail the
+  // webhook - a non-2xx would make Stripe retry an already-recorded invoice.
+  try {
+    const meta = subscription
+      ? await getSubscriptionMetadata(subscription)
+      : { subscriptionType: undefined, allowedCategories: undefined };
+    await sendNewSubscriberNotice({
+      subscriberEmail: user.email ?? "(no email on file)",
+      amountCents: invoice.amount_paid ?? 0,
+      currency: invoice.currency || "usd",
+      plan: subscription ? getPlanFromSubscription(subscription) : undefined,
+      subscriptionType: meta.subscriptionType,
+      categories: meta.allowedCategories,
+      matchedBy: resolved.matchedBy,
+    });
+  } catch (error) {
+    console.error("New-subscriber notice failed (payment recorded fine):", error);
+  }
+}
+
+/** How a payment was tied to a user account. */
+export type PaymentUserMatch = "customer_id" | "subscription_metadata" | "customer_email";
+
+/**
+ * Resolve which of this site's users a Stripe payment belongs to.
+ *
+ * WHY THREE PATHS
+ *
+ * The original lookup matched only `profile.stripeCustomerId`, which made the
+ * revenue record silently drop any genuine payment whose profile link was
+ * missing - a webhook race at first checkout, a customer created under a
+ * different email, a profile edit. The invoice returned 200, so Stripe never
+ * retried, and the money existed everywhere except the admin panel.
+ *
+ * So the match now tries, in order of strength:
+ *
+ *   1. The stored customer link (`profile.stripeCustomerId`) - the normal case.
+ *   2. The user id this site's own checkout stamped onto the subscription
+ *      (`metadata.userId`) - authoritative, because we wrote it.
+ *   3. The Stripe customer's email against the user table - the human-level
+ *      link, case-insensitive.
+ *
+ * A fallback match HEALS the profile by storing the customer id, so the next
+ * webhook for the same person matches on path 1. Failure to heal is logged
+ * and swallowed - recording the payment matters more than the repair.
+ */
+export async function resolveUserForPayment(
+  customerId: string,
+  subscription: Stripe.Subscription | null,
+): Promise<{ user: { id: string; email: string | null }; matchedBy: PaymentUserMatch } | null> {
+  const allUsers = await storage.getAllUsers();
+
+  const byCustomer = allUsers.find((u) => u.profile?.stripeCustomerId === customerId);
+  if (byCustomer) return { user: byCustomer, matchedBy: "customer_id" };
+
+  const stampedUserId = subscription?.metadata?.userId;
+  if (stampedUserId) {
+    const stamped = allUsers.find((u) => u.id === stampedUserId);
+    if (stamped) {
+      await healCustomerLink(stamped.id, customerId, "subscription metadata");
+      return { user: stamped, matchedBy: "subscription_metadata" };
+    }
+  }
+
+  try {
+    const stripe = await getCachedStripeClient();
+    const customer = await stripe.customers.retrieve(customerId);
+    const email = customer.deleted ? null : (customer as Stripe.Customer).email;
+    if (email) {
+      const needle = email.toLowerCase();
+      const byEmail = allUsers.find((u) => u.email?.toLowerCase() === needle);
+      if (byEmail) {
+        await healCustomerLink(byEmail.id, customerId, "customer email");
+        return { user: byEmail, matchedBy: "customer_email" };
+      }
+    }
+  } catch (error) {
+    console.error("Could not retrieve Stripe customer while resolving payment:", error);
+  }
+
+  return null;
+}
+
+async function healCustomerLink(userId: string, customerId: string, via: string): Promise<void> {
+  try {
+    await storage.updateProfile(userId, { stripeCustomerId: customerId });
+    console.log(
+      `Healed missing stripeCustomerId for user ${userId} (matched via ${via}); ` +
+      `future webhooks will match directly`,
+    );
+  } catch (error) {
+    console.error(`Could not heal stripeCustomerId for user ${userId}:`, error);
+  }
 }
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void> {

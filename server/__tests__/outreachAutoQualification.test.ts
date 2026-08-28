@@ -64,7 +64,7 @@ describeIfDb("automated outreach qualification", () => {
     await cleanup();
   });
 
-  it("promotes eligible researched prospects without manual ready_to_contact work", async () => {
+  it("moves every untouched safe prospect to ready_to_contact while suppression stays blocked", async () => {
     const eligible = await prospect("eligible", { priority: "Very High" });
     const low = await prospect("low", { priority: "Low" });
     const missingEmail = await prospect("missing", { email: null, priority: "High" });
@@ -73,12 +73,12 @@ describeIfDb("automated outreach qualification", () => {
 
     await pool.query(
       `INSERT INTO partner_email_suppressions (email, reason, source)
-       VALUES ($1, 'unsubscribe', 'test')`,
+       VALUES ($1, 'unsubscribed', 'test')`,
       [suppressed.email],
     );
 
-    const promoted = await autoQualifyProspects(10);
-    expect(promoted).toBe(1);
+    const prepared = await autoQualifyProspects(10);
+    expect(prepared).toBe(3);
 
     const rows = await pool.query<{ id: string; outreach_status: string }>(
       `SELECT id, outreach_status FROM partner_prospects WHERE id = ANY($1::uuid[])`,
@@ -87,13 +87,13 @@ describeIfDb("automated outreach qualification", () => {
     const status = new Map(rows.rows.map((r) => [r.id, r.outreach_status]));
 
     expect(status.get(eligible.id)).toBe("ready_to_contact");
-    expect(status.get(low.id)).toBe("researching");
-    expect(status.get(missingEmail.id)).toBe("researching");
-    expect(status.get(other.id)).toBe("researching");
+    expect(status.get(low.id)).toBe("ready_to_contact");
+    expect(status.get(missingEmail.id)).toBe("ready_to_contact");
+    expect(status.get(other.id)).toBe("ready_to_contact");
     expect(status.get(suppressed.id)).toBe("researching");
   });
 
-  it("extracts a literal published email from public_contact and persists it", async () => {
+  it("extracts a literal published email, while phone-only prospects are still ready but unsendable", async () => {
     const published = await prospect("published", {
       email: null,
       publicContact: `Public.Team@${DOMAIN} | 713-555-0100`,
@@ -117,7 +117,7 @@ describeIfDb("automated outreach qualification", () => {
 
     expect(byId.get(published.id)?.outreach_status).toBe("ready_to_contact");
     expect(byId.get(published.id)?.contact_email).toBe(`public.team@${DOMAIN}`);
-    expect(byId.get(phoneOnly.id)?.outreach_status).toBe("researching");
+    expect(byId.get(phoneOnly.id)?.outreach_status).toBe("ready_to_contact");
     expect(byId.get(phoneOnly.id)?.contact_email).toBeNull();
   });
 
@@ -130,7 +130,7 @@ describeIfDb("automated outreach qualification", () => {
     });
     await pool.query(
       `INSERT INTO partner_email_suppressions (email, reason, source)
-       VALUES ($1, 'unsubscribe', 'test')`,
+       VALUES ($1, 'unsubscribed', 'test')`,
       [email],
     );
 
@@ -143,17 +143,19 @@ describeIfDb("automated outreach qualification", () => {
     expect(row.rows[0].contact_email).toBeNull();
   });
 
-  it("respects the remaining daily budget", async () => {
-    await prospect("budget-a", { priority: "High" });
-    await prospect("budget-b", { priority: "High" });
+  it("limits canonical recipient preparation to the remaining daily budget without undoing ready state", async () => {
+    const a = await prospect("budget-a", { email: null, publicContact: `a@${DOMAIN}`, priority: "High" });
+    const b = await prospect("budget-b", { email: null, publicContact: `b@${DOMAIN}`, priority: "High" });
 
     expect(await autoQualifyProspects(1)).toBe(1);
 
-    const count = await pool.query<{ n: string }>(
-      `SELECT count(*) AS n FROM partner_prospects
-        WHERE dedupe_key LIKE $1 AND outreach_status = 'ready_to_contact'`,
-      [`${FX}-budget-%`],
+    const rows = await pool.query<{ id: string; outreach_status: string; contact_email: string | null }>(
+      `SELECT id, outreach_status, contact_email
+         FROM partner_prospects
+        WHERE id = ANY($1::uuid[])`,
+      [[a.id, b.id]],
     );
-    expect(Number(count.rows[0].n)).toBe(1);
+    expect(rows.rows.every((row) => row.outreach_status === "ready_to_contact")).toBe(true);
+    expect(rows.rows.filter((row) => row.contact_email !== null)).toHaveLength(1);
   });
 });

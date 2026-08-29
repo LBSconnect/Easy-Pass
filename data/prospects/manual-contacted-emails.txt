@@ -1,4 +1,4 @@
-# Public business addresses already contacted manually through Outlook on 2026-08-28.
+# Public business addresses already contacted manually through Outlook on or after 2026-08-28.
 # The automated outreach qualifier reads this file before enrollment so it does
 # not send a second first-touch message to the same mailbox. One address per line.
 
@@ -47,3 +47,13 @@ info@examtx.com
 aypohelp@certus.com
 clientservices@xcelsolutions.com
 sales@webce.com
+contactus@kaplan.com
+help@adbanker.com
+support@tsinational.com
+info@trebs.us
+support@licenseclassroom.com
+diana.holmes@learntexasrealestateonline.com
+support@mlscampus.com
+marketing@kwsw.com
+agentonboarding@exprealty.net
+education@texasrealtors.com

@@ -213,12 +213,23 @@ export async function runOutreachDispatch(
     return result;
   }
 
-  // Spam complaints remain a global stop. Hard bounces are handled per-address
-  // by the webhook processor: the bounced mailbox is suppressed immediately,
-  // but one or more hard bounces no longer pause unrelated prospect outreach.
   const facts = await recentDeliverabilityFacts(config.breakers.windowDays);
   if (facts.spamComplaints > config.breakers.spamComplaintLimit) {
     result.reason = `circuit breaker: ${facts.spamComplaints} spam complaint(s) in the last ${config.breakers.windowDays} days`;
+    console.error(`[Outreach] PAUSED - ${result.reason}`);
+    return result;
+  }
+
+  // Production config sets hardBounceRatioLimit to Infinity, so hard bounces
+  // never pause unrelated outreach. The branch remains here only as an
+  // explicit opt-in/test hook; each hard-bounced address is still suppressed
+  // immediately by the webhook processor.
+  if (
+    Number.isFinite(config.breakers.hardBounceRatioLimit) &&
+    facts.sends >= config.breakers.bounceCheckMinSends &&
+    facts.hardBounces / facts.sends > config.breakers.hardBounceRatioLimit
+  ) {
+    result.reason = `circuit breaker: hard-bounce rate ${facts.hardBounces}/${facts.sends} over the last ${config.breakers.windowDays} days`;
     console.error(`[Outreach] PAUSED - ${result.reason}`);
     return result;
   }

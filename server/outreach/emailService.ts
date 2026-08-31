@@ -48,9 +48,8 @@ export interface OutreachEmailConfig {
   senderName: string;
   dailyNewProspectLimit: number;
   breakers: {
+    /** Any spam complaint still pauses all outreach. */
     spamComplaintLimit: number;
-    hardBounceRatioLimit: number;
-    bounceCheckMinSends: number;
     windowDays: number;
   };
 }
@@ -70,8 +69,6 @@ export function outreachConfig(env: NodeJS.ProcessEnv = process.env): OutreachEm
     dailyNewProspectLimit,
     breakers: {
       spamComplaintLimit: 0,
-      hardBounceRatioLimit: 0.03,
-      bounceCheckMinSends: 10,
       windowDays: 7,
     },
   };

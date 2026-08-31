@@ -48,7 +48,13 @@ export interface OutreachEmailConfig {
   senderName: string;
   dailyNewProspectLimit: number;
   breakers: {
+    /** Any spam complaint still pauses all outreach. */
     spamComplaintLimit: number;
+    /**
+     * Hard-bounce ratio support is retained only for an explicit override or
+     * test. Production uses Infinity, so hard bounces suppress only the bad
+     * address and never pause unrelated prospect outreach.
+     */
     hardBounceRatioLimit: number;
     bounceCheckMinSends: number;
     windowDays: number;
@@ -70,8 +76,8 @@ export function outreachConfig(env: NodeJS.ProcessEnv = process.env): OutreachEm
     dailyNewProspectLimit,
     breakers: {
       spamComplaintLimit: 0,
-      hardBounceRatioLimit: 0.03,
-      bounceCheckMinSends: 10,
+      hardBounceRatioLimit: Number.POSITIVE_INFINITY,
+      bounceCheckMinSends: 1,
       windowDays: 7,
     },
   };

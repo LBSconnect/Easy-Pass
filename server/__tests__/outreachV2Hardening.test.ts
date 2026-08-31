@@ -86,11 +86,11 @@ describe("outreach v3 hardening", () => {
     expect(outreachConfig({ OUTREACH_DAILY_LIMIT: "8" } as NodeJS.ProcessEnv).dailyNewProspectLimit).toBe(8);
   });
 
-  it("uses a strict deliverability breaker for a small high-value list", () => {
+  it("keeps spam complaints as the global breaker while hard bounces stay address-level by default", () => {
     const config = outreachConfig({} as NodeJS.ProcessEnv);
     expect(config.breakers.spamComplaintLimit).toBe(0);
-    expect(config.breakers.hardBounceRatioLimit).toBe(0.03);
-    expect(config.breakers.bounceCheckMinSends).toBe(10);
+    expect(config.breakers.hardBounceRatioLimit).toBe(Number.POSITIVE_INFINITY);
+    expect(config.breakers.bounceCheckMinSends).toBe(1);
   });
 
   it("uses info@lbsconnect.net with the MyEasyPass.net display name", () => {

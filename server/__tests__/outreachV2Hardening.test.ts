@@ -22,22 +22,25 @@ const BUSINESS_ADDRESS = [
 
 const BRAND = "MyEasyPass.net";
 
-describe("outreach v3 hardening", () => {
+describe("outreach v4 conversion hardening", () => {
   const base = { organizationName: "Example Licensing School", senderName: "Sean" };
 
-  it("uses the v3 template, outcome-led subjects, and a classifier-compatible asynchronous CTA", () => {
-    expect(TEMPLATE_VERSION).toBe("outreach-v3");
+  it("uses the v4 template, a concrete pilot offer, and a classifier-compatible CTA", () => {
+    expect(TEMPLATE_VERSION).toBe("outreach-v4");
     expect(REPLY_CTA.toLowerCase()).toContain('reply "yes"');
     expect(classifyReply("yes")).toBe("interested");
 
     for (const segment of PARTNER_SEGMENTS) {
       const email = renderInitialEmail({ ...base, segment });
+      expect(email.subject).toContain("Example Licensing School");
       expect(email.subject.toLowerCase().startsWith("free ")).toBe(false);
       expect(email.text).toContain(REPLY_CTA);
+      expect(email.text.toLowerCase()).toContain("no-cost");
+      expect(email.text.toLowerCase()).toContain("10-");
+      expect(email.text.toLowerCase()).toContain("tracked partner link");
+      expect(email.text.toLowerCase()).toContain("may need more review");
       expect(email.text.toLowerCase()).not.toContain("would fail");
       expect(email.text.toLowerCase()).not.toContain("exactly which topics");
-      expect(email.text.toLowerCase()).toContain("may need more review");
-      expect(email.text.toLowerCase()).toContain("without adding work for your staff");
     }
   });
 
@@ -73,6 +76,7 @@ describe("outreach v3 hardening", () => {
   it("keeps automatic pilot details factual and leaves activation deliberate", () => {
     for (const segment of PARTNER_SEGMENTS) {
       const lower = renderPilotDetailsEmail({ ...base, segment }).text.toLowerCase();
+      expect(lower).toContain("up to 10");
       expect(lower).toContain("may need more review");
       expect(lower).toContain("does not guarantee exam results");
       expect(lower).toContain('reply "yes" again');

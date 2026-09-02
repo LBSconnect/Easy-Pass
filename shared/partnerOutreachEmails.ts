@@ -157,7 +157,7 @@ export function renderFollowUp1(inputs: OutreachEmailInputs): RenderedOutreachEm
 export function renderFollowUp2(inputs: OutreachEmailInputs): RenderedOutreachEmail {
   const paragraphs = [
     greeting(inputs.decisionMakerName),
-    `Closing the loop on the MyEasyPass.net pilot for ${inputs.organizationName}. If you'd like the two-minute outline for a no-cost 10-candidate test, reply "yes" and I'll send it. Otherwise I won't email you about this again.`,
+    `Closing the loop on the MyEasyPass.net pilot for ${inputs.organizationName}. If you'd like the two-minute outline for a no-cost 10-candidate test, reply "yes" and I'll send it. Otherwise I won't email you about it again.`,
     signature(inputs.senderName),
   ];
   return {

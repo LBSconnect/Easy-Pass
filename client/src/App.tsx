@@ -23,7 +23,7 @@ import ExamsPage from "@/pages/exams";
 import PricingPage from "@/pages/pricing";
 import ProfilePage from "@/pages/profile";
 const AdminPage = lazy(() => import("@/pages/admin"));
-import ScheduleExamPage from "@/pages/schedule-exam";
+import { Redirect } from "wouter";
 import StudyGuidePage from "@/pages/study-guide";
 import CertificatePage from "@/pages/certificate";
 import FAQPage from "@/pages/faq";
@@ -191,7 +191,7 @@ function Router() {
           off into the ordinary funnel; an unknown or inactive code lands on
           the normal readiness check with no organization named. */}
       <Route path="/p/:partnerCode" component={PartnerReferralPage} />
-      <Route path="/schedule-exam" component={ScheduleExamPage} />
+      <Route path="/schedule-exam" component={() => <Redirect to="/free/study-resources" />} />
       <Route path="/study-guide" component={() => <ProtectedRoute component={StudyGuidePage} />} />
       <Route path="/profile" component={() => <ProtectedRoute component={ProfilePage} />} />
       <Route path="/admin" component={() => <ProtectedRoute component={AdminPage} />} />

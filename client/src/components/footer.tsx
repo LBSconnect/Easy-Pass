@@ -40,24 +40,6 @@ export function Footer() {
                   <span className="hover:text-primary transition-colors">{t("nav.exams")}</span>
                 </Link>
               </li>
-              <li>
-                <Link href="/schedule-exam">
-                  <span className="hover:text-primary transition-colors" data-testid="link-footer-schedule-exam">
-                    {t("nav.scheduleExam")}
-                  </span>
-                </Link>
-              </li>
-              <li>
-                <a
-                  href="https://www.lbs4.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-primary transition-colors"
-                  data-testid="link-footer-test-center"
-                >
-                  {t("nav.visitTestCenter")}
-                </a>
-              </li>
               {isAdmin && (
                 <li>
                   <Link href="/admin">
@@ -161,8 +143,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>info@LBSconnect.net</li>
               <li>281-836-5357</li>
-              <li>616 FM 1960 Road West, Suite 101</li>
-              <li>Houston, Texas 77090-3048</li>
+              <li>Online exam preparation throughout Texas</li>
             </ul>
           </div>
         </div>

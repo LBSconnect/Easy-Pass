@@ -11,8 +11,6 @@ import { STUDY_ASSISTANT } from "@/lib/studyAssistant";
 import { Footer } from "@/components/footer";
 import { trackEvent } from "@/lib/analytics";
 
-// Confirmed by owner: LBS4 bootcamp services listing.
-const BOOTCAMP_HREF = "https://www.lbs4.com/services?filter=bootcamp";
 
 export default function LandingPage() {
   const { t, i18n } = useTranslation();
@@ -501,48 +499,27 @@ export default function LandingPage() {
         </section>
 
 
-        {/* Live Bootcamp */}
+        {/* Online-only exam preparation: keep visitors on MyEasyPass. */}
         <section className="py-12 md:py-16 bg-muted/30">
           <div className="container mx-auto px-4 max-w-4xl">
-            <Card className="overflow-hidden border-2">
-              <div className="grid md:grid-cols-[auto_1fr] items-center gap-6 p-6 md:p-8">
-                <div className="hidden md:flex shrink-0 items-center justify-center w-28 h-28 rounded-2xl bg-primary/10">
-                  <GraduationCap className="h-14 w-14 text-primary" />
-                </div>
-                <div>
-                  <Badge variant="secondary" className="mb-3">
-                    {isSpanish ? "INSTRUCCIÓN EN VIVO" : "LIVE INSTRUCTION"}
-                  </Badge>
-                  <h2 className="text-xl md:text-2xl font-bold mb-2">
-                    {isSpanish ? "¿Prefieres un Bootcamp en Vivo?" : "Prefer a Live Bootcamp?"}
-                  </h2>
-                  <p className="text-muted-foreground mb-4">
-                    {isSpanish
-                      ? "Conéctate con bootcamps de repaso de examen en vivo y nuestro centro de exámenes en Houston."
-                      : "Connect with live exam-cram bootcamps and our Houston testing center."}
-                  </p>
-                  <div className="flex flex-wrap gap-x-5 gap-y-2 mb-5 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1.5">
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      <span>{isSpanish ? "Instrucción en vivo" : "Live, in-person instruction"}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      <span>{isSpanish ? "Ubicación en Houston" : "Houston location"}</span>
-                    </div>
-                  </div>
-                  <a href={BOOTCAMP_HREF} target="_blank" rel="noopener noreferrer">
-                    <Button
-                      className="gap-2"
-                      onClick={() => trackEvent("bootcamp_cta_click", { source: "homepage" })}
-                      data-testid="button-homepage-bootcamp-cta"
-                    >
-                      {isSpanish ? "Ver Bootcamps en Vivo" : "See Live Exam Bootcamps"}
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                  </a>
-                </div>
-              </div>
+            <Card className="p-6 md:p-8">
+              <Badge variant="secondary" className="mb-3">
+                {isSpanish ? "PREPARACIÓN 100% EN LÍNEA" : "100% ONLINE EXAM PREP"}
+              </Badge>
+              <h2 className="text-xl md:text-2xl font-bold mb-2">
+                {isSpanish ? "Prepárate a tu ritmo, desde cualquier lugar" : "Prepare at your pace, wherever you are"}
+              </h2>
+              <p className="text-muted-foreground mb-5">
+                {isSpanish
+                  ? "Practica con preguntas, exámenes de simulación y recursos de estudio para licencias de Texas, completamente en línea."
+                  : "Practice with Texas licensing exam questions, mock exams, and study resources entirely online."}
+              </p>
+              <Button asChild className="gap-2">
+                <Link href="/free/texas-real-estate-practice-test">
+                  {isSpanish ? "Comenzar práctica gratuita" : "Start Free Practice"}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
             </Card>
           </div>
         </section>

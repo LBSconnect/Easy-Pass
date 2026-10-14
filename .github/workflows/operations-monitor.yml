@@ -1,0 +1,65 @@
+name: Three-site operations monitor
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ops/mission/**'
+      - '.github/workflows/operations-monitor.yml'
+      - '.github/workflows/operations-watchdog.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ops/mission/**'
+      - '.github/workflows/operations-monitor.yml'
+      - '.github/workflows/operations-watchdog.yml'
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: three-site-operations-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'live' }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    # No private-repository runner charges; no larger runners, artifacts or caches.
+    if: github.repository == 'LBSconnect/Easy-Pass' && github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Syntax and offline safety/recovery tests
+        run: |
+          python3 -m py_compile ops/mission/controller.py
+          python3 -m unittest discover -s ops/mission -p 'test_*.py' -v
+
+  verify:
+    needs: test
+    if: >-
+      github.event_name != 'pull_request' &&
+      github.repository == 'LBSconnect/Easy-Pass' &&
+      github.event.repository.private == false &&
+      vars.THREE_SITE_OPS_STOP != '1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Resume public verification queue and checkpoint one status issue
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          OPS_STOP: ${{ vars.THREE_SITE_OPS_STOP }}
+        run: |
+          python3 ops/mission/controller.py --network --github-issue 202 --report /tmp/operations-report.md
+          cat /tmp/operations-report.md >> "$GITHUB_STEP_SUMMARY"

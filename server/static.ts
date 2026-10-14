@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type RequestHandler } from "express";
 import fs from "fs";
 import path from "path";
 
@@ -48,6 +48,22 @@ function renderSeoHtml(indexHtml: string, pathname: string): string {
     .replace(/<meta name="twitter:description" content="[^"]*"\s*\/>/i, `<meta name="twitter:description" content="${description}" />`);
 }
 
+// The client-side redirect remains useful for in-app navigation, but crawlers
+// and bookmarked visits must receive a real permanent HTTP redirect as well.
+// Only redirect the retired public page, never API calls or form submissions.
+export const redirectRetiredExamScheduling: RequestHandler = (req, res, next) => {
+  if ((req.method !== "GET" && req.method !== "HEAD") ||
+      (req.path !== "/schedule-exam" && req.path !== "/schedule-exam/")) {
+    next();
+    return;
+  }
+
+  // Preserve the supported language choice, not arbitrary query parameters
+  // that may contain old appointment details or untrusted redirect targets.
+  const language = req.query.lang === "es" ? "?lang=es" : "";
+  res.redirect(301, `/free/study-resources${language}`);
+};
+
 export function serveStatic(app: Express) {
   const distPath = path.resolve(__dirname, "public");
   if (!fs.existsSync(distPath)) {
@@ -56,6 +72,7 @@ export function serveStatic(app: Express) {
     );
   }
 
+  app.use(redirectRetiredExamScheduling);
   app.use(express.static(distPath));
 
   // Serve route-specific SEO metadata in the initial HTML response for high-value

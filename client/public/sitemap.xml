@@ -5,7 +5,7 @@
   <!-- Home / Landing — primary marketing page -->
   <url>
     <loc>https://www.myeasypass.net/</loc>
-    <lastmod>2026-02-24</lastmod>
+    <lastmod>2026-10-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <!-- bilingual alternates -->
@@ -33,31 +33,31 @@
     <xhtml:link rel="alternate" hreflang="es" href="https://www.myeasypass.net/faq?lang=es" />
   </url>
 
-  <!-- Free practice-test acquisition pages -->
+  <!-- Free practice-test acquisition pages; server metadata fixed September 21 -->
   <url>
     <loc>https://www.myeasypass.net/free/texas-real-estate-practice-test</loc>
-    <lastmod>2026-08-19</lastmod>
+    <lastmod>2026-09-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
 
   <url>
     <loc>https://www.myeasypass.net/free/texas-property-casualty-practice-test</loc>
-    <lastmod>2026-08-19</lastmod>
+    <lastmod>2026-09-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
 
   <url>
     <loc>https://www.myeasypass.net/free/texas-life-insurance-practice-test</loc>
-    <lastmod>2026-08-19</lastmod>
+    <lastmod>2026-09-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
 
   <url>
     <loc>https://www.myeasypass.net/free/texas-general-lines-practice-test</loc>
-    <lastmod>2026-08-19</lastmod>
+    <lastmod>2026-09-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
@@ -197,12 +197,11 @@
     <priority>0.6</priority>
   </url>
 
-  <!-- Schedule Exam -->
+  <!-- Online study resources replace the retired scheduling service. -->
   <url>
-    <loc>https://www.myeasypass.net/schedule-exam</loc>
-    <lastmod>2026-02-24</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <loc>https://www.myeasypass.net/free/study-resources</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
 
   <!-- Legal -->

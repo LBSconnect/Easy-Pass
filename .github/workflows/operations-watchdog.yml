@@ -1,0 +1,32 @@
+name: Operations heartbeat watchdog
+
+on:
+  schedule:
+    - cron: '47 13 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: three-site-operations-watchdog
+  cancel-in-progress: false
+
+jobs:
+  check-heartbeat:
+    if: >-
+      github.repository == 'LBSconnect/Easy-Pass' &&
+      github.event.repository.private == false &&
+      vars.THREE_SITE_OPS_STOP != '1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Fail if no complete public verification cycle exists within three hours
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 ops/mission/controller.py --watchdog --github-issue 202

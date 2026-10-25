@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { analyticsUserId } from "./analyticsIdentity";
 import { isAuthenticated } from "./simpleAuth";
 import { getCachedStripeClient } from "./stripeClient";
 import { initializeStripePrices, REQUIRED_PRICES } from "./initializeStripePrices";
@@ -2788,7 +2789,10 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid event" });
       }
 
-      const userId = req.user?.claims?.sub;
+      // This application authenticates via req.session.userId. The public
+      // analytics route does not run isAuthenticated, so req.user is often absent.
+      // Only a server-held identity is allowed; never accept userId from metadata.
+      const userId = analyticsUserId(req);
 
       await storage.createAnalyticsEvent({
         event: parsed.data.event,

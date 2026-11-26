@@ -88,7 +88,7 @@
          student sits in front of a white page. Measured at ~13.6s to first
          paint with the request blocked.
 
-         `media="print"` makes it non-blocking; the onload handler promotes it
+         `media="print"` makes it non-blocking; the script below promotes it
          once it arrives. Text paints immediately in the fallback (system-ui,
          see --font-sans) and swaps when Inter loads, which is what
          `display=swap` in the URL is for. The noscript copy keeps the font for
@@ -102,9 +102,26 @@
     <link
       rel="stylesheet"
       media="print"
-      onload="this.media='all'"
+      id="inter-stylesheet"
       href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..700;1,14..32,400..600&display=swap"
     />
+    <script>
+      // Promotes the print-media stylesheet above once it loads. An inline
+      // event-handler attribute did this before, but helmet's default
+      // script-src-attr 'none' blocks those attributes, so the font
+      // never swapped in; a script block is allowed by script-src.
+      (function () {
+        var link = document.getElementById("inter-stylesheet");
+        if (!link) return;
+        if (link.sheet) {
+          link.media = "all";
+        } else {
+          link.addEventListener("load", function () {
+            link.media = "all";
+          });
+        }
+      })();
+    </script>
     <noscript>
       <link
         rel="stylesheet"

@@ -619,9 +619,12 @@ describeIfDb("the engine against a real database", () => {
     await makeProspect({ name: "Never Contacted Weekend" });
     const service = new emailService.RecordingEmailService();
 
-    const saturday = await engine.runOutreachDispatch(service, new Date("2026-08-29T15:00:00Z"), config());
-    expect(saturday.ran).toBe(false);
-    expect(saturday.reason).toContain("window");
+    // Sunday stays outside the sending window. (Saturday no longer does:
+    // the window deliberately widened to Mon-Sat 8-6 Central on 2026-08-28 -
+    // see server/outreach/sendingWindow.ts and outreachSendingWindow.test.ts.)
+    const sunday = await engine.runOutreachDispatch(service, new Date("2026-08-30T15:00:00Z"), config());
+    expect(sunday.ran).toBe(false);
+    expect(sunday.reason).toContain("window");
 
     const disabled = await engine.runOutreachDispatch(service, TUE, config({ enabled: false }));
     expect(disabled.ran).toBe(false);

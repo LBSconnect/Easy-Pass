@@ -102,7 +102,7 @@ describeIfDb("outreach recipient deduplication", () => {
 
     const rows = await pool.query<{ id: string; outreach_status: string; contact_email: string | null }>(
       `SELECT id, outreach_status, contact_email
-         FROM partner_prospects WHERE id = ANY($1::uuid[])`,
+         FROM partner_prospects WHERE id = ANY($1::text[])`,
       [[high, lower]],
     );
     const byId = new Map(rows.rows.map((row) => [row.id, row]));
@@ -145,7 +145,7 @@ describeIfDb("outreach recipient deduplication", () => {
               initial_sent_at = $2,
               last_sent_at = $2,
               next_action_at = $3
-        WHERE id = ANY($1::uuid[])`,
+        WHERE id = ANY($1::text[])`,
       [[c1!.id, c2!.id], new Date("2026-08-20T15:00:00Z"), TUE],
     );
 
@@ -158,7 +158,7 @@ describeIfDb("outreach recipient deduplication", () => {
     const campaigns = await pool.query<{ state: string; stop_reason: string | null }>(
       `SELECT state, stop_reason
          FROM partner_outreach_campaigns
-        WHERE id = ANY($1::uuid[])`,
+        WHERE id = ANY($1::text[])`,
       [[c1!.id, c2!.id]],
     );
     expect(campaigns.rows.filter((row) => row.state === "follow_up_1_sent")).toHaveLength(1);

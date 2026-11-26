@@ -38,16 +38,16 @@ export default function LandingPage() {
       icon: PlayCircle,
       title: isSpanish ? "Practica a tu Ritmo" : "Practice at Your Pace",
       description: isSpanish
-        ? "Accede a cientos de preguntas reales"
-        : "Access hundreds of real exam questions",
+        ? "Practica con cientos de preguntas de estudio"
+        : "Study with hundreds of practice questions",
     },
     {
       step: 4,
       icon: Award,
-      title: isSpanish ? "Aprueba con Confianza" : "Pass with Confidence",
+      title: isSpanish ? "Repasa con Confianza" : "Review with Confidence",
       description: isSpanish
-        ? "Prepárate para aprobar en el primer intento"
-        : "Be ready to pass on your first try",
+        ? "Refuerza tus conocimientos antes del examen"
+        : "Build confidence before your licensing exam",
     },
   ];
 
@@ -56,9 +56,9 @@ export default function LandingPage() {
       icon: Target,
       title: isSpanish ? "Preguntas de Práctica" : "Practice Questions",
       description: isSpanish
-        ? "Más de 800 preguntas en formato real del examen con respuestas explicadas"
-        : "800+ questions in real exam format with detailed explanations",
-      highlight: isSpanish ? "800+ preguntas" : "800+ questions",
+        ? "Más de 700 preguntas de práctica con explicaciones detalladas"
+        : "700+ practice questions with detailed explanations",
+      highlight: isSpanish ? "700+ preguntas" : "700+ questions",
     },
     {
       icon: ClipboardCheck,
@@ -113,7 +113,7 @@ export default function LandingPage() {
   // Do not add student counts, pass rates, or testimonials without real,
   // owner-supplied and substantiated data.
   const trustIndicators = [
-    { value: "800+", label: isSpanish ? "Preguntas" : "Questions" },
+    { value: "700+", label: isSpanish ? "Preguntas" : "Questions" },
     { value: "4", label: isSpanish ? "Categorías" : "Categories" },
     { value: "EN/ES", label: isSpanish ? "Bilingüe" : "Bilingual" },
   ];
@@ -137,23 +137,21 @@ export default function LandingPage() {
                 <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-foreground leading-tight">
                   {isSpanish ? (
                     <>
-                      Aprueba tu Examen de{" "}
-                      <span className="text-primary">Licencia de Texas</span> en el
-                      Primer Intento
+                      Prepárate para tu Examen de{" "}
+                      <span className="text-primary">Licencia de Texas</span>
                     </>
                   ) : (
                     <>
-                      Pass Your Texas{" "}
-                      <span className="text-primary">Licensing Exam</span> on the
-                      First Try
+                      Prepare for Your Texas{" "}
+                      <span className="text-primary">Licensing Exam</span>
                     </>
                   )}
                 </h1>
 
                 <p className="text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 leading-relaxed">
                   {isSpanish
-                    ? "Preparación bilingüe para exámenes de Real Estate e Insurance. Practica con preguntas reales, a tu ritmo, en tu idioma."
-                    : "Bilingual exam prep for Real Estate & Insurance. Practice with real exam questions, at your pace, in your language."}
+                    ? "Preparación bilingüe para exámenes de Real Estate e Insurance. Practica con preguntas de estudio, a tu ritmo, en tu idioma."
+                    : "Bilingual exam prep for Real Estate & Insurance. Practice with study questions, at your pace, in your language."}
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-1">
@@ -455,8 +453,8 @@ export default function LandingPage() {
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
                 {isSpanish
-                  ? "Todo lo que necesitas para aprobar tu examen en un solo lugar"
-                  : "Everything you need to pass your exam in one place"}
+                  ? "Herramientas para prepararte, reunidas en un solo lugar"
+                  : "Study tools to help you prepare in one place"}
               </p>
             </div>
 
@@ -563,7 +561,7 @@ export default function LandingPage() {
         <section className="py-12 md:py-16 bg-primary text-primary-foreground">
           <div className="container mx-auto px-4 text-center">
             <h2 className="text-2xl md:text-3xl font-bold mb-3">
-              {isSpanish ? "¿Listo para Aprobar tu Examen?" : "Ready to Pass Your Exam?"}
+              {isSpanish ? "¿Listo para Prepararte para tu Examen?" : "Ready to Prepare for Your Exam?"}
             </h2>
             <p className="text-primary-foreground/80 mb-6 max-w-2xl mx-auto text-lg">
               {isSpanish

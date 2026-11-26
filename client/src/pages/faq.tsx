@@ -244,7 +244,7 @@ export default function FAQPage() {
                     <BookOpen className="h-6 w-6 text-primary" />
                   </div>
                 </div>
-                <p className="font-bold text-2xl" data-testid="text-trust-questions">800+</p>
+                <p className="font-bold text-2xl" data-testid="text-trust-questions">700+</p>
                 <p className="text-sm text-muted-foreground">{t("faq.trust.questions")}</p>
               </CardContent>
             </Card>

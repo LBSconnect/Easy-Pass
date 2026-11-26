@@ -58,7 +58,7 @@ describeIfDb("automatic pilot-details reply", () => {
     const service = new emailService.RecordingEmailService();
     await replies.processReply(campaign!, EMAIL, "Yes, please send the pilot details.", service);
 
-    const firstPilotEmails = service.sent.filter((email) => email.to === EMAIL && email.subject.includes("pilot details"));
+    const firstPilotEmails = service.sent.filter((email) => email.to === EMAIL && email.subject.includes("pilot"));
     expect(firstPilotEmails).toHaveLength(1);
     expect(firstPilotEmails[0].text).toContain("616 FM 1960 Road West, Suite 101");
     expect(firstPilotEmails[0].text.toLowerCase()).toContain("nothing is activated automatically");
@@ -79,7 +79,7 @@ describeIfDb("automatic pilot-details reply", () => {
     // a second pilot-details email.
     await replies.processReply(after!, EMAIL, "Yes, please send the pilot details.", service);
 
-    const allPilotEmails = service.sent.filter((email) => email.to === EMAIL && email.subject.includes("pilot details"));
+    const allPilotEmails = service.sent.filter((email) => email.to === EMAIL && email.subject.includes("pilot"));
     expect(allPilotEmails).toHaveLength(1);
 
     const recorded = await pool.query(

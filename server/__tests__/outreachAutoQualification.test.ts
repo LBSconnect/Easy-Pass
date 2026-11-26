@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 const describeIfDb = hasDatabase ? describe : describe.skip;
@@ -64,6 +64,13 @@ describeIfDb("automated outreach qualification", () => {
     await cleanup();
   });
 
+  // Each test builds its counts from scratch. Without this, autoQualify's
+  // ranked query re-counts earlier tests' already-canonical fixtures and
+  // every count assertion below drifts with execution order.
+  beforeEach(async () => {
+    await cleanup();
+  });
+
   it("moves every untouched safe prospect to ready_to_contact while suppression stays blocked", async () => {
     const eligible = await prospect("eligible", { priority: "Very High" });
     const low = await prospect("low", { priority: "Low" });
@@ -81,7 +88,7 @@ describeIfDb("automated outreach qualification", () => {
     expect(prepared).toBe(3);
 
     const rows = await pool.query<{ id: string; outreach_status: string }>(
-      `SELECT id, outreach_status FROM partner_prospects WHERE id = ANY($1::uuid[])`,
+      `SELECT id, outreach_status FROM partner_prospects WHERE id = ANY($1::text[])`,
       [[eligible.id, low.id, missingEmail.id, other.id, suppressed.id]],
     );
     const status = new Map(rows.rows.map((r) => [r.id, r.outreach_status]));
@@ -110,7 +117,7 @@ describeIfDb("automated outreach qualification", () => {
     const rows = await pool.query<{ id: string; outreach_status: string; contact_email: string | null }>(
       `SELECT id, outreach_status, contact_email
          FROM partner_prospects
-        WHERE id = ANY($1::uuid[])`,
+        WHERE id = ANY($1::text[])`,
       [[published.id, phoneOnly.id]],
     );
     const byId = new Map(rows.rows.map((r) => [r.id, r]));
@@ -152,7 +159,7 @@ describeIfDb("automated outreach qualification", () => {
     const rows = await pool.query<{ id: string; outreach_status: string; contact_email: string | null }>(
       `SELECT id, outreach_status, contact_email
          FROM partner_prospects
-        WHERE id = ANY($1::uuid[])`,
+        WHERE id = ANY($1::text[])`,
       [[a.id, b.id]],
     );
     expect(rows.rows.every((row) => row.outreach_status === "ready_to_contact")).toBe(true);

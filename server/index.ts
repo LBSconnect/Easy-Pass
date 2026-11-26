@@ -44,11 +44,24 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://js.stripe.com"],
+      // googletagmanager.com serves the Google Ads gtag loader injected in
+      // client/src/main.tsx; without it the CSP silently blocks the tag and
+      // no Ads conversion ever fires. The connect/frame entries are the
+      // endpoints gtag reports conversions to (sendBeacon/fetch pings and the
+      // conversion-linker iframe).
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://js.stripe.com", "https://www.googletagmanager.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      frameSrc: ["https://js.stripe.com", "https://hooks.stripe.com", "https://www.google.com"],
-      connectSrc: ["'self'", "https://api.stripe.com"],
+      frameSrc: ["https://js.stripe.com", "https://hooks.stripe.com", "https://www.google.com", "https://td.doubleclick.net"],
+      connectSrc: [
+        "'self'",
+        "https://api.stripe.com",
+        "https://www.googletagmanager.com",
+        "https://www.google.com",
+        "https://googleads.g.doubleclick.net",
+        "https://www.googleadservices.com",
+        "https://*.google-analytics.com",
+      ],
     },
   },
   hsts: {
